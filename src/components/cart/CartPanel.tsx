@@ -28,7 +28,7 @@ export function CartPanel({
       <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 z-40 flex h-full w-80 flex-col bg-white shadow-2xl">
+      <div className="fixed right-0 top-0 z-40 flex h-full w-80 flex-col bg-white shadow-2xl" role="dialog" aria-modal="true" aria-label="Shopping cart">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
           <div className="flex items-center gap-2">
@@ -40,7 +40,7 @@ export function CartPanel({
               Your Cart ({cart.items.reduce((s, i) => s + i.quantity, 0)})
             </h3>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 hover:bg-gray-100">
+          <button onClick={onClose} aria-label="Close cart" className="rounded-lg p-1 hover:bg-gray-100">
             <X className="h-4 w-4 text-gray-500" />
           </button>
         </div>

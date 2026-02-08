@@ -23,7 +23,7 @@ export function MessageList({
   }, [messages, loading]);
 
   return (
-    <div className="flex-1 overflow-y-auto py-4">
+    <div className="flex-1 overflow-y-auto py-4" role="log" aria-live="polite">
       {messages.map((msg, i) => (
         <MessageBubble
           key={i}

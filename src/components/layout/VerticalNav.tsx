@@ -18,7 +18,7 @@ const hoverClasses = {
 
 export function VerticalNav() {
   return (
-    <nav className="flex gap-1">
+    <nav className="flex gap-1" aria-label="Vertical navigation">
       {verticalList.map((v) => (
         <NavLink
           key={v.id}
@@ -31,7 +31,9 @@ export function VerticalNav() {
             )
           }
         >
-          {v.name}
+          {({ isActive }) => (
+            <span aria-current={isActive ? "page" : undefined}>{v.name}</span>
+          )}
         </NavLink>
       ))}
     </nav>

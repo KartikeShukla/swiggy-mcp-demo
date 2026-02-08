@@ -13,11 +13,11 @@ export function OrderConfirmation({
   accentColor: string;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-labelledby="order-confirm-title">
       <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-bold text-gray-900">Confirm Order</h3>
+          <h3 id="order-confirm-title" className="text-base font-bold text-gray-900">Confirm Order</h3>
           <button onClick={onClose} className="rounded-lg p-1 hover:bg-gray-100">
             <X className="h-4 w-4 text-gray-500" />
           </button>

@@ -9,6 +9,7 @@ import {
   getSwiggyTokenAge,
   clearAllChatHistory,
 } from "@/lib/storage";
+import { TOKEN_STALENESS_MS, OAUTH_POPUP_WIDTH, OAUTH_POPUP_HEIGHT } from "@/lib/constants";
 
 export function useAuth() {
   const [apiKey, setApiKeyState] = useState<string | null>(getApiKey);
@@ -48,7 +49,7 @@ export function useAuth() {
   }, []);
 
   const tokenAge = getSwiggyTokenAge();
-  const isTokenStale = tokenAge !== null && tokenAge > 60 * 60 * 1000; // 1 hour
+  const isTokenStale = tokenAge !== null && tokenAge > TOKEN_STALENESS_MS;
 
   // Listen for OAuth postMessage from popup
   useEffect(() => {
@@ -62,14 +63,12 @@ export function useAuth() {
   }, [saveSwiggyToken]);
 
   const startOAuth = useCallback(() => {
-    const width = 500;
-    const height = 600;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
+    const left = window.screenX + (window.outerWidth - OAUTH_POPUP_WIDTH) / 2;
+    const top = window.screenY + (window.outerHeight - OAUTH_POPUP_HEIGHT) / 2;
     window.open(
       "/api/auth/start",
       "swiggy-oauth",
-      `width=${width},height=${height},left=${left},top=${top}`,
+      `width=${OAUTH_POPUP_WIDTH},height=${OAUTH_POPUP_HEIGHT},left=${left},top=${top}`,
     );
   }, []);
 

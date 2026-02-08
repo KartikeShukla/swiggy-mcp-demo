@@ -3,6 +3,7 @@ import { verticals } from "@/verticals";
 import type { VerticalConfig } from "@/lib/types";
 import { useChat } from "@/hooks/useChat";
 import { useCart } from "@/hooks/useCart";
+import { ErrorBoundary } from "../ErrorBoundary";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 import { CartFloatingButton } from "../cart/CartFloatingButton";
@@ -31,13 +32,15 @@ function ChatViewInner({
     <div className="flex h-[calc(100vh-3.5rem)] flex-col relative">
       {/* Messages or empty state */}
       {hasMessages ? (
-        <MessageList
-          messages={messages}
-          loading={loading}
-          accentColor={vertical.color}
-          verticalId={vertical.id}
-          onAction={sendMessage}
-        />
+        <ErrorBoundary>
+          <MessageList
+            messages={messages}
+            loading={loading}
+            accentColor={vertical.color}
+            verticalId={vertical.id}
+            onAction={sendMessage}
+          />
+        </ErrorBoundary>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center px-4">
           <div
@@ -92,7 +95,7 @@ function ChatViewInner({
       {/* Error display */}
       {error && (
         <div className="mx-auto w-full max-w-3xl px-4 pb-2">
-          <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">
+          <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600" role="alert">
             {error}
           </div>
         </div>

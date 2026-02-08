@@ -1,5 +1,6 @@
 import { UtensilsCrossed, Star, Tag, MapPin } from "lucide-react";
 import type { ParsedRestaurant } from "@/lib/types";
+import { MAX_OFFERS_SHOWN } from "@/lib/constants";
 
 export function RestaurantCard({
   restaurant,
@@ -58,7 +59,7 @@ export function RestaurantCard({
         {/* Offers */}
         {restaurant.offers && restaurant.offers.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1">
-            {restaurant.offers.slice(0, 2).map((offer, i) => (
+            {restaurant.offers.slice(0, MAX_OFFERS_SHOWN).map((offer, i) => (
               <span
                 key={i}
                 className="flex items-center gap-0.5 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700"
@@ -72,6 +73,7 @@ export function RestaurantCard({
 
         <button
           onClick={() => onAction(`Check availability at ${restaurant.name}`)}
+          aria-label={`Check availability at ${restaurant.name}`}
           className="mt-auto rounded-lg py-1.5 text-xs font-semibold text-white transition-colors"
           style={{ backgroundColor: `var(--color-${accentColor})` }}
         >

@@ -17,14 +17,14 @@ export function ApiKeyModal({ onSubmit }: { onSubmit: (key: string) => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
       <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100">
             <KeyRound className="h-5 w-5 text-gray-700" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 id="api-key-modal-title" className="text-lg font-semibold text-gray-900">
               Enter your API key
             </h2>
             <p className="text-sm text-gray-500">

@@ -31,19 +31,23 @@ export function SettingsMenu({
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen(!open)}
+        aria-label="Settings"
+        aria-haspopup="true"
+        aria-expanded={open}
         className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
       >
         <Settings className="h-4 w-4" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-56 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+        <div className="absolute right-0 top-full mt-1 w-56 rounded-xl border border-gray-200 bg-white py-1 shadow-lg" role="menu">
           {hasApiKey && (
             <button
               onClick={() => {
                 onChangeApiKey();
                 setOpen(false);
               }}
+              role="menuitem"
               className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
               <KeyRound className="h-4 w-4 text-gray-400" />
@@ -56,6 +60,7 @@ export function SettingsMenu({
                 onDisconnectSwiggy();
                 setOpen(false);
               }}
+              role="menuitem"
               className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
               <Link2Off className="h-4 w-4 text-gray-400" />
@@ -67,6 +72,7 @@ export function SettingsMenu({
               onClearChats();
               setOpen(false);
             }}
+            role="menuitem"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
           >
             <Trash2 className="h-4 w-4 text-red-400" />

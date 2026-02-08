@@ -1,5 +1,6 @@
 import { ShoppingCart } from "lucide-react";
 import { useEffect, useState } from "react";
+import { CART_BOUNCE_MS } from "@/lib/constants";
 
 export function CartFloatingButton({
   count,
@@ -14,13 +15,14 @@ export function CartFloatingButton({
 
   useEffect(() => {
     setBounce(true);
-    const t = setTimeout(() => setBounce(false), 300);
+    const t = setTimeout(() => setBounce(false), CART_BOUNCE_MS);
     return () => clearTimeout(t);
   }, [count]);
 
   return (
     <button
       onClick={onClick}
+      aria-label={`View cart, ${count} ${count === 1 ? "item" : "items"}`}
       className={`absolute bottom-20 right-6 z-30 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-transform ${
         bounce ? "scale-110" : "scale-100"
       }`}

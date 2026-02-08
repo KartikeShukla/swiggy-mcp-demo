@@ -46,6 +46,8 @@ export function SwiggyConnect({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
+        aria-haspopup="true"
+        aria-expanded={open}
         className="flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
       >
         <Link2 className="h-3 w-3" />

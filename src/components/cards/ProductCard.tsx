@@ -66,6 +66,7 @@ export function ProductCard({
         ) : quantity === 0 ? (
           <button
             onClick={onIncrement}
+            aria-label={`Add ${product.name} to cart`}
             className="mt-2 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold text-white transition-colors"
             style={{ backgroundColor: `var(--color-${accentColor})` }}
           >
@@ -76,6 +77,7 @@ export function ProductCard({
           <div className="mt-2 flex items-center justify-center gap-0.5">
             <button
               onClick={onDecrement}
+              aria-label={`Decrease ${product.name} quantity`}
               className="flex h-7 w-7 items-center justify-center rounded-l-lg text-white transition-colors"
               style={{ backgroundColor: `var(--color-${accentColor})` }}
             >
@@ -89,6 +91,7 @@ export function ProductCard({
             </span>
             <button
               onClick={onIncrement}
+              aria-label={`Increase ${product.name} quantity`}
               className="flex h-7 w-7 items-center justify-center rounded-r-lg text-white transition-colors"
               style={{ backgroundColor: `var(--color-${accentColor})` }}
             >

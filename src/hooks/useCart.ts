@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { ChatMessage, CartState, ContentBlock } from "@/lib/types";
+import { findPrecedingToolName } from "@/lib/content-blocks";
 import { parseToolResult } from "@/lib/parsers";
 
 export function useCart(messages: ChatMessage[], verticalId: string) {
@@ -41,13 +42,4 @@ function findLatestCartState(
     }
   }
   return null;
-}
-
-function findPrecedingToolName(blocks: ContentBlock[], index: number): string {
-  for (let i = index - 1; i >= 0; i--) {
-    if (blocks[i].type === "mcp_tool_use" && blocks[i].name) {
-      return blocks[i].name!;
-    }
-  }
-  return "";
 }

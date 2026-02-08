@@ -21,6 +21,7 @@ export function AddressPicker({
           <button
             key={addr.id}
             onClick={() => onAction(`Use my ${addr.label} address: ${addr.address}`)}
+            aria-label={`Select ${addr.label} address: ${addr.address}`}
             className="flex w-full items-start gap-3 rounded-lg border border-gray-200 p-3 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
           >
             <div

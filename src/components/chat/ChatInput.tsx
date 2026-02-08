@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { SendHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TEXTAREA_MAX_HEIGHT } from "@/lib/constants";
 
 export function ChatInput({
   onSend,
@@ -17,7 +18,7 @@ export function ChatInput({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, TEXTAREA_MAX_HEIGHT)}px`;
     }
   }, [text]);
 
@@ -51,6 +52,7 @@ export function ChatInput({
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
+          aria-label="Type a message"
           rows={1}
           disabled={disabled}
           className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-gray-300 focus:ring-1 focus:ring-gray-300 disabled:opacity-50"
@@ -58,6 +60,7 @@ export function ChatInput({
         <button
           onClick={handleSubmit}
           disabled={disabled || !text.trim()}
+          aria-label="Send message"
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white transition-colors disabled:opacity-40",
             buttonColorClass,

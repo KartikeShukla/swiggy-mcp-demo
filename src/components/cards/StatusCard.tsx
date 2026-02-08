@@ -1,5 +1,7 @@
 import { CheckCircle, XCircle } from "lucide-react";
 import type { ParsedStatus } from "@/lib/types";
+import { MAX_STATUS_CARD_DETAILS } from "@/lib/constants";
+import { humanizeKey, stringifyValue } from "@/lib/parsers/format";
 
 export function StatusCard({
   status,
@@ -15,7 +17,7 @@ export function StatusCard({
   const Icon = isSuccess ? CheckCircle : XCircle;
 
   const detailEntries = status.details
-    ? Object.entries(status.details).slice(0, 4)
+    ? Object.entries(status.details).slice(0, MAX_STATUS_CARD_DETAILS)
     : [];
 
   return (
@@ -50,19 +52,4 @@ export function StatusCard({
       </div>
     </div>
   );
-}
-
-function humanizeKey(key: string): string {
-  return key
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/[_-]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function stringifyValue(val: unknown): string {
-  if (val == null) return "";
-  if (typeof val === "string") return val;
-  if (typeof val === "number" || typeof val === "boolean") return String(val);
-  if (Array.isArray(val)) return val.map(stringifyValue).join(", ");
-  return JSON.stringify(val);
 }

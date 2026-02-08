@@ -17,6 +17,7 @@ export function ToolTrace({
       <div className="my-1.5">
         <button
           onClick={() => setOpen(!open)}
+          aria-expanded={open}
           className="flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 transition-colors"
         >
           <Wrench className="h-3 w-3" />
@@ -42,6 +43,7 @@ export function ToolTrace({
       <div className="my-1.5">
         <button
           onClick={() => setOpen(!open)}
+          aria-expanded={open}
           className={cn(
             "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-colors",
             block.is_error

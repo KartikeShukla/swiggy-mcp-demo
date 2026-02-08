@@ -25,6 +25,8 @@ export function TimeSlotPicker({
           <button
             key={slot.time}
             disabled={!slot.available}
+            aria-label={`${slot.time}${slot.available ? "" : " (unavailable)"}`}
+            aria-disabled={!slot.available}
             onClick={() => {
               const target = restaurantName
                 ? `Book a table at ${restaurantName} for ${slot.time}`

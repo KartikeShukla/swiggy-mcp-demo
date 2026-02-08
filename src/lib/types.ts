@@ -16,17 +16,27 @@ export interface VerticalConfig {
   mcpServer: McpServerConfig;
 }
 
-export interface ContentBlock {
-  type: string;
-  text?: string;
-  id?: string;
-  name?: string;
+export interface TextBlock {
+  type: "text";
+  text: string;
+}
+
+export interface McpToolUseBlock {
+  type: "mcp_tool_use";
+  id: string;
+  name: string;
   server_name?: string;
   input?: Record<string, unknown>;
-  tool_use_id?: string;
-  is_error?: boolean;
-  content?: unknown;
 }
+
+export interface McpToolResultBlock {
+  type: "mcp_tool_result";
+  tool_use_id: string;
+  is_error?: boolean;
+  content: unknown;
+}
+
+export type ContentBlock = TextBlock | McpToolUseBlock | McpToolResultBlock;
 
 export interface ChatMessage {
   role: "user" | "assistant";

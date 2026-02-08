@@ -5,6 +5,7 @@ import { ChatView } from "./components/chat/ChatView";
 import { ApiKeyModal } from "./components/auth/ApiKeyModal";
 import { SettingsMenu } from "./components/auth/SettingsMenu";
 import { SwiggyConnect } from "./components/auth/SwiggyConnect";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAuth } from "./hooks/useAuth";
 
 export default function App() {
@@ -45,18 +46,20 @@ export default function App() {
         }
       />
 
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route
-          path="/:verticalId"
-          element={
-            <ChatView
-              apiKey={apiKey}
-              swiggyToken={swiggyToken}
-            />
-          }
-        />
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route
+            path="/:verticalId"
+            element={
+              <ChatView
+                apiKey={apiKey}
+                swiggyToken={swiggyToken}
+              />
+            }
+          />
+        </Routes>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }
