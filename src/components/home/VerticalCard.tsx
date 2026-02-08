@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
-import { Salad, Sparkles, UtensilsCrossed } from "lucide-react";
+import { Bike, Salad, Sparkles, UtensilsCrossed } from "lucide-react";
 import type { VerticalConfig } from "@/lib/types";
 
 const iconMap = {
   Salad,
   Sparkles,
   UtensilsCrossed,
+  Bike,
 } as const;
 
 const colorClasses = {
@@ -29,6 +30,13 @@ const colorClasses = {
     text: "text-dining",
     hoverBorder: "hover:border-dining",
     iconBg: "bg-dining/10",
+  },
+  foodorder: {
+    bg: "bg-foodorder-light",
+    border: "border-foodorder/30",
+    text: "text-foodorder",
+    hoverBorder: "hover:border-foodorder",
+    iconBg: "bg-foodorder/10",
   },
 } as const;
 

@@ -3,7 +3,13 @@ import { ChevronRight, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ContentBlock } from "@/lib/types";
 
-export function ToolTrace({ block }: { block: ContentBlock }) {
+export function ToolTrace({
+  block,
+  defaultCollapsed = false,
+}: {
+  block: ContentBlock;
+  defaultCollapsed?: boolean;
+}) {
   const [open, setOpen] = useState(false);
 
   if (block.type === "mcp_tool_use") {
@@ -44,7 +50,7 @@ export function ToolTrace({ block }: { block: ContentBlock }) {
           )}
         >
           <span className="font-medium">
-            {block.is_error ? "Error" : "Result"}
+            {block.is_error ? "Error" : defaultCollapsed ? "Show raw data" : "Result"}
           </span>
           <ChevronRight
             className={cn(

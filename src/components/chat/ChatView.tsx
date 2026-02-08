@@ -2,9 +2,12 @@ import { useParams, Navigate } from "react-router-dom";
 import { verticals } from "@/verticals";
 import type { VerticalConfig } from "@/lib/types";
 import { useChat } from "@/hooks/useChat";
+import { useCart } from "@/hooks/useCart";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 import { SwiggyConnect } from "../auth/SwiggyConnect";
+import { CartFloatingButton } from "../cart/CartFloatingButton";
+import { CartPanel } from "../cart/CartPanel";
 import { Bot } from "lucide-react";
 
 function ChatViewInner({
@@ -27,11 +30,12 @@ function ChatViewInner({
     apiKey,
     swiggyToken,
   );
+  const { cart, isOpen, setIsOpen, itemCount } = useCart(messages, vertical.id);
 
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] flex-col">
+    <div className="flex h-[calc(100vh-3.5rem)] flex-col relative">
       {/* Swiggy connection banner */}
       <div className="mx-auto w-full max-w-3xl px-4 pt-3">
         <SwiggyConnect
@@ -52,6 +56,8 @@ function ChatViewInner({
           messages={messages}
           loading={loading}
           accentColor={vertical.color}
+          verticalId={vertical.id}
+          onAction={sendMessage}
         />
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center px-4">
@@ -83,6 +89,25 @@ function ChatViewInner({
             ))}
           </div>
         </div>
+      )}
+
+      {/* Cart FAB */}
+      {itemCount > 0 && (
+        <CartFloatingButton
+          count={itemCount}
+          onClick={() => setIsOpen(true)}
+          accentColor={vertical.color}
+        />
+      )}
+
+      {/* Cart drawer */}
+      {isOpen && cart && (
+        <CartPanel
+          cart={cart}
+          onClose={() => setIsOpen(false)}
+          onAction={sendMessage}
+          accentColor={vertical.color}
+        />
       )}
 
       {/* Error display */}

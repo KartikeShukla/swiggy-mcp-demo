@@ -6,12 +6,14 @@ const activeClasses = {
   food: "bg-food/10 text-food",
   style: "bg-style/10 text-style",
   dining: "bg-dining/10 text-dining",
+  foodorder: "bg-foodorder/10 text-foodorder",
 } as const;
 
 const hoverClasses = {
   food: "hover:text-food",
   style: "hover:text-style",
   dining: "hover:text-dining",
+  foodorder: "hover:text-foodorder",
 } as const;
 
 export function VerticalNav() {

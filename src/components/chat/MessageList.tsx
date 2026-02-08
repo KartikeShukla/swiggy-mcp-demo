@@ -7,10 +7,14 @@ export function MessageList({
   messages,
   loading,
   accentColor,
+  verticalId,
+  onAction,
 }: {
   messages: ChatMessage[];
   loading: boolean;
   accentColor: string;
+  verticalId?: string;
+  onAction?: (message: string) => void;
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -21,7 +25,13 @@ export function MessageList({
   return (
     <div className="flex-1 overflow-y-auto py-4">
       {messages.map((msg, i) => (
-        <MessageBubble key={i} message={msg} accentColor={accentColor} />
+        <MessageBubble
+          key={i}
+          message={msg}
+          accentColor={accentColor}
+          verticalId={verticalId}
+          onAction={onAction}
+        />
       ))}
       {loading && <LoadingIndicator />}
       <div ref={bottomRef} />

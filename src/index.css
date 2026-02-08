@@ -7,6 +7,8 @@
   --color-style-light: #ede9fe;
   --color-dining: #f59e0b;
   --color-dining-light: #fef3c7;
+  --color-foodorder: #ef4444;
+  --color-foodorder-light: #fef2f2;
 }
 
 body {

@@ -1,0 +1,53 @@
+import { useState, useEffect } from "react";
+import type { ChatMessage, CartState, ContentBlock } from "@/lib/types";
+import { parseToolResult } from "@/lib/parsers";
+
+export function useCart(messages: ChatMessage[], verticalId: string) {
+  const [cart, setCart] = useState<CartState | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const latestCart = findLatestCartState(messages, verticalId);
+    if (latestCart) setCart(latestCart);
+  }, [messages, verticalId]);
+
+  const itemCount = cart?.items.reduce((sum, i) => sum + i.quantity, 0) ?? 0;
+
+  return { cart, isOpen, setIsOpen, itemCount };
+}
+
+function findLatestCartState(
+  messages: ChatMessage[],
+  verticalId: string,
+): CartState | null {
+  // Scan messages in reverse to find the most recent cart-related tool result
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.role !== "assistant" || typeof msg.content === "string") continue;
+
+    const blocks = msg.content as ContentBlock[];
+    for (let j = blocks.length - 1; j >= 0; j--) {
+      const block = blocks[j];
+      if (block.type !== "mcp_tool_result") continue;
+
+      // Find the preceding tool_use to get the tool name
+      const toolName = findPrecedingToolName(blocks, j);
+      if (!/cart|basket/i.test(toolName)) continue;
+
+      const parsed = parseToolResult(toolName, block.content, verticalId);
+      if (parsed.type === "cart") {
+        return parsed.cart;
+      }
+    }
+  }
+  return null;
+}
+
+function findPrecedingToolName(blocks: ContentBlock[], index: number): string {
+  for (let i = index - 1; i >= 0; i--) {
+    if (blocks[i].type === "mcp_tool_use" && blocks[i].name) {
+      return blocks[i].name!;
+    }
+  }
+  return "";
+}

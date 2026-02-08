@@ -1,4 +1,4 @@
-export const MODEL_ID = "claude-sonnet-4-5-20250929";
+export const MODEL_ID = "claude-haiku-4-5-20251001";
 export const MCP_BETA_FLAG = "mcp-client-2025-11-20";
 
 export const MCP_SERVERS = {
