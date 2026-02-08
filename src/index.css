@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-food: #22c55e;
+  --color-food-light: #dcfce7;
+  --color-style: #8b5cf6;
+  --color-style-light: #ede9fe;
+  --color-dining: #f59e0b;
+  --color-dining-light: #fef3c7;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  margin: 0;
+}
