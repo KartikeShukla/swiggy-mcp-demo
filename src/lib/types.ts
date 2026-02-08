@@ -73,6 +73,17 @@ export interface ParsedAddress {
   lng?: number;
 }
 
+export interface ParsedStatus {
+  success: boolean;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+export interface ParsedInfoEntry {
+  key: string;
+  value: string;
+}
+
 export interface CartItem {
   id: string;
   name: string;
@@ -88,6 +99,13 @@ export interface CartState {
   total: number;
 }
 
+export interface TextParseResult {
+  segments: Array<
+    | { type: "text"; content: string }
+    | { type: "products"; items: ParsedProduct[] }
+  >;
+}
+
 export type ParsedToolResult =
   | { type: "products"; items: ParsedProduct[] }
   | { type: "restaurants"; items: ParsedRestaurant[] }
@@ -96,4 +114,6 @@ export type ParsedToolResult =
   | { type: "cart"; cart: CartState }
   | { type: "order_placed"; orderId?: string; status?: string }
   | { type: "booking_confirmed"; details: Record<string, unknown> }
+  | { type: "status"; status: ParsedStatus }
+  | { type: "info"; title: string; entries: ParsedInfoEntry[] }
   | { type: "raw"; content: unknown }

@@ -1,13 +1,17 @@
-import { Package, ShoppingCart } from "lucide-react";
+import { Package, Plus, Minus } from "lucide-react";
 import type { ParsedProduct } from "@/lib/types";
 
 export function ProductCard({
   product,
-  onAction,
+  quantity,
+  onIncrement,
+  onDecrement,
   accentColor,
 }: {
   product: ParsedProduct;
-  onAction: (message: string) => void;
+  quantity: number;
+  onIncrement: () => void;
+  onDecrement: () => void;
   accentColor: string;
 }) {
   const unavailable = product.available === false;
@@ -59,15 +63,38 @@ export function ProductCard({
           <span className="mt-2 text-center text-xs font-medium text-red-400">
             Out of stock
           </span>
-        ) : (
+        ) : quantity === 0 ? (
           <button
-            onClick={() => onAction(`Add ${product.name} to my cart`)}
+            onClick={onIncrement}
             className="mt-2 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold text-white transition-colors"
             style={{ backgroundColor: `var(--color-${accentColor})` }}
           >
-            <ShoppingCart className="h-3 w-3" />
-            Add to cart
+            <Plus className="h-3 w-3" />
+            Add
           </button>
+        ) : (
+          <div className="mt-2 flex items-center justify-center gap-0.5">
+            <button
+              onClick={onDecrement}
+              className="flex h-7 w-7 items-center justify-center rounded-l-lg text-white transition-colors"
+              style={{ backgroundColor: `var(--color-${accentColor})` }}
+            >
+              <Minus className="h-3 w-3" />
+            </button>
+            <span
+              className="flex h-7 w-8 items-center justify-center text-xs font-bold text-white"
+              style={{ backgroundColor: `var(--color-${accentColor})` }}
+            >
+              {quantity}
+            </span>
+            <button
+              onClick={onIncrement}
+              className="flex h-7 w-7 items-center justify-center rounded-r-lg text-white transition-colors"
+              style={{ backgroundColor: `var(--color-${accentColor})` }}
+            >
+              <Plus className="h-3 w-3" />
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -4,7 +4,9 @@ import type {
   ParsedRestaurant,
   ParsedTimeSlot,
   ParsedAddress,
+  ParsedInfoEntry,
   CartItem,
+  TextParseResult,
 } from "./types";
 
 /**
@@ -54,7 +56,22 @@ export function parseToolResult(
     }
 
     // Fall back to shape detection
-    return detectByShape(payload, verticalId) ?? { type: "raw", content };
+    const shaped = detectByShape(payload, verticalId);
+    if (shaped) return shaped;
+
+    // Try status on pre-extracted data (has success/message at top level)
+    const statusFromData = tryParseStatus(data);
+    if (statusFromData) return statusFromData;
+
+    // Try status on extracted payload
+    const statusFromPayload = tryParseStatus(payload);
+    if (statusFromPayload) return statusFromPayload;
+
+    // Catch-all: any non-empty object becomes an info card
+    const info = tryParseInfo(data);
+    if (info) return info;
+
+    return { type: "raw", content };
   } catch {
     return { type: "raw", content };
   }
@@ -127,30 +144,54 @@ function tryParseProducts(payload: unknown): ParsedToolResult | null {
     const name = str(obj.name) || str(obj.displayName) || str(obj.product_name) || str(obj.title);
     if (!name) continue;
 
-    // Extract pricing from Swiggy's nested variations structure
-    const variation = firstVariation(obj.variations);
-    const priceObj = variation?.price as Record<string, unknown> | undefined;
+    const variations = allVariations(obj.variations);
 
-    items.push({
-      id: str(obj.id) || str(obj.productId) || str(obj.product_id) || str(obj.item_id) || str(variation?.spinId) || String(items.length),
-      name,
-      price: num(priceObj?.offerPrice) ?? num(priceObj?.offer_price) ?? num(obj.selling_price) ?? num(obj.price) ?? num(obj.cost) ?? num(obj.offer_price),
-      mrp: num(priceObj?.mrp) ?? num(obj.mrp) ?? num(obj.marked_price) ?? num(obj.original_price),
-      image: str(obj.image) || str(obj.imageUrl) || str(obj.img) || str(obj.thumbnail) || str(obj.image_url),
-      brand: str(obj.brand) || str(obj.brand_name) || str(variation?.brandName),
-      quantity: str(variation?.quantityDescription) || str(obj.quantity) || str(obj.weight) || str(obj.size) || str(obj.pack_size),
-      available: obj.isAvail != null ? Boolean(obj.isAvail) : obj.inStock != null ? Boolean(obj.inStock) : obj.available != null ? Boolean(obj.available) : obj.in_stock != null ? Boolean(obj.in_stock) : variation?.isInStockAndAvailable != null ? Boolean(variation.isInStockAndAvailable) : true,
-      description: str(obj.description) || str(obj.desc),
-    });
+    if (variations.length <= 1) {
+      // Single or no variation: existing behavior
+      const variation = variations[0];
+      const priceObj = variation?.price as Record<string, unknown> | undefined;
+
+      items.push({
+        id: str(obj.id) || str(obj.productId) || str(obj.product_id) || str(obj.item_id) || str(variation?.spinId) || String(items.length),
+        name,
+        price: num(priceObj?.offerPrice) ?? num(priceObj?.offer_price) ?? num(obj.selling_price) ?? num(obj.price) ?? num(obj.cost) ?? num(obj.offer_price),
+        mrp: num(priceObj?.mrp) ?? num(obj.mrp) ?? num(obj.marked_price) ?? num(obj.original_price),
+        image: str(obj.image) || str(obj.imageUrl) || str(obj.img) || str(obj.thumbnail) || str(obj.image_url),
+        brand: str(obj.brand) || str(obj.brand_name) || str(variation?.brandName),
+        quantity: str(variation?.quantityDescription) || str(obj.quantity) || str(obj.weight) || str(obj.size) || str(obj.pack_size),
+        available: obj.isAvail != null ? Boolean(obj.isAvail) : obj.inStock != null ? Boolean(obj.inStock) : obj.available != null ? Boolean(obj.available) : obj.in_stock != null ? Boolean(obj.in_stock) : variation?.isInStockAndAvailable != null ? Boolean(variation.isInStockAndAvailable) : true,
+        description: str(obj.description) || str(obj.desc),
+      });
+    } else {
+      // Multiple variations: one card per variation
+      for (let vi = 0; vi < variations.length; vi++) {
+        const variation = variations[vi];
+        const priceObj = variation.price as Record<string, unknown> | undefined;
+        const variantId = str(obj.id) || str(obj.productId) || str(obj.product_id) || str(obj.item_id) || str(variation.spinId) || String(items.length);
+
+        items.push({
+          id: `${variantId}-var-${vi}`,
+          name,
+          price: num(priceObj?.offerPrice) ?? num(priceObj?.offer_price) ?? num(obj.selling_price) ?? num(obj.price) ?? num(obj.cost) ?? num(obj.offer_price),
+          mrp: num(priceObj?.mrp) ?? num(obj.mrp) ?? num(obj.marked_price) ?? num(obj.original_price),
+          image: str(obj.image) || str(obj.imageUrl) || str(obj.img) || str(obj.thumbnail) || str(obj.image_url),
+          brand: str(obj.brand) || str(obj.brand_name) || str(variation.brandName),
+          quantity: str(variation.quantityDescription) || str(obj.quantity) || str(obj.weight) || str(obj.size) || str(obj.pack_size),
+          available: obj.isAvail != null ? Boolean(obj.isAvail) : obj.inStock != null ? Boolean(obj.inStock) : obj.available != null ? Boolean(obj.available) : obj.in_stock != null ? Boolean(obj.in_stock) : variation.isInStockAndAvailable != null ? Boolean(variation.isInStockAndAvailable) : true,
+          description: str(obj.description) || str(obj.desc),
+        });
+      }
+    }
   }
 
   return items.length > 0 ? { type: "products", items } : null;
 }
 
-function firstVariation(variations: unknown): Record<string, unknown> | undefined {
-  if (!Array.isArray(variations) || variations.length === 0) return undefined;
-  const v = variations[0];
-  return typeof v === "object" && v !== null ? v as Record<string, unknown> : undefined;
+function allVariations(variations: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(variations) || variations.length === 0) return [];
+  return variations.filter(
+    (v): v is Record<string, unknown> => typeof v === "object" && v !== null,
+  );
 }
 
 // --- Restaurant parsing ---
@@ -295,7 +336,7 @@ function parseCartItems(arr: unknown[]): CartItem[] {
     const obj = item as Record<string, unknown>;
     const name = str(obj.name) || str(obj.displayName) || str(obj.product_name) || str(obj.title);
     if (!name) continue;
-    const variation = firstVariation(obj.variations);
+    const variation = allVariations(obj.variations)[0];
     const priceObj = variation?.price as Record<string, unknown> | undefined;
     items.push({
       id: str(obj.id) || str(obj.productId) || str(obj.product_id) || String(items.length),
@@ -371,6 +412,148 @@ function detectByShape(payload: unknown, verticalId: string): ParsedToolResult |
   }
 
   return tryParseProducts(arr);
+}
+
+// --- Status parsing ---
+
+function tryParseStatus(payload: unknown): ParsedToolResult | null {
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) return null;
+  const obj = payload as Record<string, unknown>;
+
+  // Must have a success/status boolean or a message string
+  const hasSuccess = typeof obj.success === "boolean";
+  const hasStatus = typeof obj.status === "string" || typeof obj.status === "boolean";
+  const hasMessage = typeof obj.message === "string" && obj.message.length > 0;
+
+  if (!hasMessage && !hasSuccess && !hasStatus) return null;
+  // Need at least a message or a success indicator
+  if (!hasMessage && !hasSuccess) return null;
+
+  const success = hasSuccess
+    ? Boolean(obj.success)
+    : hasStatus
+      ? obj.status === true || obj.status === "success" || obj.status === "ok"
+      : true;
+
+  const message = (typeof obj.message === "string" && obj.message) ||
+    (typeof obj.status === "string" && obj.status) ||
+    (success ? "Operation completed successfully" : "Operation failed");
+
+  // Collect remaining fields as details (up to 6)
+  const details: Record<string, unknown> = {};
+  let count = 0;
+  for (const [k, v] of Object.entries(obj)) {
+    if (k === "success" || k === "message" || k === "status") continue;
+    if (v == null) continue;
+    if (count >= 6) break;
+    details[k] = v;
+    count++;
+  }
+
+  return {
+    type: "status",
+    status: {
+      success,
+      message,
+      details: count > 0 ? details : undefined,
+    },
+  };
+}
+
+// --- Info parsing (catch-all) ---
+
+function humanizeKey(key: string): string {
+  return key
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function stringifyValue(val: unknown): string {
+  if (val == null) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "number" || typeof val === "boolean") return String(val);
+  if (Array.isArray(val)) return val.map(stringifyValue).join(", ");
+  return JSON.stringify(val);
+}
+
+function tryParseInfo(payload: unknown): ParsedToolResult | null {
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) return null;
+  const obj = payload as Record<string, unknown>;
+  const keys = Object.keys(obj);
+  if (keys.length === 0) return null;
+
+  const title = (typeof obj.name === "string" && obj.name) ||
+    (typeof obj.title === "string" && obj.title) ||
+    (typeof obj.label === "string" && obj.label) ||
+    "Details";
+
+  const entries: ParsedInfoEntry[] = [];
+  for (const key of keys) {
+    const val = obj[key];
+    if (val == null) continue;
+    const valueStr = stringifyValue(val);
+    if (!valueStr) continue;
+    entries.push({ key: humanizeKey(key), value: valueStr });
+  }
+
+  return entries.length > 0 ? { type: "info", title, entries } : null;
+}
+
+// --- Variant text parsing ---
+
+export function parseVariantsFromText(text: string): TextParseResult {
+  const segments: TextParseResult["segments"] = [];
+  const blockPattern = /\*\*(.+?)(?::?\s*)\*\*\s*\n((?:\s*[-*•]\s+.+\n?)+)/g;
+  const variantLinePattern = /[-*•]\s+(.+?)\s*@\s*(?:₹|Rs\.?\s*)([\d,]+(?:\.\d+)?)/;
+
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = blockPattern.exec(text)) !== null) {
+    const productName = match[1].trim();
+    const variantBlock = match[2];
+    const variantLines = variantBlock.split("\n").filter((l) => l.trim());
+
+    const parsedProducts: ParsedProduct[] = [];
+    for (let vi = 0; vi < variantLines.length; vi++) {
+      const lineMatch = variantLines[vi].match(variantLinePattern);
+      if (lineMatch) {
+        const quantity = lineMatch[1].trim();
+        const price = parseFloat(lineMatch[2].replace(/,/g, ""));
+        parsedProducts.push({
+          id: `text-variant-${segments.length}-${vi}`,
+          name: productName,
+          price,
+          quantity,
+          available: true,
+        });
+      }
+    }
+
+    // Only treat as product block if at least one line has a price match
+    if (parsedProducts.length > 0) {
+      const before = text.slice(lastIndex, match.index);
+      if (before.trim()) {
+        segments.push({ type: "text", content: before });
+      }
+      segments.push({ type: "products", items: parsedProducts });
+      lastIndex = match.index + match[0].length;
+    }
+  }
+
+  // If no products found, return single text segment
+  if (segments.length === 0) {
+    return { segments: [{ type: "text", content: text }] };
+  }
+
+  // Remaining text after last match
+  const remaining = text.slice(lastIndex);
+  if (remaining.trim()) {
+    segments.push({ type: "text", content: remaining });
+  }
+
+  return { segments };
 }
 
 // --- Utilities ---

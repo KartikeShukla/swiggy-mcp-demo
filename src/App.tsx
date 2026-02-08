@@ -4,6 +4,7 @@ import { LandingPage } from "./components/home/LandingPage";
 import { ChatView } from "./components/chat/ChatView";
 import { ApiKeyModal } from "./components/auth/ApiKeyModal";
 import { SettingsMenu } from "./components/auth/SettingsMenu";
+import { SwiggyConnect } from "./components/auth/SwiggyConnect";
 import { useAuth } from "./hooks/useAuth";
 
 export default function App() {
@@ -26,13 +27,21 @@ export default function App() {
 
       <Header
         right={
-          <SettingsMenu
-            hasApiKey={!!apiKey}
-            hasSwiggyToken={!!swiggyToken}
-            onChangeApiKey={changeApiKey}
-            onDisconnectSwiggy={disconnectSwiggy}
-            onClearChats={clearChats}
-          />
+          <>
+            <SwiggyConnect
+              connected={!!swiggyToken}
+              isTokenStale={isTokenStale}
+              onConnect={startOAuth}
+              onPasteToken={saveSwiggyToken}
+            />
+            <SettingsMenu
+              hasApiKey={!!apiKey}
+              hasSwiggyToken={!!swiggyToken}
+              onChangeApiKey={changeApiKey}
+              onDisconnectSwiggy={disconnectSwiggy}
+              onClearChats={clearChats}
+            />
+          </>
         }
       />
 
@@ -44,9 +53,6 @@ export default function App() {
             <ChatView
               apiKey={apiKey}
               swiggyToken={swiggyToken}
-              isTokenStale={isTokenStale}
-              onConnect={startOAuth}
-              onPasteToken={saveSwiggyToken}
             />
           }
         />

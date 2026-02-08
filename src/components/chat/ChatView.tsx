@@ -5,7 +5,6 @@ import { useChat } from "@/hooks/useChat";
 import { useCart } from "@/hooks/useCart";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
-import { SwiggyConnect } from "../auth/SwiggyConnect";
 import { CartFloatingButton } from "../cart/CartFloatingButton";
 import { CartPanel } from "../cart/CartPanel";
 import { Bot } from "lucide-react";
@@ -14,16 +13,10 @@ function ChatViewInner({
   vertical,
   apiKey,
   swiggyToken,
-  isTokenStale,
-  onConnect,
-  onPasteToken,
 }: {
   vertical: VerticalConfig;
   apiKey: string | null;
   swiggyToken: string | null;
-  isTokenStale: boolean;
-  onConnect: () => void;
-  onPasteToken: (token: string) => void;
 }) {
   const { messages, loading, error, sendMessage } = useChat(
     vertical,
@@ -36,20 +29,6 @@ function ChatViewInner({
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col relative">
-      {/* Swiggy connection banner */}
-      <div className="mx-auto w-full max-w-3xl px-4 pt-3">
-        <SwiggyConnect
-          connected={!!swiggyToken}
-          onConnect={onConnect}
-          onPasteToken={onPasteToken}
-        />
-        {isTokenStale && swiggyToken && (
-          <p className="mt-1 text-xs text-amber-600">
-            Session may have expired — reconnect if tools stop working.
-          </p>
-        )}
-      </div>
-
       {/* Messages or empty state */}
       {hasMessages ? (
         <MessageList
@@ -132,9 +111,6 @@ function ChatViewInner({
 export function ChatView(props: {
   apiKey: string | null;
   swiggyToken: string | null;
-  isTokenStale: boolean;
-  onConnect: () => void;
-  onPasteToken: (token: string) => void;
 }) {
   const { verticalId } = useParams<{ verticalId: string }>();
   const vertical = verticalId ? verticals[verticalId] : undefined;
