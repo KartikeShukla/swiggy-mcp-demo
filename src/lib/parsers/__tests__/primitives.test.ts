@@ -1,4 +1,4 @@
-import { str, num, numFromCurrency, asArray, scanForPrice } from "@/lib/parsers/primitives";
+import { str, num, numFromCurrency, asArray, asArrayOrWrap, scanForPrice } from "@/lib/parsers/primitives";
 
 describe("str()", () => {
   it("returns the string for a valid non-empty string", () => {
@@ -136,6 +136,44 @@ describe("asArray()", () => {
 
   it("returns null for an object", () => {
     expect(asArray({ length: 2 })).toBeNull();
+  });
+});
+
+describe("asArrayOrWrap()", () => {
+  it("returns the array for an array input", () => {
+    const arr = [1, 2, 3];
+    expect(asArrayOrWrap(arr)).toBe(arr);
+  });
+
+  it("returns an empty array for an empty array input", () => {
+    expect(asArrayOrWrap([])).toEqual([]);
+  });
+
+  it("wraps a non-null object in an array", () => {
+    const obj = { name: "test" };
+    const result = asArrayOrWrap(obj);
+    expect(result).toEqual([obj]);
+    expect(result![0]).toBe(obj);
+  });
+
+  it("returns null for a string", () => {
+    expect(asArrayOrWrap("hello")).toBeNull();
+  });
+
+  it("returns null for a number", () => {
+    expect(asArrayOrWrap(42)).toBeNull();
+  });
+
+  it("returns null for null", () => {
+    expect(asArrayOrWrap(null)).toBeNull();
+  });
+
+  it("returns null for undefined", () => {
+    expect(asArrayOrWrap(undefined)).toBeNull();
+  });
+
+  it("returns null for a boolean", () => {
+    expect(asArrayOrWrap(true)).toBeNull();
   });
 });
 

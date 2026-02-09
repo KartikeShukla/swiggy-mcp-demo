@@ -52,11 +52,18 @@ describe("tryParseTimeSlots()", () => {
     expect(tryParseTimeSlots([])).toBeNull();
   });
 
-  it("returns null for non-array input", () => {
+  it("returns null for non-object/non-array input", () => {
     expect(tryParseTimeSlots("not array")).toBeNull();
     expect(tryParseTimeSlots(null)).toBeNull();
     expect(tryParseTimeSlots(42)).toBeNull();
-    expect(tryParseTimeSlots({ time: "10:00" })).toBeNull();
+  });
+
+  it("wraps a single time slot object and parses it", () => {
+    const result = tryParseTimeSlots({ time: "10:00" });
+    expect(result).not.toBeNull();
+    if (result!.type !== "time_slots") return;
+    expect(result!.slots).toHaveLength(1);
+    expect(result!.slots[0]).toEqual({ time: "10:00", available: true });
   });
 
   it("skips objects without a recognized time key", () => {

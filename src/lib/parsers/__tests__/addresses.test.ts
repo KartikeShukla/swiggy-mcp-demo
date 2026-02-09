@@ -101,11 +101,18 @@ describe("tryParseAddresses()", () => {
     expect(tryParseAddresses([])).toBeNull();
   });
 
-  it("returns null for non-array input", () => {
+  it("returns null for non-object/non-array input", () => {
     expect(tryParseAddresses("not array")).toBeNull();
     expect(tryParseAddresses(null)).toBeNull();
     expect(tryParseAddresses(42)).toBeNull();
-    expect(tryParseAddresses({ address: "test" })).toBeNull();
+  });
+
+  it("wraps a single address object and parses it", () => {
+    const result = tryParseAddresses({ address: "test" });
+    expect(result).not.toBeNull();
+    if (result!.type !== "addresses") return;
+    expect(result!.addresses).toHaveLength(1);
+    expect(result!.addresses[0].address).toBe("test");
   });
 
   it("skips items without a recognized address key", () => {

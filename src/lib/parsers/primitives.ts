@@ -3,6 +3,13 @@ export function asArray(val: unknown): unknown[] | null {
   return null;
 }
 
+/** Returns an array: if val is already an array return it, if it's a non-null object wrap it in [val], else null. */
+export function asArrayOrWrap(val: unknown): unknown[] | null {
+  if (Array.isArray(val)) return val;
+  if (typeof val === "object" && val !== null) return [val];
+  return null;
+}
+
 export function str(val: unknown): string | undefined {
   if (typeof val === "string" && val.length > 0) return val;
   if (typeof val === "number") return String(val);

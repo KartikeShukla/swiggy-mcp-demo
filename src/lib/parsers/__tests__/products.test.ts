@@ -114,12 +114,27 @@ describe("tryParseProducts()", () => {
     expect(tryParseProducts([])).toBeNull();
   });
 
-  it("returns null for non-array input", () => {
+  it("returns null for non-object/non-array input", () => {
     expect(tryParseProducts("not array")).toBeNull();
     expect(tryParseProducts(42)).toBeNull();
     expect(tryParseProducts(null)).toBeNull();
     expect(tryParseProducts(undefined)).toBeNull();
-    expect(tryParseProducts({ name: "test" })).toBeNull();
+  });
+
+  it("wraps a single product object in an array and parses it", () => {
+    const result = tryParseProducts({
+      name: "Single Product",
+      price: 99,
+      image: "img.jpg",
+    });
+    expect(result).not.toBeNull();
+    if (result!.type !== "products") return;
+    expect(result!.items).toHaveLength(1);
+    expect(result!.items[0]).toMatchObject({
+      name: "Single Product",
+      price: 99,
+      image: "img.jpg",
+    });
   });
 
   it("skips items with missing name", () => {
@@ -213,5 +228,63 @@ describe("tryParseProducts()", () => {
 
     const r3 = tryParseProducts([{ name: "A", item_id: "iid" }]);
     expect(r3!.type === "products" && r3!.items[0].id).toBe("iid");
+  });
+
+  it("handles defaultPrice field", () => {
+    const result = tryParseProducts([{ name: "Biryani", defaultPrice: 25000 }]);
+    if (result!.type !== "products") return;
+    // 25000 > 1000, integer → paise detection kicks in → 250
+    expect(result!.items[0].price).toBe(250);
+  });
+
+  it("handles basePrice field", () => {
+    const result = tryParseProducts([{ name: "Pizza", basePrice: 399 }]);
+    if (result!.type !== "products") return;
+    expect(result!.items[0].price).toBe(399);
+  });
+
+  it("handles finalPrice field", () => {
+    const result = tryParseProducts([{ name: "Wrap", finalPrice: 150 }]);
+    if (result!.type !== "products") return;
+    expect(result!.items[0].price).toBe(150);
+  });
+
+  it("converts paise to rupees when all prices > 1000 and are integers", () => {
+    const result = tryParseProducts([
+      { name: "Item A", price: 15000 },
+      { name: "Item B", price: 20000, mrp: 25000 },
+    ]);
+    if (result!.type !== "products") return;
+    expect(result!.items[0].price).toBe(150);
+    expect(result!.items[1].price).toBe(200);
+    expect(result!.items[1].mrp).toBe(250);
+  });
+
+  it("does not convert prices when any price has fractional part", () => {
+    const result = tryParseProducts([
+      { name: "Item A", price: 1500.5 },
+      { name: "Item B", price: 2000 },
+    ]);
+    if (result!.type !== "products") return;
+    expect(result!.items[0].price).toBe(1500.5);
+    expect(result!.items[1].price).toBe(2000);
+  });
+
+  it("uses isVeg as description fallback", () => {
+    const r1 = tryParseProducts([{ name: "Paneer", price: 200, isVeg: true }]);
+    if (r1!.type !== "products") return;
+    expect(r1!.items[0].description).toBe("Veg");
+
+    const r2 = tryParseProducts([{ name: "Chicken", price: 300, isVeg: false }]);
+    if (r2!.type !== "products") return;
+    expect(r2!.items[0].description).toBe("Non-Veg");
+  });
+
+  it("prefers description over isVeg fallback", () => {
+    const result = tryParseProducts([
+      { name: "Dish", price: 100, description: "Spicy dish", isVeg: true },
+    ]);
+    if (result!.type !== "products") return;
+    expect(result!.items[0].description).toBe("Spicy dish");
   });
 });

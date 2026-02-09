@@ -1,8 +1,8 @@
 import type { ParsedToolResult, ParsedAddress } from "@/lib/types";
-import { asArray, str, num } from "./primitives";
+import { asArrayOrWrap, str, num } from "./primitives";
 
 export function tryParseAddresses(payload: unknown): ParsedToolResult | null {
-  const arr = asArray(payload);
+  const arr = asArrayOrWrap(payload);
   if (!arr || arr.length === 0) return null;
 
   const addresses: ParsedAddress[] = [];

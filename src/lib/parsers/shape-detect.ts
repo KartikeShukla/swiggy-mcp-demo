@@ -1,26 +1,32 @@
 import type { ParsedToolResult } from "@/lib/types";
-import { asArray } from "./primitives";
+import { asArrayOrWrap } from "./primitives";
 import { tryParseRestaurants } from "./restaurants";
 import { tryParseProducts } from "./products";
 import { tryParseTimeSlots } from "./time-slots";
 import { tryParseAddresses } from "./addresses";
 
 export function detectByShape(payload: unknown, verticalId: string): ParsedToolResult | null {
-  const arr = asArray(payload);
+  const arr = asArrayOrWrap(payload);
   if (!arr || arr.length === 0) return null;
 
   const sample = arr[0];
   if (typeof sample !== "object" || sample === null) return null;
   const keys = Object.keys(sample);
-  const hasName = keys.includes("name") || keys.includes("displayName");
+  const hasName = keys.includes("name") || keys.includes("displayName") || keys.includes("title");
 
-  // Restaurant-like shape
-  if ((keys.includes("cuisine") || keys.includes("cuisines") || keys.includes("rating")) && hasName) {
+  // Restaurant-like shape — expanded key set
+  if ((keys.includes("cuisine") || keys.includes("cuisines") || keys.includes("rating") ||
+       keys.includes("avgRating") || keys.includes("avg_rating") ||
+       keys.includes("deliveryTime") || keys.includes("delivery_time") ||
+       keys.includes("costForTwo") || keys.includes("cost_for_two") ||
+       keys.includes("areaName") || keys.includes("sla")) && hasName) {
     return tryParseRestaurants(arr);
   }
 
-  // Product-like shape
-  if ((keys.includes("price") || keys.includes("selling_price") || keys.includes("mrp") || keys.includes("variations")) && hasName) {
+  // Product-like shape — expanded key set
+  if ((keys.includes("price") || keys.includes("selling_price") || keys.includes("mrp") ||
+       keys.includes("variations") || keys.includes("defaultPrice") || keys.includes("default_price") ||
+       keys.includes("basePrice") || keys.includes("isVeg")) && hasName) {
     return tryParseProducts(arr);
   }
 
@@ -34,8 +40,8 @@ export function detectByShape(payload: unknown, verticalId: string): ParsedToolR
     return tryParseAddresses(arr);
   }
 
-  // For dining vertical, try restaurants first
-  if (verticalId === "dining") {
+  // For dining/foodorder verticals, try restaurants first then products
+  if (verticalId === "dining" || verticalId === "foodorder") {
     return tryParseRestaurants(arr) || tryParseProducts(arr);
   }
 

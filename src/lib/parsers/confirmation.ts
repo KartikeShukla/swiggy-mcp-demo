@@ -6,7 +6,7 @@ export function tryParseConfirmation(payload: unknown, toolName: string): Parsed
   const obj = payload as Record<string, unknown>;
 
   // Check for order placement
-  if (/order|place/i.test(toolName)) {
+  if (/order|place|checkout|submit/i.test(toolName)) {
     return {
       type: "order_placed",
       orderId: str(obj.order_id) || str(obj.orderId) || str(obj.id),

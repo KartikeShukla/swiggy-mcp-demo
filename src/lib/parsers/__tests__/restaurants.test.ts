@@ -95,10 +95,26 @@ describe("tryParseRestaurants()", () => {
     expect(tryParseRestaurants([])).toBeNull();
   });
 
-  it("returns null for non-array input", () => {
+  it("returns null for non-object/non-array input", () => {
     expect(tryParseRestaurants("not array")).toBeNull();
     expect(tryParseRestaurants(null)).toBeNull();
     expect(tryParseRestaurants(42)).toBeNull();
+  });
+
+  it("wraps a single restaurant object in an array and parses it", () => {
+    const result = tryParseRestaurants({
+      name: "Solo Restaurant",
+      cuisine: "Italian",
+      rating: 4.2,
+    });
+    expect(result).not.toBeNull();
+    if (result!.type !== "restaurants") return;
+    expect(result!.items).toHaveLength(1);
+    expect(result!.items[0]).toMatchObject({
+      name: "Solo Restaurant",
+      cuisine: "Italian",
+      rating: 4.2,
+    });
   });
 
   it("skips items without a name", () => {
@@ -187,5 +203,85 @@ describe("tryParseRestaurants()", () => {
     ]);
     if (r2!.type !== "restaurants") return;
     expect(r2!.items[0].locality).toBe("BTM");
+  });
+
+  it("accepts costForTwo as a qualifying field and maps to priceForTwo", () => {
+    const result = tryParseRestaurants([
+      { name: "R", costForTwo: 600 },
+    ]);
+    expect(result).not.toBeNull();
+    if (result!.type !== "restaurants") return;
+    expect(result!.items[0].priceForTwo).toBe("₹600");
+  });
+
+  it("accepts deliveryTime as a qualifying field", () => {
+    const result = tryParseRestaurants([
+      { name: "R", deliveryTime: "30 mins" },
+    ]);
+    expect(result).not.toBeNull();
+  });
+
+  it("accepts delivery_time as a qualifying field", () => {
+    const result = tryParseRestaurants([
+      { name: "R", delivery_time: 25 },
+    ]);
+    expect(result).not.toBeNull();
+  });
+
+  it("accepts avgRating as a qualifying field and maps to rating", () => {
+    const result = tryParseRestaurants([
+      { name: "R", avgRating: 4.3 },
+    ]);
+    expect(result).not.toBeNull();
+    if (result!.type !== "restaurants") return;
+    expect(result!.items[0].rating).toBe(4.3);
+  });
+
+  it("accepts areaName as a qualifying field and maps to locality", () => {
+    const result = tryParseRestaurants([
+      { name: "R", areaName: "Koramangala" },
+    ]);
+    expect(result).not.toBeNull();
+    if (result!.type !== "restaurants") return;
+    expect(result!.items[0].locality).toBe("Koramangala");
+  });
+
+  it("accepts area_name as a qualifying field and maps to locality", () => {
+    const result = tryParseRestaurants([
+      { name: "R", area_name: "JP Nagar" },
+    ]);
+    expect(result).not.toBeNull();
+    if (result!.type !== "restaurants") return;
+    expect(result!.items[0].locality).toBe("JP Nagar");
+  });
+
+  it("accepts sla as a qualifying field", () => {
+    const result = tryParseRestaurants([
+      { name: "R", sla: { deliveryTime: 30 } },
+    ]);
+    expect(result).not.toBeNull();
+  });
+
+  it("accepts feeDetails as a qualifying field", () => {
+    const result = tryParseRestaurants([
+      { name: "R", feeDetails: { totalFee: 40 } },
+    ]);
+    expect(result).not.toBeNull();
+  });
+
+  it("resolves address from completeAddress", () => {
+    const result = tryParseRestaurants([
+      { name: "R", cuisine: "Indian", completeAddress: "123 Full St" },
+    ]);
+    if (result!.type !== "restaurants") return;
+    expect(result!.items[0].address).toBe("123 Full St");
+  });
+
+  it("resolves address from complete_address", () => {
+    const result = tryParseRestaurants([
+      { name: "R", cuisine: "Indian", complete_address: "456 Full Ave" },
+    ]);
+    if (result!.type !== "restaurants") return;
+    expect(result!.items[0].address).toBe("456 Full Ave");
   });
 });

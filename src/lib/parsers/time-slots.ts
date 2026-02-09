@@ -1,8 +1,8 @@
 import type { ParsedToolResult, ParsedTimeSlot } from "@/lib/types";
-import { asArray, str } from "./primitives";
+import { asArrayOrWrap, str } from "./primitives";
 
 export function tryParseTimeSlots(payload: unknown): ParsedToolResult | null {
-  const arr = asArray(payload);
+  const arr = asArrayOrWrap(payload);
   if (!arr || arr.length === 0) return null;
 
   const slots: ParsedTimeSlot[] = [];

@@ -1,7 +1,7 @@
 import { parseToolResult } from "@/lib/parsers/orchestrator";
 
 describe("parseToolResult()", () => {
-  describe("tool name routing: search/find/discover/browse/menu -> products", () => {
+  describe("tool name routing: search/find/discover/browse/menu/list/recommend -> products", () => {
     it("routes search tool to products for instamart vertical", () => {
       const content = JSON.stringify([
         { name: "Milk", price: 55, image: "img.jpg" },
@@ -33,9 +33,52 @@ describe("parseToolResult()", () => {
       const result = parseToolResult("discover_products", content, "instamart");
       expect(result.type).toBe("products");
     });
+
+    it("routes list_items tool to products", () => {
+      const content = JSON.stringify([
+        { name: "Rice", price: 80 },
+      ]);
+      const result = parseToolResult("list_items", content, "instamart");
+      expect(result.type).toBe("products");
+    });
+
+    it("routes recommend_products tool to products", () => {
+      const content = JSON.stringify([
+        { name: "Shampoo", price: 200 },
+      ]);
+      const result = parseToolResult("recommend_products", content, "instamart");
+      expect(result.type).toBe("products");
+    });
+
+    it("routes suggest_items tool to products", () => {
+      const content = JSON.stringify([
+        { name: "Soap", price: 50 },
+      ]);
+      const result = parseToolResult("suggest_items", content, "instamart");
+      expect(result.type).toBe("products");
+    });
+
+    it("routes get_restaurant_details to restaurants for dining", () => {
+      const content = JSON.stringify({
+        name: "Pizza Palace",
+        cuisine: "Italian",
+        rating: 4.5,
+        address: "123 Main St",
+      });
+      const result = parseToolResult("get_restaurant_details", content, "dining");
+      expect(result.type).toBe("restaurants");
+    });
+
+    it("routes get_menu_items to products", () => {
+      const content = JSON.stringify([
+        { name: "Burger", price: 150 },
+      ]);
+      const result = parseToolResult("get_menu_items", content, "foodorder");
+      expect(result.type).toBe("products");
+    });
   });
 
-  describe("tool name routing: cart/basket -> cart", () => {
+  describe("tool name routing: cart/basket/add_item/remove_item -> cart", () => {
     it("routes cart tool to cart type", () => {
       const content = JSON.stringify({
         items: [{ name: "Item A", price: 100, quantity: 2 }],
@@ -52,9 +95,34 @@ describe("parseToolResult()", () => {
       const result = parseToolResult("view_basket", content, "instamart");
       expect(result.type).toBe("cart");
     });
+
+    it("routes add_item tool to cart type when cart data is present", () => {
+      const content = JSON.stringify({
+        items: [{ name: "Item C", price: 75, quantity: 1 }],
+        total: 75,
+      });
+      const result = parseToolResult("add_item", content, "instamart");
+      expect(result.type).toBe("cart");
+    });
+
+    it("routes remove_item tool to cart type when cart data is present", () => {
+      const content = JSON.stringify({
+        items: [{ name: "Item D", price: 60, quantity: 2 }],
+      });
+      const result = parseToolResult("remove_item", content, "instamart");
+      expect(result.type).toBe("cart");
+    });
+
+    it("routes add_to_cart tool to cart type", () => {
+      const content = JSON.stringify({
+        items: [{ name: "Item E", price: 90, quantity: 1 }],
+      });
+      const result = parseToolResult("add_to_cart", content, "foodorder");
+      expect(result.type).toBe("cart");
+    });
   });
 
-  describe("tool name routing: slot/avail -> time_slots", () => {
+  describe("tool name routing: slot/avail/schedule/timeslot -> time_slots", () => {
     it("routes slot tool to time_slots type", () => {
       const content = JSON.stringify(["10:00 AM", "11:00 AM"]);
       const result = parseToolResult("get_slots", content, "instamart");
@@ -68,9 +136,25 @@ describe("parseToolResult()", () => {
       const result = parseToolResult("check_availability", content, "instamart");
       expect(result.type).toBe("time_slots");
     });
+
+    it("routes schedule tool to time_slots type", () => {
+      const content = JSON.stringify([
+        { time: "9:00 AM", available: true },
+      ]);
+      const result = parseToolResult("get_schedule", content, "dining");
+      expect(result.type).toBe("time_slots");
+    });
+
+    it("routes timeslot tool to time_slots type", () => {
+      const content = JSON.stringify([
+        { time: "1:00 PM", available: false },
+      ]);
+      const result = parseToolResult("get_timeslots", content, "dining");
+      expect(result.type).toBe("time_slots");
+    });
   });
 
-  describe("tool name routing: address/location -> addresses", () => {
+  describe("tool name routing: address/location/deliver -> addresses", () => {
     it("routes address tool to addresses type", () => {
       const content = JSON.stringify([
         { address: "123 Main St", label: "Home" },
@@ -86,9 +170,17 @@ describe("parseToolResult()", () => {
       const result = parseToolResult("set_location", content, "instamart");
       expect(result.type).toBe("addresses");
     });
+
+    it("routes deliver tool to addresses type", () => {
+      const content = JSON.stringify([
+        { address: "789 Elm St", label: "Office" },
+      ]);
+      const result = parseToolResult("get_delivery_addresses", content, "foodorder");
+      expect(result.type).toBe("addresses");
+    });
   });
 
-  describe("tool name routing: order/place/book/reserve/confirm -> confirmation", () => {
+  describe("tool name routing: order/place/book/reserve/confirm/checkout/submit -> confirmation", () => {
     it("routes order tool to order_placed type", () => {
       const content = JSON.stringify({ order_id: "O1", status: "confirmed" });
       const result = parseToolResult("place_order", content, "instamart");
@@ -102,13 +194,21 @@ describe("parseToolResult()", () => {
     });
 
     it("routes confirm tool to order_placed (order match first)", () => {
-      // 'confirm' does not match /order|place/ so falls through,
-      // but it does match /order|place|book|reserve|confirm/
       const content = JSON.stringify({ id: "C1" });
       const result = parseToolResult("confirm_booking", content, "dining");
-      // 'confirm' matches the pattern, but not /order|place/ so tryParseConfirmation
-      // is called with toolName "confirm_booking". /book|reserve/ matches.
       expect(result.type).toBe("booking_confirmed");
+    });
+
+    it("routes checkout tool to confirmation type", () => {
+      const content = JSON.stringify({ order_id: "O2", status: "placed" });
+      const result = parseToolResult("checkout", content, "instamart");
+      expect(result.type).toBe("order_placed");
+    });
+
+    it("routes submit_order tool to confirmation type", () => {
+      const content = JSON.stringify({ order_id: "O3" });
+      const result = parseToolResult("submit_order", content, "foodorder");
+      expect(result.type).toBe("order_placed");
     });
   });
 
@@ -130,13 +230,10 @@ describe("parseToolResult()", () => {
     });
 
     it("falls back to products for dining vertical when restaurants fails", () => {
-      // Items that don't look like restaurants
+      // Items that don't look like restaurants — dining now also tries products
       const content = JSON.stringify([
         { name: "Naan", price: 60 },
       ]);
-      // For dining vertical, restaurants parse attempted first but fails,
-      // then for dining vertical products is NOT attempted (verticalId === "dining")
-      // falls through to shape detection, which calls tryParseProducts
       const result = parseToolResult("search_dishes", content, "dining");
       expect(result.type).toBe("products");
     });
@@ -147,6 +244,36 @@ describe("parseToolResult()", () => {
       ]);
       const result = parseToolResult("get_menu", content, "foodorder");
       expect(result.type).toBe("products");
+    });
+
+    it("parses single restaurant object from get_restaurant_details", () => {
+      const content = JSON.stringify({
+        name: "Taj Mahal Restaurant",
+        cuisine: "Indian",
+        rating: 4.7,
+        costForTwo: 800,
+        areaName: "MG Road",
+      });
+      const result = parseToolResult("get_restaurant_details", content, "dining");
+      expect(result.type).toBe("restaurants");
+      if (result.type !== "restaurants") return;
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].name).toBe("Taj Mahal Restaurant");
+    });
+
+    it("parses category-structured menu into products", () => {
+      const content = JSON.stringify({
+        categories: [
+          { name: "Starters", items: [{ name: "Paneer Tikka", price: 250 }] },
+          { name: "Mains", items: [{ name: "Butter Chicken", price: 350 }] },
+        ],
+      });
+      const result = parseToolResult("get_menu", content, "foodorder");
+      expect(result.type).toBe("products");
+      if (result.type !== "products") return;
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0].name).toBe("Paneer Tikka");
+      expect(result.items[1].name).toBe("Butter Chicken");
     });
   });
 
@@ -190,15 +317,23 @@ describe("parseToolResult()", () => {
       if (result.type !== "status") return;
       expect(result.status.success).toBe(false);
     });
+
+    it("prefers embedded cart over status when both are present", () => {
+      const content = JSON.stringify({
+        success: true,
+        message: "Item added",
+        cart: { items: [{ name: "Added Item", price: 100, quantity: 1 }] },
+      });
+      const result = parseToolResult("unknown_action", content, "instamart");
+      expect(result.type).toBe("cart");
+    });
   });
 
   describe("info fallback", () => {
-    it("falls back to info for generic objects", () => {
-      const content = JSON.stringify({ name: "Profile", age: 25, city: "Bangalore" });
+    it("falls back to info for generic objects without product/restaurant fields", () => {
+      const content = JSON.stringify({ label: "Profile", age: 25, city: "Bangalore" });
       const result = parseToolResult("get_profile", content, "instamart");
       expect(result.type).toBe("info");
-      if (result.type !== "info") return;
-      expect(result.title).toBe("Profile");
     });
   });
 

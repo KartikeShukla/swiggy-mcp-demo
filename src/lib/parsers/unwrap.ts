@@ -1,4 +1,5 @@
 import { PAYLOAD_EXTRACT_MAX_DEPTH } from "@/lib/constants";
+import { asArray } from "./primitives";
 
 /** Attempt to parse a string as JSON; return original string on failure. */
 export function tryParseJSON(str: string): unknown {
@@ -50,11 +51,48 @@ export function extractPayload(content: unknown, depth = 0): unknown {
     for (const key of [
       "data", "results", "items", "products", "restaurants", "menu",
       "dishes", "addresses", "cart", "cart_items", "slots",
+      "menu_items", "menu_categories", "listings", "options",
     ]) {
       if (key in obj && obj[key] != null) {
         return extractPayload(obj[key], depth + 1);
       }
     }
+
+    // Special case: menu categories with nested items
+    if ("categories" in obj && obj.categories != null) {
+      const cats = asArray(obj.categories);
+      if (cats) {
+        const flattened = flattenCategoryItems(cats);
+        if (flattened.length > 0) return flattened;
+      }
+    }
   }
   return content;
+}
+
+/** Flatten category arrays like [{ name: "Starters", items: [...] }] into a single items array. */
+export function flattenCategoryItems(categories: unknown[]): unknown[] {
+  const items: unknown[] = [];
+  for (const cat of categories) {
+    if (typeof cat !== "object" || cat === null) continue;
+    const catObj = cat as Record<string, unknown>;
+    const catItems = asArray(catObj.items) || asArray(catObj.dishes) || asArray(catObj.itemCards) || asArray(catObj.products);
+    if (catItems) {
+      for (const item of catItems) {
+        if (typeof item === "object" && item !== null) {
+          const itemObj = item as Record<string, unknown>;
+          // Handle Swiggy-style double-nested: { card: { info: { name, price, ... } } }
+          if (typeof itemObj.card === "object" && itemObj.card !== null) {
+            const card = itemObj.card as Record<string, unknown>;
+            if (typeof card.info === "object" && card.info !== null) {
+              items.push(card.info);
+              continue;
+            }
+          }
+          items.push(item);
+        }
+      }
+    }
+  }
+  return items;
 }

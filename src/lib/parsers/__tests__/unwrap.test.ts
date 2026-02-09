@@ -1,4 +1,4 @@
-import { unwrapContent, extractPayload, tryParseJSON } from "@/lib/parsers/unwrap";
+import { unwrapContent, extractPayload, tryParseJSON, flattenCategoryItems } from "@/lib/parsers/unwrap";
 
 describe("tryParseJSON()", () => {
   it("parses valid JSON object", () => {
@@ -185,5 +185,133 @@ describe("extractPayload()", () => {
   it("skips null values for known keys", () => {
     const payload = { data: null, results: [5, 6] };
     expect(extractPayload(payload)).toEqual([5, 6]);
+  });
+
+  it("extracts nested menu_items key", () => {
+    expect(extractPayload({ menu_items: [{ name: "A" }] })).toEqual([{ name: "A" }]);
+  });
+
+  it("extracts nested menu_categories key", () => {
+    expect(extractPayload({ menu_categories: [{ name: "Cat" }] })).toEqual([{ name: "Cat" }]);
+  });
+
+  it("extracts nested listings key", () => {
+    expect(extractPayload({ listings: [{ name: "L" }] })).toEqual([{ name: "L" }]);
+  });
+
+  it("extracts nested options key", () => {
+    expect(extractPayload({ options: [{ name: "O" }] })).toEqual([{ name: "O" }]);
+  });
+
+  it("flattens categories with nested items", () => {
+    const payload = {
+      categories: [
+        { name: "Starters", items: [{ name: "Spring Roll" }, { name: "Soup" }] },
+        { name: "Mains", items: [{ name: "Biryani" }] },
+      ],
+    };
+    const result = extractPayload(payload);
+    expect(result).toEqual([
+      { name: "Spring Roll" },
+      { name: "Soup" },
+      { name: "Biryani" },
+    ]);
+  });
+
+  it("flattens categories with dishes sub-arrays", () => {
+    const payload = {
+      categories: [
+        { name: "Appetizers", dishes: [{ name: "Samosa" }] },
+      ],
+    };
+    const result = extractPayload(payload);
+    expect(result).toEqual([{ name: "Samosa" }]);
+  });
+
+  it("unwraps Swiggy-style double-nested card.info in categories", () => {
+    const payload = {
+      categories: [
+        {
+          name: "Recommended",
+          itemCards: [
+            { card: { info: { name: "Butter Chicken", price: 350 } } },
+            { card: { info: { name: "Dal Makhani", price: 250 } } },
+          ],
+        },
+      ],
+    };
+    const result = extractPayload(payload);
+    expect(result).toEqual([
+      { name: "Butter Chicken", price: 350 },
+      { name: "Dal Makhani", price: 250 },
+    ]);
+  });
+
+  it("returns object as-is when categories has no sub-items", () => {
+    const payload = {
+      categories: [
+        { name: "Empty Category" },
+      ],
+    };
+    expect(extractPayload(payload)).toBe(payload);
+  });
+});
+
+describe("flattenCategoryItems()", () => {
+  it("flattens items from multiple categories", () => {
+    const result = flattenCategoryItems([
+      { name: "Cat1", items: [{ name: "A" }, { name: "B" }] },
+      { name: "Cat2", items: [{ name: "C" }] },
+    ]);
+    expect(result).toEqual([{ name: "A" }, { name: "B" }, { name: "C" }]);
+  });
+
+  it("handles dishes key", () => {
+    const result = flattenCategoryItems([
+      { name: "Cat", dishes: [{ name: "D" }] },
+    ]);
+    expect(result).toEqual([{ name: "D" }]);
+  });
+
+  it("handles itemCards key", () => {
+    const result = flattenCategoryItems([
+      { name: "Cat", itemCards: [{ name: "I" }] },
+    ]);
+    expect(result).toEqual([{ name: "I" }]);
+  });
+
+  it("handles products key", () => {
+    const result = flattenCategoryItems([
+      { name: "Cat", products: [{ name: "P" }] },
+    ]);
+    expect(result).toEqual([{ name: "P" }]);
+  });
+
+  it("unwraps card.info nested items", () => {
+    const result = flattenCategoryItems([
+      {
+        name: "Cat",
+        itemCards: [
+          { card: { info: { name: "Unwrapped" } } },
+        ],
+      },
+    ]);
+    expect(result).toEqual([{ name: "Unwrapped" }]);
+  });
+
+  it("skips non-object categories", () => {
+    const result = flattenCategoryItems(["string", null, 42]);
+    expect(result).toEqual([]);
+  });
+
+  it("skips categories without item sub-arrays", () => {
+    const result = flattenCategoryItems([
+      { name: "Empty" },
+    ]);
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty array for empty input", () => {
+    expect(flattenCategoryItems([])).toEqual([]);
   });
 });
