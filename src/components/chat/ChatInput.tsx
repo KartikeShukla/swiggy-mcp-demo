@@ -1,16 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { SendHorizontal } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TEXTAREA_MAX_HEIGHT } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
 
 export function ChatInput({
   onSend,
   disabled,
-  accentColor,
 }: {
   onSend: (text: string) => void;
   disabled: boolean;
-  accentColor: string;
 }) {
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -36,38 +35,36 @@ export function ChatInput({
     }
   }
 
-  const buttonColorClass =
-    accentColor === "food"
-      ? "bg-food hover:bg-food/90"
-      : accentColor === "style"
-        ? "bg-style hover:bg-style/90"
-        : "bg-dining hover:bg-dining/90";
-
   return (
-    <div className="border-t border-gray-200 bg-white p-4">
-      <div className="mx-auto flex max-w-3xl items-end gap-2">
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
-          aria-label="Type a message"
-          rows={1}
-          disabled={disabled}
-          className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-gray-300 focus:ring-1 focus:ring-gray-300 disabled:opacity-50"
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={disabled || !text.trim()}
-          aria-label="Send message"
+    <div className="shrink-0 z-40 bg-gradient-to-t from-background from-60% to-transparent pb-[var(--safe-bottom)] pt-8 px-4">
+      <div className="mx-auto">
+        <div
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white transition-colors disabled:opacity-40",
-            buttonColorClass,
+            "flex items-end gap-2 rounded-2xl border border-border bg-card px-4 py-2 shadow-sm",
+            "focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50",
           )}
         >
-          <SendHorizontal className="h-4 w-4" />
-        </button>
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask anything..."
+            aria-label="Ask anything"
+            rows={1}
+            disabled={disabled}
+            className="flex-1 resize-none border-0 bg-transparent py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
+          />
+          <Button
+            onClick={handleSubmit}
+            disabled={disabled || !text.trim()}
+            aria-label="Send message"
+            size="icon"
+            className="h-8 w-8 shrink-0 rounded-xl"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

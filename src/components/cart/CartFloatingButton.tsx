@@ -1,15 +1,15 @@
 import { ShoppingCart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CART_BOUNCE_MS } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export function CartFloatingButton({
   count,
   onClick,
-  accentColor,
 }: {
   count: number;
   onClick: () => void;
-  accentColor: string;
 }) {
   const [bounce, setBounce] = useState(false);
 
@@ -20,20 +20,20 @@ export function CartFloatingButton({
   }, [count]);
 
   return (
-    <button
+    <Button
       onClick={onClick}
       aria-label={`View cart, ${count} ${count === 1 ? "item" : "items"}`}
-      className={`absolute bottom-20 right-6 z-30 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-transform ${
-        bounce ? "scale-110" : "scale-100"
+      size="icon-lg"
+      className={`absolute bottom-28 right-4 z-40 rounded-full shadow-lg shadow-primary/20 animate-[scale-in_200ms_ease-out] transition-transform ${
+        bounce ? "scale-105" : "scale-100"
       }`}
-      style={{ backgroundColor: `var(--color-${accentColor})` }}
     >
-      <ShoppingCart className="h-5 w-5 text-white" />
-      <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold shadow"
-        style={{ color: `var(--color-${accentColor})` }}
+      <ShoppingCart className="h-5 w-5" />
+      <Badge
+        className="absolute -right-1 -top-1 h-5 w-5 items-center justify-center rounded-full border-2 border-background p-0 text-[10px] font-bold bg-card text-primary"
       >
         {count}
-      </span>
-    </button>
+      </Badge>
+    </Button>
   );
 }

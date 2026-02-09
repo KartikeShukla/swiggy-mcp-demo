@@ -9,65 +9,64 @@ import { ChatInput } from "./ChatInput";
 import { CartFloatingButton } from "../cart/CartFloatingButton";
 import { CartPanel } from "../cart/CartPanel";
 import { Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 function ChatViewInner({
   vertical,
   apiKey,
   swiggyToken,
+  onAuthError,
 }: {
   vertical: VerticalConfig;
   apiKey: string | null;
   swiggyToken: string | null;
+  onAuthError?: () => void;
 }) {
   const { messages, loading, error, sendMessage } = useChat(
     vertical,
     apiKey,
     swiggyToken,
+    onAuthError,
   );
   const { cart, isOpen, setIsOpen, itemCount } = useCart(messages, vertical.id);
 
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] flex-col relative">
+    <div className="flex h-full flex-col relative">
       {/* Messages or empty state */}
       {hasMessages ? (
         <ErrorBoundary>
           <MessageList
             messages={messages}
             loading={loading}
-            accentColor={vertical.color}
             verticalId={vertical.id}
             onAction={sendMessage}
           />
         </ErrorBoundary>
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center px-4">
-          <div
-            className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: `var(--color-${vertical.color})15` }}
-          >
-            <Bot
-              className="h-7 w-7"
-              style={{ color: `var(--color-${vertical.color})` }}
-            />
+        <div className="flex flex-1 flex-col items-center justify-center px-3">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+            <Bot className="h-7 w-7 text-primary" />
           </div>
-          <h2 className="mb-2 text-lg font-semibold text-gray-900">
+          <h2 className="mb-2 text-lg font-semibold text-foreground">
             {vertical.name}
           </h2>
-          <p className="mb-6 max-w-md text-center text-sm text-gray-500 leading-relaxed">
+          <p className="mb-6 max-w-md text-center text-sm text-muted-foreground leading-relaxed">
             {vertical.welcomeMessage}
           </p>
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-1.5 w-full">
             {vertical.examplePrompts.map((prompt) => (
-              <button
+              <Button
                 key={prompt}
+                variant="outline"
+                className="rounded-full text-xs max-w-full"
                 onClick={() => sendMessage(prompt)}
                 disabled={loading || !apiKey}
-                className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 hover:border-gray-300 hover:bg-gray-50 disabled:opacity-50 transition-colors"
               >
-                {prompt}
-              </button>
+                <span className="truncate">{prompt}</span>
+              </Button>
             ))}
           </div>
         </div>
@@ -78,24 +77,26 @@ function ChatViewInner({
         <CartFloatingButton
           count={itemCount}
           onClick={() => setIsOpen(true)}
-          accentColor={vertical.color}
         />
       )}
 
       {/* Cart drawer */}
-      {isOpen && cart && (
-        <CartPanel
-          cart={cart}
-          onClose={() => setIsOpen(false)}
-          onAction={sendMessage}
-          accentColor={vertical.color}
-        />
-      )}
+      <Sheet open={isOpen && !!cart} onOpenChange={setIsOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md p-0">
+          {cart && (
+            <CartPanel
+              cart={cart}
+              onClose={() => setIsOpen(false)}
+              onAction={sendMessage}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Error display */}
       {error && (
         <div className="mx-auto w-full max-w-3xl px-4 pb-2">
-          <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600" role="alert">
+          <div className="rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive" role="alert">
             {error}
           </div>
         </div>
@@ -105,7 +106,6 @@ function ChatViewInner({
       <ChatInput
         onSend={sendMessage}
         disabled={loading || !apiKey}
-        accentColor={vertical.color}
       />
     </div>
   );
@@ -114,6 +114,7 @@ function ChatViewInner({
 export function ChatView(props: {
   apiKey: string | null;
   swiggyToken: string | null;
+  onAuthError?: () => void;
 }) {
   const { verticalId } = useParams<{ verticalId: string }>();
   const vertical = verticalId ? verticals[verticalId] : undefined;

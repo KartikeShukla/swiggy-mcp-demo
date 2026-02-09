@@ -1,22 +1,58 @@
 import { Link } from "react-router-dom";
-import { Layers } from "lucide-react";
 import { VerticalNav } from "./VerticalNav";
+
+function Logo67() {
+  return (
+    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 dark:bg-stone-800 overflow-hidden">
+      <svg viewBox="0 0 28 28" className="h-6 w-6" aria-hidden="true">
+        {/* "6" in gray */}
+        <text
+          x="5"
+          y="22"
+          fontSize="20"
+          fontWeight="700"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fill="#9ca3af"
+        >
+          6
+        </text>
+        {/* "7" in dark, overlapping */}
+        <text
+          x="13"
+          y="22"
+          fontSize="20"
+          fontWeight="700"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fill="#374151"
+          className="dark:fill-stone-200"
+        >
+          7
+        </text>
+      </svg>
+    </div>
+  );
+}
 
 export function Header({ right }: { right?: React.ReactNode }) {
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm" aria-label="Main navigation">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <div className="flex items-center gap-4">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-gray-900 hover:text-gray-700"
-          >
-            <Layers className="h-5 w-5" />
-            <span className="text-sm font-semibold">MCP Demo</span>
-          </Link>
-          <VerticalNav />
+    <header className="relative z-50 shrink-0 border-b border-border bg-background/95 backdrop-blur-lg pt-[var(--safe-top)]" aria-label="Main navigation">
+      {/* Row 1: Logo + Actions */}
+      <div className="flex h-12 items-center justify-between px-4">
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-foreground hover:text-foreground/80"
+        >
+          <Logo67 />
+          <span className="text-sm font-semibold">MCP Demo</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          {right}
         </div>
-        {right && <div className="flex items-center gap-2">{right}</div>}
+      </div>
+
+      {/* Row 2: Vertical Nav Tabs */}
+      <div className="flex h-9 items-center justify-center px-2">
+        <VerticalNav />
       </div>
     </header>
   );
