@@ -18,10 +18,14 @@ const activeClasses = {
 } as const;
 
 export function VerticalNav() {
+  const gridCols = verticalList
+    .map((v) => (v.id === "food" ? "1.2fr" : "1fr"))
+    .join(" ");
+
   return (
     <nav
-      className="grid w-full gap-1 rounded-full border-[1.2px] border-border/75 bg-muted/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
-      style={{ gridTemplateColumns: `repeat(${verticalList.length}, minmax(0, 1fr))` }}
+      className="grid w-full gap-1 rounded-full border-[1.2px] border-border/75 bg-muted/85 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
+      style={{ gridTemplateColumns: gridCols }}
       aria-label="Vertical navigation"
     >
       {verticalList.map((v) => (
