@@ -98,14 +98,14 @@ function ChatViewInner({
 
       {/* Error display */}
       {error && (
-        <div className="mx-auto w-full max-w-3xl px-4 pb-2">
+        <div className="absolute bottom-32 left-0 right-0 z-50 mx-auto w-full max-w-3xl px-4">
           <div className="rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive" role="alert">
             {error}
           </div>
         </div>
       )}
 
-      {/* Input */}
+      {/* Input — absolutely positioned, overlays messages with gradient */}
       <ChatInput
         onSend={sendMessage}
         disabled={loading || !apiKey}

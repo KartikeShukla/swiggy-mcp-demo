@@ -36,7 +36,7 @@ export function ChatInput({
   }
 
   return (
-    <div className="shrink-0 z-40 bg-gradient-to-t from-background from-60% to-transparent pb-[var(--safe-bottom)] pt-8 px-4">
+    <div className="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-background from-60% to-transparent pb-[var(--safe-bottom)] pt-8 px-4">
       <div className="mx-auto">
         <div
           className={cn(

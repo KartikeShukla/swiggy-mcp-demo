@@ -30,7 +30,7 @@ export function MessageBubble({
             </AvatarFallback>
           </Avatar>
         </div>
-        <div className="max-w-[88%] rounded-2xl rounded-br-md bg-foreground px-4 py-2.5 text-sm text-background leading-relaxed">
+        <div className="max-w-[88%] rounded-2xl rounded-br-md bg-stone-200 text-stone-900 dark:bg-stone-700 dark:text-stone-100 px-4 py-2.5 text-sm leading-relaxed">
           {typeof message.content === "string"
             ? renderMarkdownLite(message.content)
             : null}

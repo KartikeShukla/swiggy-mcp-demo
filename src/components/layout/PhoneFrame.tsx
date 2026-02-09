@@ -39,8 +39,8 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
       />
       <div
         ref={ref}
-        className="relative w-[390px] h-[844px] max-h-[95vh] rounded-[3rem] border-[8px] border-neutral-900 dark:border-neutral-900 shadow-2xl overflow-hidden bg-background flex flex-col"
-        style={{ transform: "scale(1)", "--safe-top": "50px", "--safe-bottom": "34px" } as React.CSSProperties}
+        className="relative w-[390px] h-[844px] max-h-[95vh] rounded-[3rem] border-[8px] shadow-2xl overflow-hidden bg-background flex flex-col"
+        style={{ transform: "scale(1)", "--safe-top": "50px", "--safe-bottom": "34px", borderColor: "#2c2c2e" } as React.CSSProperties}
       >
         {/* Dynamic Island */}
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[60] w-[120px] h-[34px] bg-black rounded-full pointer-events-none" />
