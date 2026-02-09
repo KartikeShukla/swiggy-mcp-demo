@@ -21,7 +21,10 @@ export function useChatApi(
   const client = useMemo(() => (apiKey ? createClient(apiKey) : null), [apiKey]);
 
   const sendToApi = useCallback(
-    async (messages: ChatMessage[]): Promise<ApiResponse> => {
+    async (
+      messages: ChatMessage[],
+      sessionStateSummary?: string | null,
+    ): Promise<ApiResponse> => {
       if (!client) throw new Error("API key required");
 
       const params = buildMessageStreamParams(
@@ -29,6 +32,7 @@ export function useChatApi(
         vertical,
         swiggyToken,
         selectedAddress,
+        sessionStateSummary,
       );
 
       return runMessageStream(client, params, onAuthError);

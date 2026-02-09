@@ -23,6 +23,7 @@
 2. Chat send:
 - `useChat` appends user message.
 - `useChatApi` builds request (system prompt + MCP config).
+- Request builder adds compact session-state summary when available.
 - Stream response returns text and tool blocks.
 - UI parses tool results and renders cards.
 

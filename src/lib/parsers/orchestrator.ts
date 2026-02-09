@@ -10,6 +10,98 @@ import { tryParseConfirmation } from "./confirmation";
 import { tryParseStatus } from "./status";
 import { tryParseInfo } from "./info";
 import { detectByShape } from "./shape-detect";
+import { asArrayOrWrap } from "./primitives";
+
+const PRODUCT_SIGNAL_KEYS = new Set([
+  "price",
+  "selling_price",
+  "mrp",
+  "variations",
+  "defaultPrice",
+  "default_price",
+  "basePrice",
+  "base_price",
+  "offerPrice",
+  "offer_price",
+  "finalPrice",
+  "final_price",
+  "productId",
+  "product_id",
+  "item_id",
+  "quantity",
+  "weight",
+  "size",
+  "pack_size",
+  "isVeg",
+]);
+
+const STRONG_RESTAURANT_SIGNAL_KEYS = new Set([
+  "cuisine",
+  "cuisines",
+  "priceForTwo",
+  "price_for_two",
+  "locality",
+  "area",
+  "address",
+  "costForTwo",
+  "cost_for_two",
+  "deliveryTime",
+  "delivery_time",
+  "areaName",
+  "area_name",
+  "sla",
+  "feeDetails",
+]);
+
+const WEAK_RESTAURANT_SIGNAL_KEYS = new Set([
+  "rating",
+  "avgRating",
+  "avg_rating",
+]);
+
+function inferPayloadSignals(payload: unknown): {
+  hasProductSignals: boolean;
+  hasStrongRestaurantSignals: boolean;
+  hasWeakRestaurantSignals: boolean;
+} {
+  const arr = asArrayOrWrap(payload);
+  if (!arr || arr.length === 0) {
+    return {
+      hasProductSignals: false,
+      hasStrongRestaurantSignals: false,
+      hasWeakRestaurantSignals: false,
+    };
+  }
+
+  let hasProductSignals = false;
+  let hasStrongRestaurantSignals = false;
+  let hasWeakRestaurantSignals = false;
+
+  for (const item of arr.slice(0, 5)) {
+    if (typeof item !== "object" || item === null) continue;
+    const keys = Object.keys(item as Record<string, unknown>);
+
+    if (keys.some((key) => PRODUCT_SIGNAL_KEYS.has(key))) {
+      hasProductSignals = true;
+    }
+    if (keys.some((key) => STRONG_RESTAURANT_SIGNAL_KEYS.has(key))) {
+      hasStrongRestaurantSignals = true;
+    }
+    if (keys.some((key) => WEAK_RESTAURANT_SIGNAL_KEYS.has(key))) {
+      hasWeakRestaurantSignals = true;
+    }
+
+    if (hasProductSignals && hasStrongRestaurantSignals && hasWeakRestaurantSignals) {
+      break;
+    }
+  }
+
+  return {
+    hasProductSignals,
+    hasStrongRestaurantSignals,
+    hasWeakRestaurantSignals,
+  };
+}
 
 /**
  * Heuristic parser: examines mcp_tool_result content and tool name
@@ -27,14 +119,34 @@ export function parseToolResult(
 
     // Match by tool name patterns
     if (/search|find|discover|browse|menu|list|recommend|suggest|get_.*(?:product|restaurant|item|dish|cuisine)/i.test(toolName)) {
-      if (verticalId === "dining" || verticalId === "foodorder") {
+      if (verticalId === "foodorder") {
+        const isMenuIntentTool = /menu|dish|item/i.test(toolName);
+        const signals = inferPayloadSignals(payload);
+        const shouldPreferProducts = isMenuIntentTool || (
+          signals.hasProductSignals && !signals.hasStrongRestaurantSignals
+        );
+
+        if (shouldPreferProducts) {
+          const products = tryParseProducts(payload);
+          if (products) return products;
+        }
+
+        if (signals.hasStrongRestaurantSignals || signals.hasWeakRestaurantSignals) {
+          const restaurants = tryParseRestaurants(payload);
+          if (restaurants) return restaurants;
+        }
+
         const restaurants = tryParseRestaurants(payload);
         if (restaurants) return restaurants;
-      }
-      if (verticalId === "foodorder" && /menu/i.test(toolName)) {
         const products = tryParseProducts(payload);
         if (products) return products;
       }
+
+      if (verticalId === "dining") {
+        const restaurants = tryParseRestaurants(payload);
+        if (restaurants) return restaurants;
+      }
+
       // Always try products (including dining — dining can have menu/dish searches)
       const products = tryParseProducts(payload);
       if (products) return products;

@@ -1,7 +1,7 @@
 import type { VerticalConfig } from "@/lib/types";
 import { MCP_SERVERS } from "@/lib/constants";
 import { buildSystemPrompt } from "./shared-prompt";
-import diningPrompt from "./prompts/dining.md?raw";
+import { diningPromptProfile } from "./prompt-spec/profiles";
 
 export const diningVertical: VerticalConfig = {
   id: "dining",
@@ -12,7 +12,8 @@ export const diningVertical: VerticalConfig = {
     "Discover restaurants, check availability, and book tables — your personal dining concierge powered by Dineout.",
   color: "dining",
   icon: "UtensilsCrossed",
-  systemPrompt: buildSystemPrompt(diningPrompt),
+  systemPrompt: buildSystemPrompt(diningPromptProfile),
+  promptProfileId: diningPromptProfile.id,
   welcomeMessage:
     "Welcome to TableScout! Tell me what you're looking for — cuisine, occasion, location, group size — and I'll find the perfect restaurant and book a table.",
   examplePrompts: [

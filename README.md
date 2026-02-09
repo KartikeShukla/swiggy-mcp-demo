@@ -85,7 +85,7 @@ src/
   integrations/  # Anthropic request/stream/error modules
   lib/           # Constants, types, storage, parsers
   hooks/         # useChat orchestration + auth state
-  verticals/     # Vertical configs + base prompts
+  verticals/     # Vertical configs + prompt profiles/compiler
   components/
     chat/        # ChatView, MessageBubble, ToolTrace, ChatInput
     auth/        # ApiKeyModal, SwiggyConnect, SettingsMenu

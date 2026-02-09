@@ -106,9 +106,9 @@ function ChatViewInner({
         />
       )}
 
-      {/* Cart drawer */}
+      {/* Cart bottom sheet */}
       <Sheet open={isOpen && !!cart} onOpenChange={setIsOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md p-0">
+        <SheetContent side="bottom" className="max-h-[84dvh] p-0">
           {cart && (
             <CartPanel
               cart={cart}

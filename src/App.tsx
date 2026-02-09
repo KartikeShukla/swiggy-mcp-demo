@@ -5,7 +5,6 @@ import { LandingPage } from "./components/home/LandingPage";
 import { ChatView } from "./components/chat/ChatView";
 import { OnboardingSheet } from "./components/auth/OnboardingSheet";
 import { SettingsMenu } from "./components/auth/SettingsMenu";
-import { StatusChip } from "./components/auth/SwiggyConnect";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAuth } from "./hooks/useAuth";
 
@@ -19,6 +18,7 @@ export default function App() {
     saveApiKey,
     changeApiKey,
     disconnectSwiggy,
+    reconnectSwiggy,
     saveSwiggyToken,
     startOAuth,
     clearChats,
@@ -41,19 +41,16 @@ export default function App() {
         />
 
         <Header
-          locationLabel={selectedAddress?.label}
+          selectedAddress={selectedAddress}
+          connectionActive={!!apiKey && !!swiggyToken && !isTokenStale}
           right={
             <>
-              <StatusChip
-                hasApiKey={!!apiKey}
-                hasSwiggyToken={!!swiggyToken}
-                isTokenStale={isTokenStale}
-              />
               <SettingsMenu
                 hasApiKey={!!apiKey}
                 hasSwiggyToken={!!swiggyToken}
                 hasAddress={!!selectedAddress}
                 onChangeApiKey={changeApiKey}
+                onConnectSwiggy={reconnectSwiggy}
                 onDisconnectSwiggy={disconnectSwiggy}
                 onClearChats={clearChats}
                 onChangeAddress={changeAddress}

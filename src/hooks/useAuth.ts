@@ -82,6 +82,14 @@ export function useAuth() {
     setSwiggyTokenState(null);
   }, []);
 
+  const reconnectSwiggy = useCallback(() => {
+    if (!getApiKey()) {
+      setOnboardingStep("api-key");
+      return;
+    }
+    setOnboardingStep("swiggy-connect");
+  }, []);
+
   const selectAddress = useCallback((addr: ParsedAddress) => {
     storeSelectedAddress(addr);
     setSelectedAddressState(addr);
@@ -132,6 +140,7 @@ export function useAuth() {
     deleteApiKey,
     saveSwiggyToken,
     disconnectSwiggy,
+    reconnectSwiggy,
     startOAuth,
     clearChats,
     markTokenExpired,

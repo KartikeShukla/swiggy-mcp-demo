@@ -40,8 +40,8 @@ export function ChatInput({
       <div className="mx-auto">
         <div
           className={cn(
-            "flex items-end gap-2 rounded-2xl border border-border bg-card px-4 py-2 shadow-sm",
-            "focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50",
+            "flex items-end gap-2 rounded-full border-[1.2px] border-border/90 bg-background/95 px-4 py-2.5 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)]",
+            "focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/60",
           )}
         >
           <textarea
@@ -60,7 +60,7 @@ export function ChatInput({
             disabled={disabled || !text.trim()}
             aria-label="Send message"
             size="icon"
-            className="h-8 w-8 shrink-0 rounded-xl"
+            className="h-9 w-9 shrink-0 rounded-full"
           >
             <ArrowUp className="h-4 w-4" />
           </Button>

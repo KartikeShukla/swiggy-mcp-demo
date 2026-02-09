@@ -27,4 +27,25 @@ describe("foodorder restaurant interactions", () => {
 
     expect(onAction).toHaveBeenCalledWith("Show me the menu at Spice Route");
   });
+
+  it("renders menu cards with add actions (not view-menu actions) for product results", () => {
+    const onAction = vi.fn();
+    const result: ParsedToolResult = {
+      type: "products",
+      items: [
+        { id: "m1", name: "Falafel-E-Khaas", price: 320, description: "Veg" },
+      ],
+    };
+
+    render(
+      <ItemCardGrid
+        result={result}
+        onAction={onAction}
+        verticalId="foodorder"
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Add Falafel-E-Khaas to cart" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /View Menu/i })).not.toBeInTheDocument();
+  });
 });

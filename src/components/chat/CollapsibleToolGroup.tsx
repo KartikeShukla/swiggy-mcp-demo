@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronRight, Wrench } from "lucide-react";
 import type { ContentBlock } from "@/lib/types";
 import { parseToolResult } from "@/lib/parsers";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ItemCardGrid } from "../cards/ItemCardGrid";
 import { DetailSheet } from "./DetailSheet";
 import { findPrecedingToolName } from "@/lib/content-blocks";
@@ -50,9 +50,11 @@ export function CollapsibleToolGroup({
       )}
 
       {/* Combined chip */}
-      <Badge
+      <Button
+        type="button"
         variant="secondary"
-        className="cursor-pointer gap-1.5 rounded-full"
+        size="xs"
+        className="h-7 rounded-full px-3 text-[11px] font-medium shadow-sm"
         onClick={() => setSheetOpen(true)}
         aria-label={hasMessage ? `${toolLabel} and message` : toolLabel}
       >
@@ -62,7 +64,7 @@ export function CollapsibleToolGroup({
           {hasMessage && <> · message</>}
         </span>
         <ChevronRight className="h-3 w-3" />
-      </Badge>
+      </Button>
 
       {/* Bottom sheet with tabs */}
       <DetailSheet

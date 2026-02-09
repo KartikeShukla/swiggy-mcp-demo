@@ -31,54 +31,56 @@ export function DetailSheet({
   const hasText = text.length > 0;
   const defaultTab: Tab = hasText ? "message" : "tools";
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
+  const resolvedActiveTab: Tab = hasText ? activeTab : "tools";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="max-h-[60%] rounded-t-2xl"
+        className="h-[min(72dvh,34rem)] p-0"
       >
         <SheetTitle className="sr-only">Details</SheetTitle>
 
-        {/* Tab bar */}
-        <div className="flex gap-4 border-b border-border px-4">
-          {hasText && (
+        <div className="px-4 pb-2 pt-1">
+          <div className="inline-flex w-full rounded-xl bg-muted/70 p-1">
+            {hasText && (
+              <button
+                onClick={() => setActiveTab("message")}
+                className={cn(
+                  "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                  resolvedActiveTab === "message"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Message
+              </button>
+            )}
             <button
-              onClick={() => setActiveTab("message")}
+              onClick={() => setActiveTab("tools")}
               className={cn(
-                "pb-2 text-xs font-medium transition-colors",
-                activeTab === "message"
-                  ? "border-b-2 border-primary text-primary"
+                "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                resolvedActiveTab === "tools"
+                  ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              Message
+              Tool Calls
             </button>
-          )}
-          <button
-            onClick={() => setActiveTab("tools")}
-            className={cn(
-              "pb-2 text-xs font-medium transition-colors",
-              activeTab === "tools"
-                ? "border-b-2 border-primary text-primary"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            Tool Calls
-          </button>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto px-4 pb-4">
-          {activeTab === "message" && hasText && (
-            <div className="text-sm text-card-foreground leading-relaxed">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+          {hasText && resolvedActiveTab === "message" && (
+            <div className="rounded-xl border border-border/70 bg-card p-3 text-sm leading-relaxed text-card-foreground shadow-sm">
               {renderMarkdownLite(text)}
             </div>
           )}
 
-          {activeTab === "tools" && (
-            <div className="space-y-1">
+          {resolvedActiveTab === "tools" && (
+            <div className="space-y-2">
               {blocks.map(({ block, index }) => {
                 if (block.type === "mcp_tool_result") {
                   const toolName = findPrecedingToolName(allBlocks, index);

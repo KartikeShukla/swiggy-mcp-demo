@@ -155,6 +155,14 @@ describe("detectByShape()", () => {
       );
       expect(result?.type).toBe("products");
     });
+
+    it("prefers products over restaurants for foodorder when price and rating both exist", () => {
+      const result = detectByShape(
+        [{ name: "Aftaabi Paneer Tikka Masala", price: 369, rating: 4.4 }],
+        "foodorder",
+      );
+      expect(result?.type).toBe("products");
+    });
   });
 
   describe("single object wrapping", () => {

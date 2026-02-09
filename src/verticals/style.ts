@@ -1,7 +1,7 @@
 import type { VerticalConfig } from "@/lib/types";
 import { MCP_SERVERS } from "@/lib/constants";
 import { buildSystemPrompt } from "./shared-prompt";
-import stylePrompt from "./prompts/style.md?raw";
+import { stylePromptProfile } from "./prompt-spec/profiles";
 
 export const styleVertical: VerticalConfig = {
   id: "style",
@@ -12,7 +12,8 @@ export const styleVertical: VerticalConfig = {
     "Get expert skincare, haircare, and grooming advice — then order recommended products from Instamart instantly.",
   color: "style",
   icon: "Sparkles",
-  systemPrompt: buildSystemPrompt(stylePrompt, { includeCodRule: true }),
+  systemPrompt: buildSystemPrompt(stylePromptProfile),
+  promptProfileId: stylePromptProfile.id,
   welcomeMessage:
     "Hey! I'm StyleBox, your personal grooming advisor. Tell me what you need — skincare routine, haircare, grooming for an event, or anything style-related — and I'll find products on Instamart.",
   examplePrompts: [

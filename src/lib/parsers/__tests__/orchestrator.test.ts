@@ -246,6 +246,27 @@ describe("parseToolResult()", () => {
       expect(result.type).toBe("products");
     });
 
+    it("prefers products for foodorder menu-like payloads even with rating fields", () => {
+      const content = JSON.stringify([
+        { name: "Falafel-E-Khaas", price: 320, rating: 4.4, isVeg: true },
+      ]);
+      const result = parseToolResult("search_restaurants", content, "foodorder");
+      expect(result.type).toBe("products");
+    });
+
+    it("still returns restaurants for foodorder discovery payloads with strong restaurant keys", () => {
+      const content = JSON.stringify([
+        {
+          name: "House Of Curry",
+          cuisine: "North Indian",
+          locality: "Sector 37",
+          rating: 4.4,
+        },
+      ]);
+      const result = parseToolResult("search_restaurants", content, "foodorder");
+      expect(result.type).toBe("restaurants");
+    });
+
     it("parses single restaurant object from get_restaurant_details", () => {
       const content = JSON.stringify({
         name: "Taj Mahal Restaurant",

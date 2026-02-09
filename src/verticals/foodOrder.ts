@@ -1,7 +1,7 @@
 import type { VerticalConfig } from "@/lib/types";
 import { MCP_SERVERS } from "@/lib/constants";
 import { buildSystemPrompt } from "./shared-prompt";
-import foodOrderPrompt from "./prompts/foodorder.md?raw";
+import { foodOrderPromptProfile } from "./prompt-spec/profiles";
 
 export const foodOrderVertical: VerticalConfig = {
   id: "foodorder",
@@ -12,7 +12,8 @@ export const foodOrderVertical: VerticalConfig = {
     "Discover restaurants, browse menus, build your order, and get food delivered — all through a natural conversation.",
   color: "foodorder",
   icon: "Bike",
-  systemPrompt: buildSystemPrompt(foodOrderPrompt, { includeCodRule: true }),
+  systemPrompt: buildSystemPrompt(foodOrderPromptProfile),
+  promptProfileId: foodOrderPromptProfile.id,
   welcomeMessage:
     "Hey! I'm FoodExpress. Tell me what you're craving — a specific dish, cuisine, or restaurant — and I'll help you order food delivered to your door.",
   examplePrompts: [

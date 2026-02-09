@@ -67,6 +67,13 @@ describe("tryParseRestaurants()", () => {
     expect(result!.items[0].rating).toBe(3.5);
   });
 
+  it("does not treat menu-like payloads as restaurants when only rating is restaurant-like", () => {
+    const result = tryParseRestaurants([
+      { name: "Aftaabi Paneer Tikka Masala", rating: 4.4, price: 369, isVeg: true },
+    ]);
+    expect(result).toBeNull();
+  });
+
   it("accepts priceForTwo as a qualifying field", () => {
     const result = tryParseRestaurants([
       { name: "Budget Eats", priceForTwo: "₹200" },

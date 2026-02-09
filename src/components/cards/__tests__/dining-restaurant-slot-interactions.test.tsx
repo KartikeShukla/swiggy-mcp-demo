@@ -31,7 +31,7 @@ describe("dining interactions", () => {
     expect(onAction).toHaveBeenCalledWith("Check availability at Saffron Table");
   });
 
-  it("allows only available slots to emit booking messages", async () => {
+  it("requires confirmation before emitting a booking message", async () => {
     const user = userEvent.setup();
     const onAction = vi.fn();
 
@@ -52,6 +52,12 @@ describe("dining interactions", () => {
     expect(onAction).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: "7:30 PM" }));
+    expect(onAction).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("heading", { name: "Are you sure you want to book this slot?" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Yes, book this slot" }));
     expect(onAction).toHaveBeenCalledWith("Book a table at Saffron Table for 7:30 PM");
   });
 });

@@ -20,7 +20,7 @@ React 19 + TypeScript 5.9 + Vite 7 SPA. No backend — Anthropic SDK runs in bro
 src/
   lib/           # Types, constants, storage, parsers, Anthropic client
   hooks/         # useAuth, useChat, useChatApi, useChatPersistence, useCart
-  verticals/     # 4 AI vertical configs (food, style, dining, foodOrder)
+  verticals/     # 4 AI vertical configs + prompt profiles/compiler
   components/
     ui/          # shadcn/ui primitives (Radix + Tailwind + CVA)
     chat/        # ChatView, MessageBubble, ToolTrace, ChatInput
@@ -45,6 +45,7 @@ Same MCP tools, different system prompts = different product experiences.
 | FoodOrder | `foodorder` | swiggy-food | `mcp.swiggy.com/food` |
 
 Config: `src/verticals/` — each file exports a `VerticalConfig`. Registry in `src/verticals/index.ts`.
+Prompt profiles: `src/verticals/prompt-spec/`; shared compact policy: `src/verticals/shared-prompt.ts`.
 
 ## MCP Integration
 
@@ -54,6 +55,7 @@ Config: `src/verticals/` — each file exports a `VerticalConfig`. Registry in `
 - Error classification in `useChatApi.ts`: auth (401/403) → prompt token refresh; server (5xx) → retry; validation → simplify params
 - Retry loop prevention: aborts after 2 tool errors or 1 auth error (`MCP_TOOL_ERROR_LIMIT`, `MCP_AUTH_ERROR_LIMIT`)
 - Prompt caching: system prompt uses `cache_control: { type: "ephemeral" }`
+- Request builder can add a compact per-turn session summary (`slots=...; confirm=...`) for high-confidence context carryover
 - Context management: auto-cleans old tool results when input > 10k tokens, keeps last 3
 
 ## Key Files

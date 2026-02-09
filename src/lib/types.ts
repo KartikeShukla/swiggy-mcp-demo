@@ -15,6 +15,7 @@ export interface VerticalConfig {
   welcomeMessage: string;
   examplePrompts: string[];
   mcpServer: McpServerConfig;
+  promptProfileId?: string;
 }
 
 export interface TextBlock {

@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import type { ParsedAddress } from "@/lib/types";
+import { formatHeaderLocation } from "./header-location";
 import { VerticalNav } from "./VerticalNav";
 
 function Logo67() {
@@ -33,7 +35,17 @@ function Logo67() {
   );
 }
 
-export function Header({ right, locationLabel }: { right?: React.ReactNode; locationLabel?: string }) {
+export function Header({
+  right,
+  selectedAddress,
+  connectionActive = false,
+}: {
+  right?: React.ReactNode;
+  selectedAddress?: ParsedAddress | null;
+  connectionActive?: boolean;
+}) {
+  const locationText = formatHeaderLocation(selectedAddress);
+
   return (
     <header className="relative z-50 shrink-0 border-b border-border bg-background/95 backdrop-blur-lg pt-[var(--safe-top)]" aria-label="Main navigation">
       {/* Row 1: Logo + Actions */}
@@ -44,12 +56,17 @@ export function Header({ right, locationLabel }: { right?: React.ReactNode; loca
         >
           <Logo67 />
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">MCP Demo</span>
-            {locationLabel && (
-              <span className="text-[10px] text-muted-foreground truncate max-w-[140px]">
-                {locationLabel}
-              </span>
-            )}
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              MCP Demo
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${connectionActive ? "bg-green-500" : "bg-red-400"}`}
+                aria-label={connectionActive ? "Connection active" : "Connection inactive"}
+                title={connectionActive ? "Connection active" : "Connection inactive"}
+              />
+            </span>
+            <span className="text-[10px] text-muted-foreground truncate max-w-[170px]">
+              {locationText}
+            </span>
           </div>
         </Link>
         <div className="flex items-center gap-2">

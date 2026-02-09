@@ -47,6 +47,21 @@ describe("buildMessageStreamParams()", () => {
     expect(systemBlocks[1].text).toContain("123 Main Street");
   });
 
+  it("includes compact session state summary when provided", () => {
+    const params = buildMessageStreamParams(
+      messages,
+      foodVertical,
+      null,
+      undefined,
+      "slots=goal,diet,servings; confirm=no",
+    );
+    const systemBlocks = params.system as Array<Record<string, unknown>>;
+
+    expect(systemBlocks).toHaveLength(2);
+    expect(systemBlocks[1].text).toContain("Conversation state snapshot");
+    expect(systemBlocks[1].text).toContain("slots=goal,diet,servings");
+  });
+
   it("sets required beta flags and context edits", () => {
     const params = buildMessageStreamParams(messages, foodVertical, null);
     expect(params.betas).toEqual([

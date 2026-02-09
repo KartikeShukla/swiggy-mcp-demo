@@ -26,11 +26,11 @@ export function CartPanel({
 
   return (
     <>
-      <div className="flex h-full flex-col">
+      <div className="flex min-h-full flex-col bg-muted/20">
         {/* Header */}
-        <SheetHeader className="border-b border-border px-4 py-3">
+        <SheetHeader className="border-b border-border/80 bg-background px-4 py-6 pr-12">
           <div className="flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5 text-primary" />
+            <ShoppingBag className="h-4 w-4 text-primary" />
             <SheetTitle className="text-sm">
               Your Cart ({cart.items.reduce((s, i) => s + i.quantity, 0)})
             </SheetTitle>
@@ -38,19 +38,19 @@ export function CartPanel({
         </SheetHeader>
 
         {/* Items */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-3">
+        <ScrollArea className="min-h-0 flex-1 px-4 py-3">
+          <div className="space-y-2.5">
             {cart.items.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-xl border border-border/70 p-3">
+              <div key={item.id} className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background p-3.5 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
                 {item.image ? (
-                  <img src={item.image} alt={item.name} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                  <img src={item.image} alt={item.name} className="h-12 w-12 shrink-0 rounded-xl object-cover" />
                 ) : (
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-muted/70">
-                    <ShoppingBag className="h-4 w-4 text-muted-foreground/30" />
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-muted/70">
+                    <ShoppingBag className="h-3.5 w-3.5 text-muted-foreground/30" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-[13px] font-medium text-card-foreground">{item.name}</p>
+                  <p className="truncate text-[13px] font-medium leading-tight text-card-foreground">{item.name}</p>
                   <p className="text-xs text-muted-foreground">₹{item.price} each</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
@@ -92,8 +92,8 @@ export function CartPanel({
         </ScrollArea>
 
         {/* Footer - Bill */}
-        <div className="border-t border-border px-4 py-5">
-          <div className="mb-3 space-y-1">
+        <div className="mt-auto border-t border-border/80 bg-background px-4 pb-4 pt-3">
+          <div className="mb-3 space-y-1.5">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Subtotal</span>
               <span className="tabular-nums">₹{cart.subtotal}</span>

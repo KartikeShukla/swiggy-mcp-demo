@@ -13,14 +13,21 @@ export function tryParseRestaurants(payload: unknown): ParsedToolResult | null {
     const name = str(obj.name) || str(obj.displayName) || str(obj.restaurant_name) || str(obj.title);
     if (!name) continue;
 
-    // Must look somewhat like a restaurant
-    const hasRestaurantFields = obj.cuisine || obj.cuisines || obj.rating || obj.priceForTwo ||
+    // Must look somewhat like a restaurant. Rating-only payloads are common on menu
+    // items, so they qualify only when product-like keys are absent.
+    const hasStrongRestaurantFields = obj.cuisine || obj.cuisines || obj.priceForTwo ||
       obj.price_for_two || obj.locality || obj.area || obj.address ||
       obj.costForTwo || obj.cost_for_two ||
       obj.deliveryTime || obj.delivery_time ||
-      obj.avgRating || obj.avg_rating ||
       obj.areaName || obj.area_name ||
       obj.sla || obj.feeDetails;
+    const hasRatingFields = obj.rating || obj.avgRating || obj.avg_rating;
+    const hasProductLikeFields = obj.price || obj.selling_price || obj.mrp ||
+      obj.variations || obj.defaultPrice || obj.default_price ||
+      obj.basePrice || obj.base_price || obj.isVeg ||
+      obj.productId || obj.product_id || obj.item_id;
+    const hasRestaurantFields = hasStrongRestaurantFields ||
+      (hasRatingFields && !hasProductLikeFields);
     if (!hasRestaurantFields) continue;
 
     const cuisineRaw = obj.cuisine || obj.cuisines;

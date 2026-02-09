@@ -20,8 +20,8 @@ describe("foodorder cart interactions", () => {
     return render(
       <Sheet open onOpenChange={() => {}}>
         <SheetContent
-          side="right"
-          className="w-full p-0"
+          side="bottom"
+          className="max-h-[84dvh] p-0"
           aria-describedby={undefined}
         >
           <CartPanel
@@ -57,7 +57,7 @@ describe("foodorder cart interactions", () => {
     renderInSheet(onAction, onClose);
 
     await user.click(screen.getByRole("button", { name: "Place Order (COD)" }));
-    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(screen.getByRole("button", { name: "Yes, place COD order" }));
 
     expect(onAction).toHaveBeenCalledWith("I confirm. Please place the order.");
     expect(onClose).toHaveBeenCalledTimes(1);

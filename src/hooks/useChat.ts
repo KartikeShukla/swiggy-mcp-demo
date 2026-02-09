@@ -2,6 +2,19 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import type { ChatMessage, VerticalConfig, TokenUsage, ParsedAddress } from "@/lib/types";
 import { useChatApi } from "./useChatApi";
 import { useChatPersistence } from "./useChatPersistence";
+import { buildSessionStateSummary } from "@/integrations/anthropic/session-summary";
+import type { VerticalId } from "@/verticals/prompt-spec/types";
+
+const SUPPORTED_VERTICAL_IDS: VerticalId[] = [
+  "food",
+  "style",
+  "dining",
+  "foodorder",
+];
+
+function isVerticalId(verticalId: string): verticalId is VerticalId {
+  return SUPPORTED_VERTICAL_IDS.includes(verticalId as VerticalId);
+}
 
 export function useChat(
   vertical: VerticalConfig,
@@ -50,7 +63,10 @@ export function useChat(
       try {
         // Pass all messages including the new user message
         const allMessages = [...messagesRef.current, userMessage];
-        const response = await sendToApi(allMessages);
+        const sessionStateSummary = isVerticalId(vertical.id)
+          ? buildSessionStateSummary(allMessages, vertical.id)
+          : null;
+        const response = await sendToApi(allMessages, sessionStateSummary);
 
         const assistantMessage: ChatMessage = {
           role: "assistant",
@@ -72,7 +88,7 @@ export function useChat(
         setLoading(false);
       }
     },
-    [apiKey, loading, sendToApi, classifyError, setMessages],
+    [apiKey, loading, sendToApi, classifyError, setMessages, vertical.id],
   );
 
   const clearHistory = useCallback(() => {

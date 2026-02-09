@@ -16,7 +16,7 @@
 1. User submits message in `ChatInput`.
 2. `useChat` appends user message and toggles loading.
 3. `useChatApi` composes request:
-- model, system blocks, messages
+- model, compiled system prompt, optional state/address blocks, messages
 - `mcp_servers` + `tools` when Swiggy token exists
 - beta flags and context management edits
 4. Anthropic stream emits content blocks.

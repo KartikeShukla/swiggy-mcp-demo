@@ -10,6 +10,7 @@ export function buildMessageStreamParams(
   vertical: VerticalConfig,
   swiggyToken: string | null,
   selectedAddress?: ParsedAddress | null,
+  sessionStateSummary?: string | null,
 ): Record<string, unknown> {
   const apiMessages = messages.map((msg) => ({
     role: msg.role as "user" | "assistant",
@@ -28,6 +29,14 @@ export function buildMessageStreamParams(
     systemBlocks.push({
       type: "text",
       text: `The user's delivery address is: "${selectedAddress.label}" — ${selectedAddress.address}. Use this as the default delivery location for all operations.`,
+      cache_control: { type: "ephemeral" },
+    });
+  }
+
+  if (sessionStateSummary) {
+    systemBlocks.push({
+      type: "text",
+      text: `Conversation state snapshot: ${sessionStateSummary}.`,
       cache_control: { type: "ephemeral" },
     });
   }
