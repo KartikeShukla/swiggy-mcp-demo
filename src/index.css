@@ -169,6 +169,28 @@ textarea,
   display: block !important;
 }
 
+/* Thin persistent horizontal scrollbar for card carousels */
+.scrollbar-thin-h::-webkit-scrollbar {
+  height: 3px;
+}
+.scrollbar-thin-h::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin-h::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+.dark .scrollbar-thin-h::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+.scrollbar-thin-h {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+.dark .scrollbar-thin-h {
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
 /* Animations */
 @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes scale-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }

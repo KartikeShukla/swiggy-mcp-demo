@@ -70,9 +70,9 @@ export function ProductGrid({
             </div>
           )}
           <div className={cn(
-            "my-2 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 -mx-1 px-1",
+            "my-2 overflow-x-auto scrollbar-thin-h snap-x snap-mandatory pb-2 -mx-3",
             groupItems.length > 3
-              ? "grid grid-rows-2 grid-flow-col auto-cols-[144px] gap-2.5"
+              ? "grid grid-rows-2 grid-flow-col auto-cols-[calc(50%_-_5px)] gap-2.5"
               : "flex gap-2.5",
           )}>
             {groupItems.map((product) => (
@@ -130,9 +130,9 @@ export function ItemCardGrid({
             {result.items.length} {result.items.length === 1 ? "restaurant" : "restaurants"} found
           </p>
           <div className={cn(
-            "overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 -mx-1 px-1",
+            "overflow-x-auto scrollbar-thin-h snap-x snap-mandatory pb-2 -mx-3",
             result.items.length > 3
-              ? "grid grid-rows-2 grid-flow-col auto-cols-[160px] gap-2.5"
+              ? "grid grid-rows-2 grid-flow-col auto-cols-[calc(50%_-_5px)] gap-2.5"
               : "flex gap-2.5",
           )}>
             {result.items.map((restaurant) => (
