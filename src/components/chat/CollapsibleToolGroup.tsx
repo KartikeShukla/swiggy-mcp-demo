@@ -4,19 +4,18 @@ import type { ContentBlock } from "@/lib/types";
 import { findPrecedingToolName } from "@/lib/content-blocks";
 import { parseToolResult } from "@/lib/parsers";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { ToolTrace } from "./ToolTrace";
 import { ItemCardGrid } from "../cards/ItemCardGrid";
 
 export function CollapsibleToolGroup({
   blocks,
   allBlocks,
-  accentColor,
   verticalId,
   onAction,
 }: {
   blocks: { block: ContentBlock; index: number }[];
   allBlocks: ContentBlock[];
-  accentColor: string;
   verticalId: string;
   onAction?: (message: string) => void;
 }) {
@@ -42,19 +41,17 @@ export function CollapsibleToolGroup({
       {/* Card results rendered outside collapsible */}
       {cardResults.map(({ key, parsed }) =>
         onAction ? (
-          <ItemCardGrid key={key} result={parsed} onAction={onAction} accentColor={accentColor} />
+          <ItemCardGrid key={key} result={parsed} onAction={onAction} verticalId={verticalId} />
         ) : null,
       )}
 
       {/* Collapsible pill */}
-      <button
+      <Badge
+        variant="secondary"
+        className="cursor-pointer gap-1.5 rounded-full"
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
         aria-label={`${toolUseCount} tool ${toolUseCount === 1 ? "call" : "calls"}`}
-        className={cn(
-          "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors",
-          expanded && "text-gray-500",
-        )}
       >
         <Wrench className="h-3 w-3" />
         <span>{toolUseCount} tool {toolUseCount === 1 ? "call" : "calls"}</span>
@@ -64,11 +61,11 @@ export function CollapsibleToolGroup({
             expanded && "rotate-90",
           )}
         />
-      </button>
+      </Badge>
 
       {/* Expanded tool traces */}
       {expanded && (
-        <div className="ml-2 space-y-1 border-l-2 border-gray-100 pl-3">
+        <div className="ml-2 space-y-1 border-l-2 border-border pl-3">
           {blocks.map(({ block, index }) => {
             if (block.type === "mcp_tool_result") {
               const toolName = findPrecedingToolName(allBlocks, index);

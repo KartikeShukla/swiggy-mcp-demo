@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import type { ParsedToolResult, ParsedProduct } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { ProductCard } from "./ProductCard";
 import { RestaurantCard } from "./RestaurantCard";
 import { TimeSlotPicker } from "./TimeSlotPicker";
@@ -14,11 +16,9 @@ import { InfoCard } from "./InfoCard";
 export function ProductGrid({
   items,
   onAction,
-  accentColor,
 }: {
   items: ParsedProduct[];
   onAction: (message: string) => void;
-  accentColor: string;
 }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
@@ -48,29 +48,47 @@ export function ProductGrid({
     setQuantities({});
   };
 
+  // Group items by brand
+  const grouped = new Map<string, ParsedProduct[]>();
+  for (const item of items) {
+    const key = item.brand || "";
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(item);
+  }
+
   return (
     <div>
-      <div className="my-2 flex gap-3 overflow-x-auto pb-2">
-        {items.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            quantity={quantities[product.id] || 0}
-            onIncrement={() => handleIncrement(product.id)}
-            onDecrement={() => handleDecrement(product.id)}
-            accentColor={accentColor}
-          />
-        ))}
-      </div>
+      {[...grouped.entries()].map(([brand, groupItems]) => (
+        <div key={brand}>
+          {brand && (
+            <div className="mb-2 mt-3 flex items-center gap-2.5">
+              <h5 className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {brand}
+              </h5>
+              <Separator className="flex-1" />
+            </div>
+          )}
+          <div className="my-2 flex gap-2.5 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 -mx-1 px-1">
+            {groupItems.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                quantity={quantities[product.id] || 0}
+                onIncrement={() => handleIncrement(product.id)}
+                onDecrement={() => handleDecrement(product.id)}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
       {totalCount > 0 && (
-        <button
+        <Button
           onClick={handleBulkAdd}
-          className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
-          style={{ backgroundColor: `var(--color-${accentColor})` }}
+          className="mt-3 w-full gap-2 rounded-xl text-sm font-semibold shadow-sm"
         >
           <ShoppingCart className="h-4 w-4" />
           Add {totalCount} {totalCount === 1 ? "item" : "items"} to cart
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -79,11 +97,11 @@ export function ProductGrid({
 export function ItemCardGrid({
   result,
   onAction,
-  accentColor,
+  verticalId,
 }: {
   result: ParsedToolResult;
   onAction: (message: string) => void;
-  accentColor: string;
+  verticalId?: string;
 }) {
   switch (result.type) {
     case "products":
@@ -91,23 +109,34 @@ export function ItemCardGrid({
         <ProductGrid
           items={result.items}
           onAction={onAction}
-          accentColor={accentColor}
         />
       );
 
-    case "restaurants":
+    case "restaurants": {
+      const isFoodOrder = verticalId === "foodorder";
+      const actionLabel = isFoodOrder ? "View Menu" : "Check Availability";
+      const actionMessage = isFoodOrder
+        ? (name: string) => `Show me the menu at ${name}`
+        : undefined;
       return (
-        <div className="my-2 flex gap-3 overflow-x-auto pb-2">
-          {result.items.map((restaurant) => (
-            <RestaurantCard
-              key={restaurant.id}
-              restaurant={restaurant}
-              onAction={onAction}
-              accentColor={accentColor}
-            />
-          ))}
+        <div className="my-2">
+          <p className="mb-2 text-[11px] font-medium text-muted-foreground/70">
+            {result.items.length} {result.items.length === 1 ? "restaurant" : "restaurants"} found
+          </p>
+          <div className="flex gap-2.5 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 -mx-1 px-1">
+            {result.items.map((restaurant) => (
+              <RestaurantCard
+                key={restaurant.id}
+                restaurant={restaurant}
+                onAction={onAction}
+                actionLabel={actionLabel}
+                actionMessage={actionMessage}
+              />
+            ))}
+          </div>
         </div>
       );
+    }
 
     case "time_slots":
       return (
@@ -116,7 +145,6 @@ export function ItemCardGrid({
             slots={result.slots}
             restaurantName={result.restaurantName}
             onAction={onAction}
-            accentColor={accentColor}
           />
         </div>
       );
@@ -127,7 +155,6 @@ export function ItemCardGrid({
           <AddressPicker
             addresses={result.addresses}
             onAction={onAction}
-            accentColor={accentColor}
           />
         </div>
       );
@@ -135,7 +162,7 @@ export function ItemCardGrid({
     case "cart":
       return (
         <div className="my-2">
-          <CartSummaryCard cart={result.cart} accentColor={accentColor} />
+          <CartSummaryCard cart={result.cart} />
         </div>
       );
 
@@ -145,7 +172,6 @@ export function ItemCardGrid({
           <OrderConfirmationCard
             orderId={result.orderId}
             status={result.status}
-            accentColor={accentColor}
           />
         </div>
       );
@@ -155,7 +181,6 @@ export function ItemCardGrid({
         <div className="my-2">
           <BookingConfirmedCard
             details={result.details}
-            accentColor={accentColor}
           />
         </div>
       );
@@ -163,7 +188,7 @@ export function ItemCardGrid({
     case "status":
       return (
         <div className="my-2">
-          <StatusCard status={result.status} accentColor={accentColor} />
+          <StatusCard status={result.status} />
         </div>
       );
 
@@ -173,7 +198,6 @@ export function ItemCardGrid({
           <InfoCard
             title={result.title}
             entries={result.entries}
-            accentColor={accentColor}
           />
         </div>
       );

@@ -1,56 +1,61 @@
 import { UtensilsCrossed, Star, Tag, MapPin } from "lucide-react";
 import type { ParsedRestaurant } from "@/lib/types";
 import { MAX_OFFERS_SHOWN } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export function RestaurantCard({
   restaurant,
   onAction,
-  accentColor,
+  actionLabel = "Check Availability",
+  actionMessage,
 }: {
   restaurant: ParsedRestaurant;
   onAction: (message: string) => void;
-  accentColor: string;
+  actionLabel?: string;
+  actionMessage?: (name: string) => string;
 }) {
   return (
-    <div className="flex w-64 shrink-0 flex-col rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <Card className="w-40 shrink-0 snap-start rounded-2xl py-0 gap-0">
       {/* Image */}
-      <div className="flex h-36 items-center justify-center rounded-t-xl bg-gray-50">
+      <div className="relative flex h-24 items-center justify-center rounded-t-2xl bg-muted overflow-hidden">
         {restaurant.image ? (
           <img
             src={restaurant.image}
             alt={restaurant.name}
-            className="h-full w-full rounded-t-xl object-cover"
+            className="h-full w-full rounded-t-2xl object-cover"
           />
         ) : (
-          <UtensilsCrossed className="h-10 w-10 text-gray-300" />
+          <UtensilsCrossed className="h-8 w-8 text-muted-foreground/25" />
+        )}
+        {restaurant.rating != null && (
+          <span className="absolute bottom-2 left-2 flex items-center gap-0.5 rounded-md bg-white/95 backdrop-blur-md px-2 py-0.5 text-xs font-bold shadow-sm">
+            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+            {restaurant.rating}
+          </span>
         )}
       </div>
 
       {/* Details */}
-      <div className="flex flex-1 flex-col p-3">
-        <h4 className="mb-1 text-sm font-semibold text-gray-900 leading-tight">
+      <CardContent className="flex flex-1 flex-col p-3">
+        <h4 className="mb-1 text-[13px] font-semibold text-card-foreground leading-snug line-clamp-1">
           {restaurant.name}
         </h4>
 
-        {/* Cuisine + Rating row */}
-        <div className="mb-1.5 flex items-center gap-2 text-xs text-gray-500">
+        {/* Cuisine row */}
+        <div className="mb-1.5 flex items-center gap-2 text-xs text-muted-foreground/80">
           {restaurant.cuisine && (
-            <span className="truncate">{restaurant.cuisine}</span>
-          )}
-          {restaurant.rating != null && (
-            <span className="flex shrink-0 items-center gap-0.5">
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-              {restaurant.rating}
-            </span>
+            <span className="truncate line-clamp-1">{restaurant.cuisine}</span>
           )}
         </div>
 
         {/* Price + Location */}
-        <div className="mb-2 flex items-center gap-2 text-xs text-gray-400">
+        <div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground/60">
           {restaurant.priceForTwo && <span>{restaurant.priceForTwo} for two</span>}
           {restaurant.locality && (
             <span className="flex items-center gap-0.5 truncate">
-              <MapPin className="h-3 w-3" />
+              <MapPin className="h-2.5 w-2.5" />
               {restaurant.locality}
             </span>
           )}
@@ -60,26 +65,30 @@ export function RestaurantCard({
         {restaurant.offers && restaurant.offers.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1">
             {restaurant.offers.slice(0, MAX_OFFERS_SHOWN).map((offer, i) => (
-              <span
-                key={i}
-                className="flex items-center gap-0.5 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700"
-              >
-                <Tag className="h-2.5 w-2.5" />
+              <Badge key={i} variant="secondary" className="gap-0.5 text-[10px] bg-primary-50 text-primary-600 border-0">
+                <Tag className="h-2.5 w-2.5 text-primary" />
                 {offer}
-              </span>
+              </Badge>
             ))}
           </div>
         )}
 
-        <button
-          onClick={() => onAction(`Check availability at ${restaurant.name}`)}
-          aria-label={`Check availability at ${restaurant.name}`}
-          className="mt-auto rounded-lg py-1.5 text-xs font-semibold text-white transition-colors"
-          style={{ backgroundColor: `var(--color-${accentColor})` }}
+        <Button
+          onClick={() =>
+            onAction(
+              actionMessage
+                ? actionMessage(restaurant.name)
+                : `Check availability at ${restaurant.name}`
+            )
+          }
+          aria-label={`${actionLabel} ${restaurant.name}`}
+          variant="outline"
+          size="sm"
+          className="mt-auto w-full text-xs font-medium border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
         >
-          Check Availability
-        </button>
-      </div>
-    </div>
+          {actionLabel}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
