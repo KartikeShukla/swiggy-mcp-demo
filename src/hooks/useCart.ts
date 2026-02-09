@@ -1,16 +1,14 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import type { ChatMessage, CartState, ContentBlock } from "@/lib/types";
 import { findPrecedingToolName } from "@/lib/content-blocks";
 import { parseToolResult } from "@/lib/parsers";
 
 export function useCart(messages: ChatMessage[], verticalId: string) {
-  const [cart, setCart] = useState<CartState | null>(null);
+  const cart = useMemo(
+    () => findLatestCartState(messages, verticalId),
+    [messages, verticalId],
+  );
   const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    const latestCart = findLatestCartState(messages, verticalId);
-    if (latestCart) setCart(latestCart);
-  }, [messages, verticalId]);
 
   const itemCount = cart?.items.reduce((sum, i) => sum + i.quantity, 0) ?? 0;
 

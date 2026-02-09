@@ -5,7 +5,7 @@ import { XIcon } from "lucide-react"
 import { Dialog as SheetPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
-import { usePhoneFrame } from "@/components/layout/PhoneFrame"
+import { usePhoneFrame } from "@/components/layout/phone-frame-context"
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />

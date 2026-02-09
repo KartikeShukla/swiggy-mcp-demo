@@ -21,6 +21,8 @@ export const MAX_OFFERS_SHOWN = 2;
 export const MAX_STATUS_DETAILS = 6;
 export const MAX_STATUS_CARD_DETAILS = 4;
 export const PAYLOAD_EXTRACT_MAX_DEPTH = 2;
+export const MAX_PRODUCTS_SHOWN = 5;
+export const MAX_RESTAURANTS_SHOWN = 10;
 
 export const MCP_SERVERS = {
   instamart: {

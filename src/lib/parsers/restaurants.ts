@@ -1,4 +1,5 @@
 import type { ParsedToolResult, ParsedRestaurant } from "@/lib/types";
+import { MAX_RESTAURANTS_SHOWN } from "@/lib/constants";
 import { asArrayOrWrap, str, num } from "./primitives";
 
 export function tryParseRestaurants(payload: unknown): ParsedToolResult | null {
@@ -45,5 +46,5 @@ export function tryParseRestaurants(payload: unknown): ParsedToolResult | null {
     });
   }
 
-  return items.length > 0 ? { type: "restaurants", items } : null;
+  return items.length > 0 ? { type: "restaurants", items: items.slice(0, MAX_RESTAURANTS_SHOWN) } : null;
 }

@@ -1,4 +1,5 @@
 import type { ParsedToolResult, ParsedProduct } from "@/lib/types";
+import { MAX_PRODUCTS_SHOWN } from "@/lib/constants";
 import { asArrayOrWrap, str, num, scanForPrice } from "./primitives";
 
 export function tryParseProducts(payload: unknown): ParsedToolResult | null {
@@ -75,7 +76,7 @@ export function tryParseProducts(payload: unknown): ParsedToolResult | null {
     }
   }
 
-  return { type: "products", items };
+  return { type: "products", items: items.slice(0, MAX_PRODUCTS_SHOWN) };
 }
 
 export function allVariations(variations: unknown): Record<string, unknown>[] {

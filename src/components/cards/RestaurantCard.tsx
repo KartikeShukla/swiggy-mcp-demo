@@ -17,7 +17,7 @@ export function RestaurantCard({
   actionMessage?: (name: string) => string;
 }) {
   return (
-    <Card className="w-40 shrink-0 snap-start rounded-2xl py-0 gap-0">
+    <Card className="h-full w-full rounded-2xl py-0 gap-0">
       {/* Image */}
       <div className="relative flex h-24 items-center justify-center rounded-t-2xl bg-muted overflow-hidden">
         {restaurant.image ? (
@@ -39,7 +39,7 @@ export function RestaurantCard({
 
       {/* Details */}
       <CardContent className="flex flex-1 flex-col p-3">
-        <h4 className="mb-1 text-[13px] font-semibold text-card-foreground leading-snug line-clamp-1">
+        <h4 className="mb-1 text-sm font-semibold text-card-foreground leading-snug line-clamp-2">
           {restaurant.name}
         </h4>
 

@@ -4,6 +4,7 @@ import {
   Sheet,
   SheetContent,
   SheetHeader,
+  SheetDescription,
   SheetTitle,
   SheetFooter,
 } from "@/components/ui/sheet";
@@ -21,10 +22,13 @@ export function OrderConfirmation({
 }) {
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-2xl">
-        <SheetHeader>
-          <SheetTitle>Confirm Order</SheetTitle>
-        </SheetHeader>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle>Confirm Order</SheetTitle>
+            <SheetDescription>
+              Review your order summary before placing this COD order.
+            </SheetDescription>
+          </SheetHeader>
 
         <div className="px-4">
           {/* Order summary */}

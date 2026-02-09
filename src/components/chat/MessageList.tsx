@@ -23,15 +23,24 @@ export function MessageList({
 
   return (
     <ScrollArea type="always" className="flex-1 min-h-0" role="log" aria-live="polite">
-      <div className="space-y-1 pb-28 pr-2">
-        {messages.map((msg, i) => (
-          <MessageBubble
-            key={i}
-            message={msg}
-            verticalId={verticalId}
-            onAction={onAction}
-          />
-        ))}
+      <div
+        data-testid="message-list-content"
+        className="pr-2"
+        style={{ paddingBottom: "calc(var(--safe-bottom) + 8rem)" }}
+      >
+        {messages.map((msg, i) => {
+          const prevRole = i > 0 ? messages[i - 1].role : msg.role;
+          const roleChanged = prevRole !== msg.role;
+          return (
+            <div key={i} className={i === 0 ? "" : roleChanged ? "mt-4" : "mt-1"}>
+              <MessageBubble
+                message={msg}
+                verticalId={verticalId}
+                onAction={onAction}
+              />
+            </div>
+          );
+        })}
         {loading && <LoadingIndicator />}
         <div ref={bottomRef} />
       </div>

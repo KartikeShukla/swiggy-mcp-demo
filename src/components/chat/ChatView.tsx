@@ -8,7 +8,17 @@ import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 import { CartFloatingButton } from "../cart/CartFloatingButton";
 import { CartPanel } from "../cart/CartPanel";
-import { Bot } from "lucide-react";
+import foodGif from "@/assets/verticals/food.gif";
+import styleGif from "@/assets/verticals/style.gif";
+import diningGif from "@/assets/verticals/dining.gif";
+import foodorderGif from "@/assets/verticals/foodorder.gif";
+
+const gifMap: Record<string, string> = {
+  food: foodGif,
+  style: styleGif,
+  dining: diningGif,
+  foodorder: foodorderGif,
+};
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
@@ -38,6 +48,15 @@ function ChatViewInner({
 
   return (
     <div className="flex h-full flex-col relative">
+      {/* Error display — pinned to top, in flow so it doesn't overlap content */}
+      {error && (
+        <div className="shrink-0 px-4 py-2">
+          <div className="rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive" role="alert">
+            {error}
+          </div>
+        </div>
+      )}
+
       {/* Messages or empty state */}
       {hasMessages ? (
         <ErrorBoundary>
@@ -50,8 +69,12 @@ function ChatViewInner({
         </ErrorBoundary>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center px-3">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-            <Bot className="h-7 w-7 text-muted-foreground" />
+          <div className="mb-4 h-[4.5rem] w-[4.5rem] overflow-hidden rounded-2xl">
+            <img
+              src={gifMap[vertical.id]}
+              alt={vertical.name}
+              className="h-full w-full object-cover"
+            />
           </div>
           <h2 className="mb-2 text-lg font-semibold text-foreground">
             {vertical.name}
@@ -95,15 +118,6 @@ function ChatViewInner({
           )}
         </SheetContent>
       </Sheet>
-
-      {/* Error display */}
-      {error && (
-        <div className="absolute bottom-32 left-0 right-0 z-50 mx-auto w-full max-w-3xl px-4">
-          <div className="rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive" role="alert">
-            {error}
-          </div>
-        </div>
-      )}
 
       {/* Input — absolutely positioned, overlays messages with gradient */}
       <ChatInput

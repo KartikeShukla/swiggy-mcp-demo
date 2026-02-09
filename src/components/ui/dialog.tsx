@@ -4,7 +4,7 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { usePhoneFrame } from "@/components/layout/PhoneFrame"
+import { usePhoneFrame } from "@/components/layout/phone-frame-context"
 
 function Dialog({
   ...props

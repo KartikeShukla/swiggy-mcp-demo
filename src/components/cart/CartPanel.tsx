@@ -57,6 +57,11 @@ export function CartPanel({
                   <Button
                     variant="outline"
                     size="icon-xs"
+                    aria-label={
+                      item.quantity <= 1
+                        ? `Remove ${item.name} from cart`
+                        : `Decrease ${item.name} quantity to ${item.quantity - 1}`
+                    }
                     onClick={() => {
                       if (item.quantity <= 1) {
                         onAction(`Remove ${item.name} from my cart`);
@@ -75,6 +80,7 @@ export function CartPanel({
                   <Button
                     variant="outline"
                     size="icon-xs"
+                    aria-label={`Increase ${item.name} quantity to ${item.quantity + 1}`}
                     onClick={() => onAction(`Change ${item.name} quantity to ${item.quantity + 1}`)}
                   >
                     <Plus className="h-3 w-3" />

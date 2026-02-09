@@ -1,11 +1,6 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { useState, useCallback, useMemo, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-
-const PhoneFrameContext = createContext<HTMLDivElement | null>(null);
-
-export function usePhoneFrame() {
-  return useContext(PhoneFrameContext);
-}
+import { PhoneFrameContext } from "./phone-frame-context";
 
 const glowColors: Record<string, string> = {
   food: "rgba(34, 197, 94, 0.07)",

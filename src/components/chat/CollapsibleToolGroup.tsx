@@ -1,25 +1,26 @@
 import { useState } from "react";
 import { ChevronRight, Wrench } from "lucide-react";
 import type { ContentBlock } from "@/lib/types";
-import { findPrecedingToolName } from "@/lib/content-blocks";
 import { parseToolResult } from "@/lib/parsers";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { ToolTrace } from "./ToolTrace";
 import { ItemCardGrid } from "../cards/ItemCardGrid";
+import { DetailSheet } from "./DetailSheet";
+import { findPrecedingToolName } from "@/lib/content-blocks";
 
 export function CollapsibleToolGroup({
   blocks,
   allBlocks,
   verticalId,
   onAction,
+  collapsibleText = "",
 }: {
   blocks: { block: ContentBlock; index: number }[];
   allBlocks: ContentBlock[];
   verticalId: string;
   onAction?: (message: string) => void;
+  collapsibleText?: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // Count tool uses (not results) for the pill label
   const toolUseCount = blocks.filter((b) => b.block.type === "mcp_tool_use").length;
@@ -36,6 +37,9 @@ export function CollapsibleToolGroup({
     }
   }
 
+  const hasMessage = collapsibleText.length > 0;
+  const toolLabel = `${toolUseCount} tool ${toolUseCount === 1 ? "call" : "calls"}`;
+
   return (
     <div className="space-y-1">
       {/* Card results rendered outside collapsible */}
@@ -45,43 +49,30 @@ export function CollapsibleToolGroup({
         ) : null,
       )}
 
-      {/* Collapsible pill */}
+      {/* Combined chip */}
       <Badge
         variant="secondary"
         className="cursor-pointer gap-1.5 rounded-full"
-        onClick={() => setExpanded(!expanded)}
-        aria-expanded={expanded}
-        aria-label={`${toolUseCount} tool ${toolUseCount === 1 ? "call" : "calls"}`}
+        onClick={() => setSheetOpen(true)}
+        aria-label={hasMessage ? `${toolLabel} and message` : toolLabel}
       >
         <Wrench className="h-3 w-3" />
-        <span>{toolUseCount} tool {toolUseCount === 1 ? "call" : "calls"}</span>
-        <ChevronRight
-          className={cn(
-            "h-3 w-3 transition-transform",
-            expanded && "rotate-90",
-          )}
-        />
+        <span>
+          {toolLabel}
+          {hasMessage && <> · message</>}
+        </span>
+        <ChevronRight className="h-3 w-3" />
       </Badge>
 
-      {/* Expanded tool traces */}
-      {expanded && (
-        <div className="ml-2 space-y-1 border-l-2 border-border pl-3">
-          {blocks.map(({ block, index }) => {
-            if (block.type === "mcp_tool_result") {
-              const toolName = findPrecedingToolName(allBlocks, index);
-              const parsed = parseToolResult(toolName, block.content, verticalId);
-              return (
-                <ToolTrace
-                  key={index}
-                  block={block}
-                  defaultCollapsed={parsed.type !== "raw"}
-                />
-              );
-            }
-            return <ToolTrace key={index} block={block} />;
-          })}
-        </div>
-      )}
+      {/* Bottom sheet with tabs */}
+      <DetailSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        text={collapsibleText}
+        blocks={blocks}
+        allBlocks={allBlocks}
+        verticalId={verticalId}
+      />
     </div>
   );
 }

@@ -16,6 +16,11 @@ export function useChat(
   const [error, setError] = useState<string | null>(null);
   const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
   const cumulativeUsageRef = useRef({ input_tokens: 0, output_tokens: 0 });
+  const messagesRef = useRef(messages);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // Clear error when vertical changes
   useEffect(() => {
@@ -30,6 +35,7 @@ export function useChat(
         setError("API key required");
         return;
       }
+      if (loading) return;
 
       const userMessage: ChatMessage = {
         role: "user",
@@ -43,7 +49,7 @@ export function useChat(
 
       try {
         // Pass all messages including the new user message
-        const allMessages = [...messages, userMessage];
+        const allMessages = [...messagesRef.current, userMessage];
         const response = await sendToApi(allMessages);
 
         const assistantMessage: ChatMessage = {
@@ -66,7 +72,7 @@ export function useChat(
         setLoading(false);
       }
     },
-    [apiKey, messages, sendToApi, classifyError, setMessages],
+    [apiKey, loading, sendToApi, classifyError, setMessages],
   );
 
   const clearHistory = useCallback(() => {

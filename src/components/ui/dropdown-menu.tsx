@@ -3,7 +3,7 @@ import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react"
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
-import { usePhoneFrame } from "@/components/layout/PhoneFrame"
+import { usePhoneFrame } from "@/components/layout/phone-frame-context"
 
 function DropdownMenu({
   ...props

@@ -1,0 +1,63 @@
+interface ApiError {
+  status?: number;
+  message: string;
+}
+
+export function classifyApiError(err: unknown): ApiError {
+  if (err instanceof Error) {
+    const msg = err.message;
+
+    if ("status" in err) {
+      const status = (err as { status: number }).status;
+      if (status === 403) {
+        return {
+          status: 403,
+          message: "Your Swiggy session has expired. Please reconnect.",
+        };
+      }
+      if (status === 401) {
+        return {
+          status: 401,
+          message: "Invalid API key. Please check your Anthropic API key.",
+        };
+      }
+      if (status === 429) {
+        return {
+          status: 429,
+          message: "Rate limit exceeded. Please wait a moment and try again.",
+        };
+      }
+      if (status === 500) {
+        return { status: 500, message: "Server error. Please try again later." };
+      }
+    }
+
+    if (msg.includes("403") || msg.includes("Forbidden")) {
+      return { status: 403, message: "Your Swiggy session has expired. Please reconnect." };
+    }
+    if (msg.includes("401")) {
+      return {
+        status: 401,
+        message: "Invalid API key. Please check your Anthropic API key.",
+      };
+    }
+    if (msg.includes("429")) {
+      return {
+        status: 429,
+        message: "Rate limit exceeded. Please wait a moment and try again.",
+      };
+    }
+    if (
+      msg.includes("Failed to fetch") ||
+      msg.includes("NetworkError") ||
+      msg.includes("net::")
+    ) {
+      return {
+        message: "Network error. Please check your connection and try again.",
+      };
+    }
+
+    return { message: msg };
+  }
+  return { message: "Something went wrong" };
+}

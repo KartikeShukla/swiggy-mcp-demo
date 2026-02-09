@@ -1,44 +1,44 @@
 import { Link } from "react-router-dom";
-import { Bike, Salad, Sparkles, UtensilsCrossed } from "lucide-react";
 import type { VerticalConfig } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 
-const iconMap = {
-  Salad,
-  Sparkles,
-  UtensilsCrossed,
-  Bike,
-} as const;
+import foodGif from "@/assets/verticals/food.gif";
+import styleGif from "@/assets/verticals/style.gif";
+import diningGif from "@/assets/verticals/dining.gif";
+import foodorderGif from "@/assets/verticals/foodorder.gif";
+
+const gifMap: Record<string, string> = {
+  food: foodGif,
+  style: styleGif,
+  dining: diningGif,
+  foodorder: foodorderGif,
+};
 
 const colorClasses = {
   food: {
     border: "border-food/30",
     text: "text-food",
     hoverBorder: "hover:border-food",
-    iconBg: "bg-food/10",
   },
   style: {
     border: "border-style/30",
     text: "text-style",
     hoverBorder: "hover:border-style",
-    iconBg: "bg-style/10",
   },
   dining: {
     border: "border-dining/30",
     text: "text-dining",
     hoverBorder: "hover:border-dining",
-    iconBg: "bg-dining/10",
   },
   foodorder: {
     border: "border-foodorder/30",
     text: "text-foodorder",
     hoverBorder: "hover:border-foodorder",
-    iconBg: "bg-foodorder/10",
   },
 } as const;
 
 export function VerticalCard({ vertical }: { vertical: VerticalConfig }) {
-  const Icon = iconMap[vertical.icon as keyof typeof iconMap];
+  const gif = gifMap[vertical.id];
   const colors = colorClasses[vertical.color];
 
   return (
@@ -47,10 +47,12 @@ export function VerticalCard({ vertical }: { vertical: VerticalConfig }) {
         className={`group rounded-xl border ${colors.border} ${colors.hoverBorder} p-3 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5`}
       >
         <div className="flex items-start gap-3">
-          <div
-            className={`shrink-0 inline-flex rounded-xl ${colors.iconBg} p-2.5`}
-          >
-            <Icon className={`h-6 w-6 ${colors.text}`} />
+          <div className="shrink-0 h-14 w-14 overflow-hidden rounded-xl">
+            <img
+              src={gif}
+              alt={vertical.name}
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-semibold text-card-foreground">

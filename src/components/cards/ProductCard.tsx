@@ -19,7 +19,7 @@ export function ProductCard({
 
   return (
     <Card
-      className={`w-36 shrink-0 snap-start rounded-xl py-0 gap-0 ${
+      className={`h-full w-full rounded-xl py-0 gap-0 ${
         unavailable ? "opacity-50" : ""
       }`}
     >
@@ -48,7 +48,7 @@ export function ProductCard({
             {product.description}
           </p>
         )}
-        <h4 className="mb-0.5 line-clamp-2 text-sm font-semibold text-card-foreground leading-tight">
+        <h4 className="mb-0.5 line-clamp-2 text-[15px] font-semibold text-card-foreground leading-tight">
           {product.name}
         </h4>
         {product.quantity && (
