@@ -6,6 +6,7 @@ export interface McpServerConfig {
 export interface VerticalConfig {
   id: string;
   name: string;
+  tabName: string;
   tagline: string;
   description: string;
   color: "food" | "style" | "dining" | "foodorder";
@@ -37,6 +38,18 @@ export interface McpToolResultBlock {
 }
 
 export type ContentBlock = TextBlock | McpToolUseBlock | McpToolResultBlock;
+
+export interface TokenUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+}
+
+export interface ApiResponse {
+  content: ContentBlock[];
+  usage: TokenUsage;
+}
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -115,6 +128,8 @@ export interface TextParseResult {
     | { type: "products"; items: ParsedProduct[] }
   >;
 }
+
+export type McpErrorCategory = "auth" | "server" | "validation";
 
 export type ParsedToolResult =
   | { type: "products"; items: ParsedProduct[] }

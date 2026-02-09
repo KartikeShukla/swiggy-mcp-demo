@@ -3,7 +3,7 @@ import { Header } from "./components/layout/Header";
 import { PhoneFrame } from "./components/layout/PhoneFrame";
 import { LandingPage } from "./components/home/LandingPage";
 import { ChatView } from "./components/chat/ChatView";
-import { ApiKeyModal } from "./components/auth/ApiKeyModal";
+import { OnboardingSheet } from "./components/auth/OnboardingSheet";
 import { SettingsMenu } from "./components/auth/SettingsMenu";
 import { SwiggyConnect } from "./components/auth/SwiggyConnect";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -13,7 +13,8 @@ export default function App() {
   const {
     apiKey,
     swiggyToken,
-    showApiKeyModal,
+    onboardingStep,
+    selectedAddress,
     isTokenStale,
     saveApiKey,
     changeApiKey,
@@ -22,14 +23,25 @@ export default function App() {
     startOAuth,
     clearChats,
     markTokenExpired,
+    selectAddress,
+    changeAddress,
   } = useAuth();
 
   return (
     <BrowserRouter>
       <PhoneFrame>
-        {showApiKeyModal && <ApiKeyModal onSubmit={saveApiKey} />}
+        <OnboardingSheet
+          step={onboardingStep}
+          apiKey={apiKey}
+          swiggyToken={swiggyToken}
+          onSaveApiKey={saveApiKey}
+          onStartOAuth={startOAuth}
+          onPasteToken={saveSwiggyToken}
+          onSelectAddress={selectAddress}
+        />
 
         <Header
+          locationLabel={selectedAddress?.label}
           right={
             <>
               <SwiggyConnect
@@ -41,9 +53,11 @@ export default function App() {
               <SettingsMenu
                 hasApiKey={!!apiKey}
                 hasSwiggyToken={!!swiggyToken}
+                hasAddress={!!selectedAddress}
                 onChangeApiKey={changeApiKey}
                 onDisconnectSwiggy={disconnectSwiggy}
                 onClearChats={clearChats}
+                onChangeAddress={changeAddress}
               />
             </>
           }
@@ -60,6 +74,7 @@ export default function App() {
                     apiKey={apiKey}
                     swiggyToken={swiggyToken}
                     onAuthError={markTokenExpired}
+                    selectedAddress={selectedAddress}
                   />
                 }
               />

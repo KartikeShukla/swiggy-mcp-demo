@@ -40,7 +40,7 @@ export function renderMarkdownLite(text: string): ReactNode[] {
       const level = headingMatch[1].length;
       const cls = level === 1 ? "text-base font-bold" : level === 2 ? "text-sm font-bold" : "text-sm font-semibold";
       elements.push(
-        createElement("div", { key: `h-${i}`, className: `${cls} text-gray-900 mt-1` },
+        createElement("div", { key: `h-${i}`, className: `${cls} text-foreground mt-1` },
           renderInline(headingMatch[2])
         )
       );
@@ -101,7 +101,7 @@ export function renderInline(text: string): ReactNode[] {
       return createElement("strong", { key: i, className: "font-semibold" }, part.slice(2, -2));
     }
     if (part.startsWith("`") && part.endsWith("`")) {
-      return createElement("code", { key: i, className: "rounded bg-gray-100 px-1 py-0.5 text-xs font-mono text-gray-700" }, part.slice(1, -1));
+      return createElement("code", { key: i, className: "rounded bg-muted px-1 py-0.5 text-xs font-mono text-muted-foreground" }, part.slice(1, -1));
     }
     return createElement("span", { key: i }, part);
   });

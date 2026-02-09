@@ -1,5 +1,5 @@
 import { STORAGE_KEYS } from "./constants";
-import type { ChatMessage } from "./types";
+import type { ChatMessage, ParsedAddress } from "./types";
 
 export function getApiKey(): string | null {
   return localStorage.getItem(STORAGE_KEYS.apiKey);
@@ -31,6 +31,24 @@ export function getSwiggyTokenAge(): number | null {
   const ts = localStorage.getItem(STORAGE_KEYS.swiggyTokenTs);
   if (!ts) return null;
   return Date.now() - parseInt(ts, 10);
+}
+
+export function getSelectedAddress(): ParsedAddress | null {
+  const raw = localStorage.getItem(STORAGE_KEYS.selectedAddress);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function setSelectedAddress(address: ParsedAddress): void {
+  localStorage.setItem(STORAGE_KEYS.selectedAddress, JSON.stringify(address));
+}
+
+export function removeSelectedAddress(): void {
+  localStorage.removeItem(STORAGE_KEYS.selectedAddress);
 }
 
 export function getChatHistory(verticalId: string): ChatMessage[] {

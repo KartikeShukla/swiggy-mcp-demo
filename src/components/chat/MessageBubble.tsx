@@ -6,15 +6,14 @@ import { parseToolResult, parseVariantsFromText } from "@/lib/parsers";
 import { ProductGrid } from "../cards/ItemCardGrid";
 import { CollapsibleText } from "./CollapsibleText";
 import { CollapsibleToolGroup } from "./CollapsibleToolGroup";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function MessageBubble({
   message,
-  accentColor,
   onAction,
   verticalId,
 }: {
   message: ChatMessage;
-  accentColor: string;
   onAction?: (message: string) => void;
   verticalId?: string;
 }) {
@@ -22,14 +21,19 @@ export function MessageBubble({
 
   if (isUser) {
     return (
-      <div className="flex justify-end gap-2 px-4 py-2">
-        <div className="max-w-[80%] rounded-2xl rounded-br-md bg-gray-900 px-4 py-2.5 text-sm text-white leading-relaxed">
+      <div className="flex flex-col items-end gap-1 px-3 py-2 animate-[fade-in_200ms_ease-out]">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-muted-foreground">You</span>
+          <Avatar className="h-5 w-5 shrink-0">
+            <AvatarFallback className="bg-muted text-[10px]">
+              <User className="h-3 w-3 text-muted-foreground" />
+            </AvatarFallback>
+          </Avatar>
+        </div>
+        <div className="max-w-[88%] rounded-2xl rounded-br-md bg-foreground px-4 py-2.5 text-sm text-background leading-relaxed">
           {typeof message.content === "string"
             ? renderMarkdownLite(message.content)
             : null}
-        </div>
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200">
-          <User className="h-4 w-4 text-gray-600" />
         </div>
       </div>
     );
@@ -52,17 +56,16 @@ export function MessageBubble({
   const segments = groupBlocks(blocks);
 
   return (
-    <div className="flex gap-2 px-4 py-2">
-      <div
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-        style={{ backgroundColor: `var(--color-${accentColor})20` }}
-      >
-        <Bot
-          className="h-4 w-4"
-          style={{ color: `var(--color-${accentColor})` }}
-        />
+    <div className="flex flex-col items-start gap-1 px-3 py-2 animate-[fade-in_200ms_ease-out]">
+      <div className="flex items-center gap-1.5">
+        <Avatar className="h-5 w-5 shrink-0">
+          <AvatarFallback className="bg-primary/10 text-[10px]">
+            <Bot className="h-3 w-3 text-primary" />
+          </AvatarFallback>
+        </Avatar>
+        <span className="text-[10px] text-muted-foreground">Assistant</span>
       </div>
-      <div className="max-w-[80%] space-y-1">
+      <div className="min-w-0 w-full space-y-2">
         {segments.map((segment, si) => {
           if (segment.kind === "text" && segment.block.type === "text" && segment.block.text) {
             const parsed = parseVariantsFromText(segment.block.text);
@@ -86,7 +89,7 @@ export function MessageBubble({
                     return (
                       <div
                         key={segi}
-                        className="rounded-2xl rounded-bl-md bg-white px-4 py-2.5 text-sm text-gray-800 leading-relaxed shadow-sm ring-1 ring-gray-100"
+                        className="rounded-2xl rounded-bl-md bg-card px-4 py-2.5 text-sm text-card-foreground leading-relaxed shadow-sm ring-1 ring-border"
                       >
                         {renderMarkdownLite(seg.content)}
                       </div>
@@ -98,7 +101,6 @@ export function MessageBubble({
                         key={segi}
                         items={seg.items}
                         onAction={onAction}
-                        accentColor={accentColor}
                       />
                     );
                   }
@@ -114,7 +116,6 @@ export function MessageBubble({
                 key={si}
                 blocks={segment.blocks}
                 allBlocks={blocks}
-                accentColor={accentColor}
                 verticalId={verticalId ?? ""}
                 onAction={onAction}
               />

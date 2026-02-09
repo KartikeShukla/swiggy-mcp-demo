@@ -1,6 +1,6 @@
 import { useParams, Navigate } from "react-router-dom";
 import { verticals } from "@/verticals";
-import type { VerticalConfig } from "@/lib/types";
+import type { VerticalConfig, ParsedAddress } from "@/lib/types";
 import { useChat } from "@/hooks/useChat";
 import { useCart } from "@/hooks/useCart";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -17,17 +17,20 @@ function ChatViewInner({
   apiKey,
   swiggyToken,
   onAuthError,
+  selectedAddress,
 }: {
   vertical: VerticalConfig;
   apiKey: string | null;
   swiggyToken: string | null;
   onAuthError?: () => void;
+  selectedAddress?: ParsedAddress | null;
 }) {
   const { messages, loading, error, sendMessage } = useChat(
     vertical,
     apiKey,
     swiggyToken,
     onAuthError,
+    selectedAddress,
   );
   const { cart, isOpen, setIsOpen, itemCount } = useCart(messages, vertical.id);
 
@@ -47,8 +50,8 @@ function ChatViewInner({
         </ErrorBoundary>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center px-3">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <Bot className="h-7 w-7 text-primary" />
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+            <Bot className="h-7 w-7 text-muted-foreground" />
           </div>
           <h2 className="mb-2 text-lg font-semibold text-foreground">
             {vertical.name}
@@ -115,6 +118,7 @@ export function ChatView(props: {
   apiKey: string | null;
   swiggyToken: string | null;
   onAuthError?: () => void;
+  selectedAddress?: ParsedAddress | null;
 }) {
   const { verticalId } = useParams<{ verticalId: string }>();
   const vertical = verticalId ? verticals[verticalId] : undefined;

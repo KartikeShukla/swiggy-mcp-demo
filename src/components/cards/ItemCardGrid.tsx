@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import type { ParsedToolResult, ParsedProduct } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ProductCard } from "./ProductCard";
@@ -68,7 +69,12 @@ export function ProductGrid({
               <Separator className="flex-1" />
             </div>
           )}
-          <div className="my-2 flex gap-2.5 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 -mx-1 px-1">
+          <div className={cn(
+            "my-2 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 -mx-1 px-1",
+            groupItems.length > 3
+              ? "grid grid-rows-2 grid-flow-col auto-cols-[144px] gap-2.5"
+              : "flex gap-2.5",
+          )}>
             {groupItems.map((product) => (
               <ProductCard
                 key={product.id}
@@ -123,7 +129,12 @@ export function ItemCardGrid({
           <p className="mb-2 text-[11px] font-medium text-muted-foreground/70">
             {result.items.length} {result.items.length === 1 ? "restaurant" : "restaurants"} found
           </p>
-          <div className="flex gap-2.5 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 -mx-1 px-1">
+          <div className={cn(
+            "overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 -mx-1 px-1",
+            result.items.length > 3
+              ? "grid grid-rows-2 grid-flow-col auto-cols-[160px] gap-2.5"
+              : "flex gap-2.5",
+          )}>
             {result.items.map((restaurant) => (
               <RestaurantCard
                 key={restaurant.id}

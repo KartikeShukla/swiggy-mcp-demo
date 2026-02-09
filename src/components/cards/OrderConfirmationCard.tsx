@@ -1,42 +1,31 @@
 import { CheckCircle, PartyPopper } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function OrderConfirmationCard({
   orderId,
   status,
-  accentColor,
 }: {
   orderId?: string;
   status?: string;
-  accentColor: string;
 }) {
   return (
-    <div
-      className="rounded-xl border-2 p-5 text-center"
-      style={{
-        borderColor: `var(--color-${accentColor})`,
-        backgroundColor: `var(--color-${accentColor}-light)`,
-      }}
-    >
-      <div className="mb-3 flex justify-center">
-        <div
-          className="flex h-12 w-12 items-center justify-center rounded-full"
-          style={{ backgroundColor: `var(--color-${accentColor})20` }}
-        >
-          <CheckCircle
-            className="h-7 w-7"
-            style={{ color: `var(--color-${accentColor})` }}
-          />
+    <Card className="rounded-2xl border border-primary/30 bg-gradient-to-b from-primary-50/80 to-card text-center py-0 gap-0">
+      <CardContent className="p-4">
+        <div className="mb-3 flex justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <CheckCircle className="h-7 w-7 text-primary" />
+          </div>
         </div>
-      </div>
-      <div className="mb-1 flex items-center justify-center gap-1">
-        <PartyPopper className="h-4 w-4 text-amber-500" />
-        <h4 className="text-sm font-bold text-gray-900">
-          {status || "Order Placed!"}
-        </h4>
-      </div>
-      {orderId && (
-        <p className="text-xs text-gray-500">Order ID: {orderId}</p>
-      )}
-    </div>
+        <div className="mb-1 flex items-center justify-center gap-1">
+          <PartyPopper className="h-5 w-5 text-amber-500" />
+          <h4 className="text-base font-bold text-foreground">
+            {status || "Order Placed!"}
+          </h4>
+        </div>
+        {orderId && (
+          <p className="text-[11px] text-muted-foreground/60 font-mono">Order ID: {orderId}</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

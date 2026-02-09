@@ -7,7 +7,9 @@ export const OAUTH_POPUP_WIDTH = 500;
 export const OAUTH_POPUP_HEIGHT = 600;
 
 // Chat
-export const MAX_TOKENS = 4096;
+export const MAX_TOKENS = 1024;
+export const MCP_TOOL_ERROR_LIMIT = 2;
+export const MCP_AUTH_ERROR_LIMIT = 1;
 export const TEXT_COLLAPSE_THRESHOLD = 120;
 export const TEXTAREA_MAX_HEIGHT = 160;
 
@@ -39,5 +41,6 @@ export const STORAGE_KEYS = {
   apiKey: "mcp-demo:api-key",
   swiggyToken: "mcp-demo:swiggy-token",
   swiggyTokenTs: "mcp-demo:swiggy-token-ts",
+  selectedAddress: "mcp-demo:selected-address",
   chatHistory: (verticalId: string) => `mcp-demo:chat:${verticalId}`,
 } as const;

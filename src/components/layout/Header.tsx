@@ -33,7 +33,7 @@ function Logo67() {
   );
 }
 
-export function Header({ right }: { right?: React.ReactNode }) {
+export function Header({ right, locationLabel }: { right?: React.ReactNode; locationLabel?: string }) {
   return (
     <header className="relative z-50 shrink-0 border-b border-border bg-background/95 backdrop-blur-lg pt-[var(--safe-top)]" aria-label="Main navigation">
       {/* Row 1: Logo + Actions */}
@@ -43,7 +43,14 @@ export function Header({ right }: { right?: React.ReactNode }) {
           className="flex items-center gap-2 text-foreground hover:text-foreground/80"
         >
           <Logo67 />
-          <span className="text-sm font-semibold">MCP Demo</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold">MCP Demo</span>
+            {locationLabel && (
+              <span className="text-[10px] text-muted-foreground truncate max-w-[140px]">
+                {locationLabel}
+              </span>
+            )}
+          </div>
         </Link>
         <div className="flex items-center gap-2">
           {right}
@@ -51,7 +58,7 @@ export function Header({ right }: { right?: React.ReactNode }) {
       </div>
 
       {/* Row 2: Vertical Nav Tabs */}
-      <div className="flex h-9 items-center justify-center px-2">
+      <div className="flex items-center justify-center px-2 py-2.5">
         <VerticalNav />
       </div>
     </header>
