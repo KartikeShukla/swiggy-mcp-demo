@@ -30,7 +30,7 @@ export function RestaurantCard({
           <UtensilsCrossed className="h-8 w-8 text-muted-foreground/25" />
         )}
         {restaurant.rating != null && (
-          <span className="absolute bottom-2 left-2 flex items-center gap-0.5 rounded-md bg-white/95 backdrop-blur-md px-2 py-0.5 text-xs font-bold shadow-sm">
+          <span className="absolute bottom-2 left-2 flex items-center gap-0.5 rounded-md bg-white/95 px-2 py-0.5 text-xs font-bold text-zinc-900 shadow-sm">
             <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
             {restaurant.rating}
           </span>
@@ -84,7 +84,7 @@ export function RestaurantCard({
           aria-label={`${actionLabel} ${restaurant.name}`}
           variant="outline"
           size="sm"
-          className="mt-auto w-full text-xs font-medium border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
+          className="mt-auto w-full border-orange-500/30 text-xs font-medium text-orange-500 transition-colors hover:!border-orange-500 hover:!bg-orange-500 hover:!text-white"
         >
           {actionLabel}
         </Button>

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,7 @@ export function ToolSectionCard({
   className,
   contentClassName,
   bodyClassName,
+  bodyStyle,
   titleClassName,
 }: {
   title?: string;
@@ -17,6 +18,7 @@ export function ToolSectionCard({
   className?: string;
   contentClassName?: string;
   bodyClassName?: string;
+  bodyStyle?: CSSProperties;
   titleClassName?: string;
 }) {
   const hasHeader = Boolean(title || icon);
@@ -36,7 +38,7 @@ export function ToolSectionCard({
         )}
         <div
           className={cn("overflow-x-hidden overflow-y-auto", bodyClassName)}
-          style={{ maxHeight: "var(--tool-section-max-h, 420px)" }}
+          style={{ maxHeight: "var(--tool-section-max-h, 420px)", ...bodyStyle }}
         >
           {children}
         </div>

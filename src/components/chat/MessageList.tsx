@@ -3,6 +3,7 @@ import type { ChatAction, ChatMessage } from "@/lib/types";
 import { MessageBubble } from "./MessageBubble";
 import { LoadingIndicator } from "./LoadingIndicator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import type { SharedProductSelection } from "../cards/ProductGrid";
 
 export function MessageList({
   messages,
@@ -11,6 +12,7 @@ export function MessageList({
   loadingElapsedMs,
   verticalId,
   onAction,
+  sharedSelection,
 }: {
   messages: ChatMessage[];
   loading: boolean;
@@ -18,6 +20,7 @@ export function MessageList({
   loadingElapsedMs?: number;
   verticalId?: string;
   onAction?: (action: ChatAction) => void;
+  sharedSelection?: SharedProductSelection;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -55,6 +58,7 @@ export function MessageList({
             paddingTop: "1rem",
             paddingBottom: "calc(var(--safe-bottom) + 8rem)",
             ["--tool-section-max-h" as string]: `${toolSectionMaxHeight}px`,
+            ["--tool-section-half-h" as string]: `${Math.floor(toolSectionMaxHeight * (2 / 3))}px`,
           }}
         >
           {messages.map((msg, i) => {
@@ -66,6 +70,7 @@ export function MessageList({
                   message={msg}
                   verticalId={verticalId}
                   onAction={onAction}
+                  sharedSelection={sharedSelection}
                 />
               </div>
             );

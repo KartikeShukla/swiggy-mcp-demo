@@ -19,17 +19,17 @@ export function ProductCard({
 
   return (
     <Card
-      className={`h-full w-full rounded-xl py-0 gap-0 ${
+      className={`h-full w-full rounded-2xl py-0 gap-0 ${
         unavailable ? "opacity-50" : ""
       }`}
     >
       {/* Image */}
-      <div className="flex h-24 items-center justify-center rounded-t-xl bg-muted overflow-hidden">
+      <div className="flex h-24 items-center justify-center rounded-t-2xl bg-muted overflow-hidden">
         {product.image ? (
           <img
             src={product.image}
             alt={product.name}
-            className="h-full w-full rounded-t-xl object-cover"
+            className="h-full w-full rounded-t-2xl object-cover"
           />
         ) : (
           <Package className="h-8 w-8 text-muted-foreground/25" />
@@ -74,7 +74,7 @@ export function ProductCard({
             aria-label={`Add ${product.name} to cart`}
             variant="outline"
             size="sm"
-            className="mt-2 w-full gap-1 text-xs font-medium border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
+            className="mt-2 w-full gap-1 border-orange-500/30 text-xs font-medium text-orange-500 transition-colors hover:!border-orange-500 hover:!bg-orange-500 hover:!text-white"
           >
             <Plus className="h-3.5 w-3.5" />
             Add

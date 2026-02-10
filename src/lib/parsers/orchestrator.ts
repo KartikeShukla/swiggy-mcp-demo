@@ -142,6 +142,7 @@ export function parseToolResult(
   toolName: string,
   content: unknown,
   verticalId: string,
+  toolInput?: Record<string, unknown>,
 ): ParsedToolResult {
   try {
     const data = unwrapContent(content);
@@ -163,7 +164,7 @@ export function parseToolResult(
           (weakRestaurantOnly && (!isRestaurantDiscoveryTool || signals.hasDishNameSignals));
 
         if (shouldPreferProducts) {
-          const products = tryParseProducts(payload);
+          const products = tryParseProducts(payload, { toolInput });
           if (products) return products;
         }
 
@@ -172,7 +173,7 @@ export function parseToolResult(
           if (restaurants) return restaurants;
         }
 
-        const products = tryParseProducts(payload);
+        const products = tryParseProducts(payload, { toolInput });
         if (products) return products;
         const restaurants = tryParseRestaurants(payload);
         if (restaurants) return restaurants;
@@ -184,7 +185,7 @@ export function parseToolResult(
       }
 
       // Always try products (including dining — dining can have menu/dish searches)
-      const products = tryParseProducts(payload);
+      const products = tryParseProducts(payload, { toolInput });
       if (products) return products;
     }
     if (/cart|basket|add_item|remove_item|update_item|modify_item|add_to|remove_from/i.test(toolName)) {

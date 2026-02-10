@@ -36,18 +36,18 @@ export function TimeSlotPicker({
       <ToolSectionCard
         title={restaurantName ? `Available slots at ${restaurantName}` : "Available time slots"}
         icon={<Clock className="h-4 w-4 text-primary" />}
+        bodyStyle={{ maxHeight: "var(--tool-section-half-h, 280px)" }}
       >
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {slots.map((slot) => (
             <Button
               key={slot.time}
               variant="outline"
-              size="sm"
               disabled={!slot.available}
               aria-label={`${slot.time}${slot.available ? "" : " (unavailable)"}`}
               aria-disabled={!slot.available}
               onClick={() => handleSlotClick(slot)}
-              className={`text-xs font-medium tabular-nums min-w-[4.5rem] ${
+              className={`h-11 w-full rounded-xl px-2 text-sm font-semibold tabular-nums ${
                 slot.available
                   ? "border-primary/40 text-primary bg-primary-50/60 hover:bg-primary-50 hover:border-primary/60 active:scale-[0.98]"
                   : ""

@@ -1,7 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { verticals } from "@/verticals";
-import type { VerticalConfig, ParsedAddress, ChatAction } from "@/lib/types";
+import type { VerticalConfig, ParsedAddress, ChatAction, ParsedProduct } from "@/lib/types";
 import { useChat } from "@/hooks/useChat";
 import { useCart } from "@/hooks/useCart";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -9,6 +9,7 @@ import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 import { CartFloatingButton } from "../cart/CartFloatingButton";
 import { CartPanel } from "../cart/CartPanel";
+import { ShoppingCart } from "lucide-react";
 import styleGif from "@/assets/verticals/style.gif";
 import diningGif from "@/assets/verticals/dining.gif";
 import foodorderGif from "@/assets/verticals/foodorder.gif";
@@ -40,6 +41,9 @@ function ChatViewInner({
   onSelectAddressFromChat?: (address: ParsedAddress) => void;
   onAddressError?: () => void;
 }) {
+  const [pendingSelection, setPendingSelection] = useState<
+    Record<string, { product: ParsedProduct; quantity: number }>
+  >({});
   const {
     messages,
     loading,
@@ -56,6 +60,57 @@ function ChatViewInner({
     selectedAddress,
   );
   const { cart, isOpen, setIsOpen, itemCount } = useCart(messages, vertical.id);
+  const isUnifiedSelectionVertical = vertical.id === "food" || vertical.id === "style";
+
+  const sharedSelection = useMemo(() => {
+    if (!isUnifiedSelectionVertical) return undefined;
+    return {
+      quantities: Object.fromEntries(
+        Object.entries(pendingSelection).map(([id, value]) => [id, value.quantity]),
+      ),
+      onIncrement: (product: ParsedProduct) => {
+        setPendingSelection((prev) => {
+          const existing = prev[product.id];
+          return {
+            ...prev,
+            [product.id]: {
+              product: existing?.product || product,
+              quantity: (existing?.quantity || 0) + 1,
+            },
+          };
+        });
+      },
+      onDecrement: (productId: string) => {
+        setPendingSelection((prev) => {
+          const existing = prev[productId];
+          if (!existing) return prev;
+          const nextQty = existing.quantity - 1;
+          if (nextQty <= 0) {
+            const rest = { ...prev };
+            delete rest[productId];
+            return rest;
+          }
+          return {
+            ...prev,
+            [productId]: {
+              ...existing,
+              quantity: nextQty,
+            },
+          };
+        });
+      },
+    };
+  }, [isUnifiedSelectionVertical, pendingSelection]);
+
+  const pendingSelectedItems = useMemo(
+    () => Object.values(pendingSelection),
+    [pendingSelection],
+  );
+  const pendingCount = useMemo(
+    () => pendingSelectedItems.reduce((sum, item) => sum + item.quantity, 0),
+    [pendingSelectedItems],
+  );
+
   const handleAction = useCallback(
     (action: ChatAction) => {
       if (isSelectAddressAction(action) && onSelectAddressFromChat) {
@@ -67,6 +122,15 @@ function ChatViewInner({
     },
     [onSelectAddressFromChat, sendMessage],
   );
+
+  const handleUnifiedAddToCart = useCallback(() => {
+    if (!pendingSelectedItems.length) return;
+    const parts = pendingSelectedItems.map(
+      (entry) => `${entry.quantity}x ${entry.product.name}`,
+    );
+    handleAction(`Add to cart: ${parts.join(", ")}`);
+    setPendingSelection({});
+  }, [handleAction, pendingSelectedItems]);
 
   const hasMessages = messages.length > 0;
 
@@ -91,6 +155,7 @@ function ChatViewInner({
             loadingElapsedMs={loadingElapsedMs}
             verticalId={vertical.id}
             onAction={handleAction}
+            sharedSelection={sharedSelection}
           />
         </ErrorBoundary>
       ) : (
@@ -124,12 +189,27 @@ function ChatViewInner({
         </div>
       )}
 
-      {/* Cart FAB */}
-      {itemCount > 0 && (
-        <CartFloatingButton
-          count={itemCount}
-          onClick={() => setIsOpen(true)}
-        />
+      {(itemCount > 0 || (isUnifiedSelectionVertical && pendingCount > 0)) && (
+        <div className="pointer-events-none absolute bottom-[6.9rem] left-4 right-4 z-50">
+          <div className="flex items-center justify-end gap-4">
+            {isUnifiedSelectionVertical && pendingCount > 0 && (
+              <Button
+                onClick={handleUnifiedAddToCart}
+                className="pointer-events-auto h-12 whitespace-nowrap rounded-full border-2 border-orange-400 bg-[#4a3527] px-4 has-[>svg]:px-4 text-sm font-semibold text-white shadow-[0_8px_16px_-12px_rgba(249,115,22,0.11)] hover:bg-[#553d2d]"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                Add {pendingCount} {pendingCount === 1 ? "item" : "items"} to cart
+              </Button>
+            )}
+            {itemCount > 0 && (
+              <CartFloatingButton
+                count={itemCount}
+                onClick={() => setIsOpen(true)}
+                className="pointer-events-auto z-50 h-12 w-12"
+              />
+            )}
+          </div>
+        </div>
       )}
 
       {/* Cart bottom sheet */}

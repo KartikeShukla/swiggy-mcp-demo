@@ -19,9 +19,10 @@ export function CartSummaryCard({
         </div>
 
         <div className="space-y-2">
-          {cart.items.map((item) => (
+          {cart.items.map((item, index) => (
             <div key={item.id} className="flex items-center justify-between text-[13px]">
               <span className="min-w-0 truncate text-card-foreground">
+                <span className="text-muted-foreground">{index + 1}. </span>
                 {item.name} <span className="text-muted-foreground">x{item.quantity}</span>
               </span>
               <span className="font-semibold tabular-nums text-card-foreground">₹{item.price * item.quantity}</span>
@@ -31,17 +32,7 @@ export function CartSummaryCard({
 
         <Separator className="my-3" />
 
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Subtotal</span>
-            <span className="tabular-nums">₹{cart.subtotal}</span>
-          </div>
-          {cart.deliveryFee > 0 && (
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Delivery</span>
-              <span className="tabular-nums">₹{cart.deliveryFee}</span>
-            </div>
-          )}
+        <div>
           <div className="flex justify-between text-sm font-bold text-card-foreground">
             <span>Total</span>
             <span className="tabular-nums">₹{cart.total}</span>

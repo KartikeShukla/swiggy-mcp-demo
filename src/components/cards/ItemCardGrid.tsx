@@ -10,15 +10,18 @@ import { BookingConfirmedCard } from "./BookingConfirmedCard";
 import { StatusCard } from "./StatusCard";
 import { InfoCard } from "./InfoCard";
 import { ToolSectionCard } from "./ToolSectionCard";
+import type { SharedProductSelection } from "./ProductGrid";
 
 export function ItemCardGrid({
   result,
   onAction,
   verticalId,
+  sharedSelection,
 }: {
   result: ParsedToolResult;
   onAction: (action: ChatAction) => void;
   verticalId?: string;
+  sharedSelection?: SharedProductSelection;
 }) {
   switch (result.type) {
     case "products":
@@ -26,12 +29,15 @@ export function ItemCardGrid({
         <ProductGrid
           items={result.items}
           onAction={onAction}
+          verticalId={verticalId}
+          sharedSelection={sharedSelection}
         />
       );
 
     case "restaurants": {
       const isFoodOrder = verticalId === "foodorder";
-      const isMultiRow = result.items.length > 3;
+      const isRailSection = verticalId === "dining" || verticalId === "foodorder";
+      const isMultiRow = !isRailSection && result.items.length > 3;
       const actionLabel = isFoodOrder ? "View Menu" : "Check Availability";
       const actionMessage = isFoodOrder
         ? (name: string) => `Open menu for restaurant: ${name}`
@@ -39,10 +45,12 @@ export function ItemCardGrid({
       return (
         <ToolSectionCard
           title={`${result.items.length} ${result.items.length === 1 ? "restaurant" : "restaurants"} found`}
+          className="border-orange-500/20 bg-orange-500/6"
           titleClassName="text-[11px] font-medium text-muted-foreground/70"
+          contentClassName="px-4 pt-3 pb-2.5"
         >
           <div className={cn(
-            "overflow-x-auto scrollbar-thin-h snap-x snap-mandatory pb-2",
+            "overflow-x-auto scrollbar-thin-h snap-x snap-mandatory pb-1",
             isMultiRow
               ? "grid grid-rows-2 grid-flow-col auto-cols-[calc(50%_-_5px)] gap-2.5"
               : "flex items-stretch gap-2.5",
@@ -52,7 +60,12 @@ export function ItemCardGrid({
                 key={restaurant.id}
                 className={cn(
                   "snap-start h-full",
-                  isMultiRow ? "w-full" : "w-[calc(50%_-_5px)] shrink-0",
+                  isMultiRow
+                    ? "w-full"
+                    : cn(
+                      "shrink-0",
+                      isRailSection ? "w-[calc(66.666%_-_6.667px)]" : "w-[calc(50%_-_5px)]",
+                    ),
                 )}
               >
                 <RestaurantCard

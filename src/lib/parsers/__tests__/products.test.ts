@@ -287,4 +287,24 @@ describe("tryParseProducts()", () => {
     if (result!.type !== "products") return;
     expect(result!.items[0].description).toBe("Spicy dish");
   });
+
+  it("builds requirement grouping metadata from explicit item type", () => {
+    const result = tryParseProducts([
+      { name: "Harvest Gold Bread", price: 80, item_type: "Bread" },
+    ]);
+    if (result!.type !== "products") return;
+    expect(result.items[0].groupLabel).toBe("Bread");
+    expect(result.items[0].groupKey).toBe("bread");
+  });
+
+  it("falls back to tool query for grouping metadata when explicit type is missing", () => {
+    const result = tryParseProducts(
+      [{ name: "Amul Butter Salted", brand: "Amul", price: 62 }],
+      { toolInput: { query: "salted butter for toast" } },
+    );
+    if (result!.type !== "products") return;
+    expect(result.items[0].sourceQuery).toBe("salted butter for toast");
+    expect(result.items[0].groupLabel).toBe("Salted Butter For Toast");
+    expect(result.items[0].groupKey).toBe("salted butter for toast");
+  });
 });

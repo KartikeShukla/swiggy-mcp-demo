@@ -6,6 +6,7 @@ import { findPrecedingToolName, groupBlocks } from "@/lib/content-blocks";
 import { parseToolResult, parseVariantsFromText } from "@/lib/parsers";
 import { TEXT_COLLAPSE_THRESHOLD } from "@/lib/constants";
 import { ProductGrid } from "../cards/ProductGrid";
+import type { SharedProductSelection } from "../cards/ProductGrid";
 import { CollapsibleText } from "./CollapsibleText";
 import { CollapsibleToolGroup } from "./CollapsibleToolGroup";
 import { DetailSheet } from "./DetailSheet";
@@ -15,10 +16,12 @@ export function AssistantMessageBubble({
   message,
   onAction,
   verticalId,
+  sharedSelection,
 }: {
   message: ChatMessage;
   onAction?: (action: ChatAction) => void;
   verticalId?: string;
+  sharedSelection?: SharedProductSelection;
 }) {
   const blocks: ContentBlock[] =
     typeof message.content === "string"
@@ -119,6 +122,8 @@ export function AssistantMessageBubble({
                         key={segi}
                         items={seg.items}
                         onAction={onAction}
+                        verticalId={resolvedVerticalId}
+                        sharedSelection={sharedSelection}
                       />
                     );
                   }
@@ -136,6 +141,7 @@ export function AssistantMessageBubble({
                 allBlocks={blocks}
                 verticalId={resolvedVerticalId}
                 onAction={onAction}
+                sharedSelection={sharedSelection}
               />
             );
           }

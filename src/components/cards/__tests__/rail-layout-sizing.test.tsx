@@ -44,7 +44,7 @@ describe("card rail layout sizing", () => {
     expect(card?.className).toContain("h-full");
   });
 
-  it("keeps restaurant cards readable in foodorder multi-row rails", () => {
+  it("uses single-row 1.5-card rail sizing for foodorder restaurants", () => {
     const result: ParsedToolResult = {
       type: "restaurants",
       items: [
@@ -69,7 +69,8 @@ describe("card rail layout sizing", () => {
 
     expect(wrapper).not.toBeNull();
     expect(card).not.toBeNull();
-    expect(wrapper?.className).toContain("w-full");
+    expect(wrapper?.className).toContain("w-[calc(66.666%_-_6.667px)]");
+    expect(wrapper?.className).toContain("shrink-0");
     expect(wrapper?.className).toContain("h-full");
     expect(card?.className).toContain("w-full");
     expect(card?.className).toContain("h-full");

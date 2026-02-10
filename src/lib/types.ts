@@ -67,6 +67,12 @@ export interface ParsedProduct {
   mrp?: number;
   image?: string;
   brand?: string;
+  itemType?: string;
+  sku?: string;
+  groupKey?: string;
+  groupLabel?: string;
+  sourceQuery?: string;
+  groupOrder?: number;
   quantity?: string;
   available?: boolean;
   description?: string;
