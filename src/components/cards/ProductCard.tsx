@@ -85,8 +85,9 @@ export function ProductCard({
               onClick={onDecrement}
               aria-label={`Decrease ${product.name} quantity`}
               size="icon-xs"
+              className="h-8 w-8 rounded-full"
             >
-              <Minus className="h-3 w-3" />
+              <Minus className="h-4 w-4 stroke-[2.6]" />
             </Button>
             <span className="w-6 text-center text-xs font-semibold text-card-foreground">
               {quantity}
@@ -95,8 +96,9 @@ export function ProductCard({
               onClick={onIncrement}
               aria-label={`Increase ${product.name} quantity`}
               size="icon-xs"
+              className="h-8 w-8 rounded-full"
             >
-              <Plus className="h-3 w-3" />
+              <Plus className="h-4 w-4 stroke-[2.6]" />
             </Button>
           </div>
         )}
