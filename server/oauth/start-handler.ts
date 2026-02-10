@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import type { PendingAuth } from "./types";
 import { createPkce } from "./pkce";
+import { discoverSwiggyOAuth } from "./discovery";
 
 export async function handleAuthStart(
   req: IncomingMessage,
@@ -8,12 +9,9 @@ export async function handleAuthStart(
   pendingAuths: Map<string, PendingAuth>,
 ): Promise<void> {
   try {
-    const wellKnownUrl =
-      "https://mcp.swiggy.com/.well-known/oauth-authorization-server";
-    const discovery = (await fetch(wellKnownUrl).then((r) => r.json())) as Record<string, unknown>;
-
-    const authorizationEndpoint = discovery.authorization_endpoint as string;
-    const tokenEndpoint = discovery.token_endpoint as string;
+    const discovery = await discoverSwiggyOAuth();
+    const authorizationEndpoint = discovery.authorizationEndpoint;
+    const tokenEndpoint = discovery.tokenEndpoint;
 
     const { codeVerifier, codeChallenge, state } = await createPkce();
 
@@ -33,7 +31,7 @@ export async function handleAuthStart(
     authUrl.searchParams.set("response_type", "code");
     authUrl.searchParams.set(
       "client_id",
-      (discovery.client_id as string) || "swiggy-mcp",
+      discovery.clientId || "swiggy-mcp",
     );
     authUrl.searchParams.set("redirect_uri", redirectUri);
     authUrl.searchParams.set("code_challenge", codeChallenge);
@@ -41,7 +39,7 @@ export async function handleAuthStart(
     authUrl.searchParams.set("state", state);
     authUrl.searchParams.set(
       "scope",
-      (discovery.scopes_supported as string[] | undefined)?.join(" ") || "",
+      discovery.scopes?.join(" ") || "",
     );
 
     res.writeHead(302, { Location: authUrl.toString() });
@@ -51,7 +49,8 @@ export async function handleAuthStart(
     res.end(`
       <html><body>
         <h3>OAuth discovery failed</h3>
-        <p>${err instanceof Error ? err.message : "Unknown error"}</p>
+        <p>${err instanceof Error ? err.message : "Unknown error"}.</p>
+        <p>Please check your network or VPN and retry.</p>
         <p>Use the "Paste token" option instead.</p>
         <script>setTimeout(() => window.close(), 5000);</script>
       </body></html>

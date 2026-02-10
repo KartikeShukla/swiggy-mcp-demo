@@ -2,6 +2,26 @@ import type { IncomingMessage, ServerResponse } from "http";
 import { parseCookies } from "./cookies";
 import type { PendingAuth } from "./types";
 
+function parseJsonObject(text: string, source: string): Record<string, unknown> {
+  if (!text.trim()) {
+    throw new Error(`${source} returned an empty response`);
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "invalid JSON";
+    throw new Error(`${source} returned invalid JSON: ${message}`);
+  }
+
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`${source} returned unexpected JSON shape`);
+  }
+
+  return parsed as Record<string, unknown>;
+}
+
 export async function handleAuthCallback(
   req: IncomingMessage,
   res: ServerResponse,
@@ -66,7 +86,17 @@ export async function handleAuthCallback(
       }),
     });
 
-    const tokenData = (await tokenRes.json()) as Record<string, unknown>;
+    const tokenBody = await tokenRes.text();
+    const tokenData = parseJsonObject(tokenBody, "Token endpoint");
+    if (!tokenRes.ok) {
+      const reason = (tokenData.error_description as string) ||
+        (tokenData.error as string);
+      throw new Error(
+        reason
+          ? `Token endpoint request failed with HTTP ${tokenRes.status}: ${reason}`
+          : `Token endpoint request failed with HTTP ${tokenRes.status}`,
+      );
+    }
 
     if (tokenData.access_token) {
       const accessToken = tokenData.access_token as string;
