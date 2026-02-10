@@ -8,34 +8,78 @@ import {
   removeSwiggyToken,
   getSwiggyTokenAge,
   clearAllChatHistory,
+  getValidatedSelectedAddress,
+  sanitizeAllStoredHistories,
+  setSelectedAddress as storeSelectedAddress,
 } from "@/lib/storage";
+import { TOKEN_STALENESS_MS, OAUTH_POPUP_WIDTH, OAUTH_POPUP_HEIGHT } from "@/lib/constants";
+import type { ParsedAddress } from "@/lib/types";
+
+export type OnboardingStep = "idle" | "api-key" | "swiggy-connect" | "address-select";
+
+function computeInitialStep(): OnboardingStep {
+  if (!getApiKey()) return "api-key";
+  if (!getSwiggyToken()) return "swiggy-connect";
+  if (!getValidatedSelectedAddress()) return "address-select";
+  return "idle";
+}
 
 export function useAuth() {
   const [apiKey, setApiKeyState] = useState<string | null>(getApiKey);
   const [swiggyToken, setSwiggyTokenState] = useState<string | null>(
     getSwiggyToken,
   );
-  const [showApiKeyModal, setShowApiKeyModal] = useState(!getApiKey());
+  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(computeInitialStep);
+  const [selectedAddress, setSelectedAddressState] = useState<ParsedAddress | null>(getValidatedSelectedAddress);
+
+  useEffect(() => {
+    sanitizeAllStoredHistories();
+  }, []);
+
+  // Backward compat
+  const showApiKeyModal = onboardingStep === "api-key";
 
   const saveApiKey = useCallback((key: string) => {
     storeApiKey(key);
     setApiKeyState(key);
-    setShowApiKeyModal(false);
+    // Advance to next step
+    if (getSwiggyToken()) {
+      if (getValidatedSelectedAddress()) {
+        setOnboardingStep("idle");
+      } else {
+        setOnboardingStep("address-select");
+      }
+    } else {
+      setOnboardingStep("swiggy-connect");
+    }
   }, []);
 
   const changeApiKey = useCallback(() => {
-    setShowApiKeyModal(true);
+    setOnboardingStep("api-key");
   }, []);
 
   const deleteApiKey = useCallback(() => {
     removeApiKey();
     setApiKeyState(null);
-    setShowApiKeyModal(true);
+    setOnboardingStep("api-key");
+  }, []);
+
+  const [forceStale, setForceStale] = useState(false);
+
+  const markTokenExpired = useCallback(() => {
+    setForceStale(true);
   }, []);
 
   const saveSwiggyToken = useCallback((token: string) => {
     storeSwiggyToken(token);
     setSwiggyTokenState(token);
+    setForceStale(false);
+    // Advance to next step
+    if (getValidatedSelectedAddress()) {
+      setOnboardingStep("idle");
+    } else {
+      setOnboardingStep("address-select");
+    }
   }, []);
 
   const disconnectSwiggy = useCallback(() => {
@@ -43,12 +87,34 @@ export function useAuth() {
     setSwiggyTokenState(null);
   }, []);
 
+  const reconnectSwiggy = useCallback(() => {
+    if (!getApiKey()) {
+      setOnboardingStep("api-key");
+      return;
+    }
+    setOnboardingStep("swiggy-connect");
+  }, []);
+
+  const selectAddress = useCallback((addr: ParsedAddress) => {
+    storeSelectedAddress(addr);
+    setSelectedAddressState(addr);
+    setOnboardingStep("idle");
+  }, []);
+
+  const changeAddress = useCallback(() => {
+    setOnboardingStep("address-select");
+  }, []);
+
+  const dismissOnboarding = useCallback(() => {
+    setOnboardingStep("idle");
+  }, []);
+
   const clearChats = useCallback(() => {
     clearAllChatHistory();
   }, []);
 
   const tokenAge = getSwiggyTokenAge();
-  const isTokenStale = tokenAge !== null && tokenAge > 60 * 60 * 1000; // 1 hour
+  const isTokenStale = forceStale || (tokenAge !== null && tokenAge > TOKEN_STALENESS_MS);
 
   // Listen for OAuth postMessage from popup
   useEffect(() => {
@@ -62,14 +128,12 @@ export function useAuth() {
   }, [saveSwiggyToken]);
 
   const startOAuth = useCallback(() => {
-    const width = 500;
-    const height = 600;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
+    const left = window.screenX + (window.outerWidth - OAUTH_POPUP_WIDTH) / 2;
+    const top = window.screenY + (window.outerHeight - OAUTH_POPUP_HEIGHT) / 2;
     window.open(
       "/api/auth/start",
       "swiggy-oauth",
-      `width=${width},height=${height},left=${left},top=${top}`,
+      `width=${OAUTH_POPUP_WIDTH},height=${OAUTH_POPUP_HEIGHT},left=${left},top=${top}`,
     );
   }, []);
 
@@ -77,13 +141,20 @@ export function useAuth() {
     apiKey,
     swiggyToken,
     showApiKeyModal,
+    onboardingStep,
+    selectedAddress,
     isTokenStale,
     saveApiKey,
     changeApiKey,
     deleteApiKey,
     saveSwiggyToken,
     disconnectSwiggy,
+    reconnectSwiggy,
     startOAuth,
     clearChats,
+    markTokenExpired,
+    selectAddress,
+    changeAddress,
+    dismissOnboarding,
   };
 }

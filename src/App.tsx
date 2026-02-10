@@ -1,56 +1,85 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Header } from "./components/layout/Header";
+import { PhoneFrame } from "./components/layout/PhoneFrame";
 import { LandingPage } from "./components/home/LandingPage";
 import { ChatView } from "./components/chat/ChatView";
-import { ApiKeyModal } from "./components/auth/ApiKeyModal";
+import { OnboardingSheet } from "./components/auth/OnboardingSheet";
 import { SettingsMenu } from "./components/auth/SettingsMenu";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAuth } from "./hooks/useAuth";
 
 export default function App() {
   const {
     apiKey,
     swiggyToken,
-    showApiKeyModal,
+    onboardingStep,
+    selectedAddress,
     isTokenStale,
     saveApiKey,
     changeApiKey,
     disconnectSwiggy,
-    saveSwiggyToken,
+    reconnectSwiggy,
     startOAuth,
     clearChats,
+    markTokenExpired,
+    selectAddress,
+    changeAddress,
+    dismissOnboarding,
   } = useAuth();
 
   return (
     <BrowserRouter>
-      {showApiKeyModal && <ApiKeyModal onSubmit={saveApiKey} />}
+      <PhoneFrame>
+        <OnboardingSheet
+          step={onboardingStep}
+          apiKey={apiKey}
+          swiggyToken={swiggyToken}
+          onSaveApiKey={saveApiKey}
+          onStartOAuth={startOAuth}
+          onSelectAddress={selectAddress}
+          onDismiss={dismissOnboarding}
+        />
 
-      <Header
-        right={
-          <SettingsMenu
-            hasApiKey={!!apiKey}
-            hasSwiggyToken={!!swiggyToken}
-            onChangeApiKey={changeApiKey}
-            onDisconnectSwiggy={disconnectSwiggy}
-            onClearChats={clearChats}
-          />
-        }
-      />
-
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route
-          path="/:verticalId"
-          element={
-            <ChatView
-              apiKey={apiKey}
-              swiggyToken={swiggyToken}
-              isTokenStale={isTokenStale}
-              onConnect={startOAuth}
-              onPasteToken={saveSwiggyToken}
-            />
+        <Header
+          selectedAddress={selectedAddress}
+          connectionActive={!!apiKey && !!swiggyToken && !isTokenStale}
+          right={
+            <>
+              <SettingsMenu
+                hasApiKey={!!apiKey}
+                hasSwiggyToken={!!swiggyToken}
+                hasAddress={!!selectedAddress}
+                onChangeApiKey={changeApiKey}
+                onConnectSwiggy={reconnectSwiggy}
+                onDisconnectSwiggy={disconnectSwiggy}
+                onClearChats={clearChats}
+                onChangeAddress={changeAddress}
+              />
+            </>
           }
         />
-      </Routes>
+
+        <ErrorBoundary>
+          <main className="flex-1 min-h-0 overflow-hidden">
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route
+                path="/:verticalId"
+                element={
+                  <ChatView
+                    apiKey={apiKey}
+                    swiggyToken={swiggyToken}
+                    onAuthError={markTokenExpired}
+                    onAddressError={changeAddress}
+                    selectedAddress={selectedAddress}
+                    onSelectAddressFromChat={selectAddress}
+                  />
+                }
+              />
+            </Routes>
+          </main>
+        </ErrorBoundary>
+      </PhoneFrame>
     </BrowserRouter>
   );
 }

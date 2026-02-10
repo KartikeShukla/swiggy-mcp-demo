@@ -1,5 +1,15 @@
 import { useState } from "react";
 import { KeyRound, ExternalLink } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 export function ApiKeyModal({ onSubmit }: { onSubmit: (key: string) => void }) {
   const [key, setKey] = useState("");
@@ -17,25 +27,25 @@ export function ApiKeyModal({ onSubmit }: { onSubmit: (key: string) => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100">
-            <KeyRound className="h-5 w-5 text-gray-700" />
+    <Dialog open>
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
+              <KeyRound className="h-5 w-5 text-foreground" />
+            </div>
+            <div>
+              <DialogTitle>Enter your API key</DialogTitle>
+              <DialogDescription>Required to connect to Claude</DialogDescription>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              Enter your API key
-            </h2>
-            <p className="text-sm text-gray-500">
-              Required to connect to Claude
-            </p>
-          </div>
-        </div>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="api-key">API Key</Label>
+            <Input
+              id="api-key"
               type="password"
               value={key}
               onChange={(e) => {
@@ -44,31 +54,27 @@ export function ApiKeyModal({ onSubmit }: { onSubmit: (key: string) => void }) {
               }}
               placeholder="sk-ant-..."
               autoFocus
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-gray-300 focus:ring-1 focus:ring-gray-300"
             />
             {error && (
-              <p className="mt-1.5 text-xs text-red-500">{error}</p>
+              <p className="text-xs text-destructive">{error}</p>
             )}
           </div>
 
-          <button
-            type="submit"
-            className="w-full rounded-xl bg-gray-900 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
-          >
+          <Button type="submit" className="w-full">
             Connect
-          </button>
+          </Button>
         </form>
 
         <a
           href="https://console.anthropic.com/settings/keys"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 flex items-center justify-center gap-1.5 text-xs text-gray-500 hover:text-gray-700"
+          className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
         >
           Get an API key from Anthropic Console
           <ExternalLink className="h-3 w-3" />
         </a>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

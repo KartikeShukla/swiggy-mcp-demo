@@ -1,15 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { SendHorizontal } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TEXTAREA_MAX_HEIGHT } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
 
 export function ChatInput({
   onSend,
   disabled,
-  accentColor,
 }: {
   onSend: (text: string) => void;
   disabled: boolean;
-  accentColor: string;
 }) {
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -17,7 +17,7 @@ export function ChatInput({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, TEXTAREA_MAX_HEIGHT)}px`;
     }
   }, [text]);
 
@@ -35,36 +35,36 @@ export function ChatInput({
     }
   }
 
-  const buttonColorClass =
-    accentColor === "food"
-      ? "bg-food hover:bg-food/90"
-      : accentColor === "style"
-        ? "bg-style hover:bg-style/90"
-        : "bg-dining hover:bg-dining/90";
-
   return (
-    <div className="border-t border-gray-200 bg-white p-4">
-      <div className="mx-auto flex max-w-3xl items-end gap-2">
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
-          rows={1}
-          disabled={disabled}
-          className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-gray-300 focus:ring-1 focus:ring-gray-300 disabled:opacity-50"
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={disabled || !text.trim()}
+    <div className="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-background from-60% to-transparent pb-[var(--safe-bottom)] pt-8 px-4">
+      <div className="mx-auto">
+        <div
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white transition-colors disabled:opacity-40",
-            buttonColorClass,
+            "flex items-center gap-2 rounded-full border-[1.5px] border-border dark:border-stone-600 bg-background/95 pl-4 pr-2 py-2 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)]",
+            "focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/60",
           )}
         >
-          <SendHorizontal className="h-4 w-4" />
-        </button>
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask anything..."
+            aria-label="Ask anything"
+            rows={1}
+            disabled={disabled}
+            className="min-h-11 self-center flex-1 resize-none border-0 bg-transparent py-[11px] text-sm leading-[22px] text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
+          />
+          <Button
+            onClick={handleSubmit}
+            disabled={disabled || !text.trim()}
+            aria-label="Send message"
+            size="icon"
+            className="h-11 w-11 shrink-0 rounded-full"
+          >
+            <ArrowUp className="h-7 w-7" />
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -2,15 +2,16 @@
 
 **Same MCP tools + different system prompts = different AI-powered verticals.**
 
-This demo shows how one set of MCP tools can power completely different product experiences through prompt engineering alone. Connect your Anthropic API key and Swiggy account to get three working AI verticals — all locally, no deployment needed.
+This demo shows how one set of MCP tools can power completely different product experiences through prompt engineering alone. Connect your Anthropic API key and Swiggy account to get four working AI verticals — all locally, no deployment needed.
 
-## Three Verticals
+## Four Verticals
 
 | Vertical | What it does | MCP Server |
 |----------|-------------|------------|
 | **NutriCart** | AI nutrition assistant — meal plans, recipes with macros, order ingredients | Swiggy Instamart |
 | **StyleBox** | Personal grooming advisor — skincare/haircare routines, order products | Swiggy Instamart |
 | **TableScout** | AI dining concierge — restaurant discovery, table bookings | Swiggy Dineout |
+| **FoodExpress** | AI food delivery assistant — find restaurants, browse menus, place orders | Swiggy Food |
 
 NutriCart and StyleBox use the **same** Instamart MCP server with different system prompts. The AI behavior is entirely driven by the prompt, not the tools.
 
@@ -23,6 +24,7 @@ Browser (React SPA)
   |     +-- MCP Connector: Anthropic connects to Swiggy MCP servers
   |           +-- mcp.swiggy.com/im (Instamart)
   |           +-- mcp.swiggy.com/dineout (Dineout)
+  |           +-- mcp.swiggy.com/food (Food)
   |
   +-- Vite Dev Server (localhost:5173)
         +-- OAuth callback handler (~50 lines)
@@ -80,16 +82,18 @@ Anthropic's servers connect to Swiggy, discover available tools, let Claude deci
 
 ```
 src/
-  lib/           # Constants, types, storage, Anthropic client
-  hooks/         # useChat (API + MCP), useAuth (credentials)
-  verticals/     # NutriCart, StyleBox, TableScout configs
+  integrations/  # Anthropic request/stream/error modules
+  lib/           # Constants, types, storage, parsers
+  hooks/         # useChat orchestration + auth state
+  verticals/     # Vertical configs + prompt profiles/compiler
   components/
     chat/        # ChatView, MessageBubble, ToolTrace, ChatInput
     auth/        # ApiKeyModal, SwiggyConnect, SettingsMenu
     layout/      # Header, VerticalNav
     home/        # LandingPage, VerticalCard
 server/
-  oauth-plugin.ts  # Vite dev server plugin for Swiggy OAuth
+  oauth/           # Modular OAuth handlers + plugin
+  oauth-plugin.ts  # Re-exported Vite plugin entrypoint
 ```
 
 ## License
