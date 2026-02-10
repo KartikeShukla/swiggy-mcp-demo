@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import type { CartState, ChatAction } from "@/lib/types";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 export function CartPanel({
   cart,
@@ -26,95 +25,91 @@ export function CartPanel({
 
   return (
     <>
-      <div className="flex min-h-full flex-col bg-muted/20">
+      <div className="flex max-h-full flex-col bg-background">
         {/* Header */}
-        <SheetHeader className="border-b border-border/80 bg-background px-4 py-6 pr-12">
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="h-4 w-4 text-primary" />
-            <SheetTitle className="text-sm">
+        <SheetHeader className="bg-background px-4 pb-4 pt-5 pr-4">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+            <span aria-hidden className="h-8 w-8" />
+            <SheetTitle className="text-sm text-center">
               Your Cart ({cart.items.reduce((s, i) => s + i.quantity, 0)})
             </SheetTitle>
+            <SheetClose
+              onClick={onClose}
+              className="ring-offset-background focus-visible:ring-ring justify-self-end inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/90 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none"
+            >
+              <X className="size-4" />
+              <span className="sr-only">Close</span>
+            </SheetClose>
           </div>
         </SheetHeader>
 
         {/* Items */}
-        <ScrollArea className="min-h-0 flex-1 px-4 py-3">
-          <div className="space-y-2.5">
-            {cart.items.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background p-3.5 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
-                {item.image ? (
-                  <img src={item.image} alt={item.name} className="h-12 w-12 shrink-0 rounded-xl object-cover" />
-                ) : (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-muted/70">
-                    <ShoppingBag className="h-3.5 w-3.5 text-muted-foreground/30" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="truncate text-[13px] font-medium leading-tight text-card-foreground">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">₹{item.price} each</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="icon-xs"
-                    aria-label={
-                      item.quantity <= 1
-                        ? `Remove ${item.name} from cart`
-                        : `Decrease ${item.name} quantity to ${item.quantity - 1}`
-                    }
-                    onClick={() => {
-                      if (item.quantity <= 1) {
-                        onAction(`Remove ${item.name} from my cart`);
-                      } else {
-                        onAction(`Change ${item.name} quantity to ${item.quantity - 1}`);
-                      }
-                    }}
-                  >
-                    {item.quantity <= 1 ? (
-                      <Trash2 className="h-3 w-3 text-destructive/70" />
+        <div className="px-4 pb-2 pt-2">
+          <div className="rounded-2xl border border-border/80 bg-card p-2.5">
+            <ScrollArea className="max-h-[min(50dvh,28rem)] pr-1">
+              <div className="space-y-2.5">
+                {cart.items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-3">
+                    {item.image ? (
+                      <img src={item.image} alt={item.name} className="h-12 w-12 shrink-0 rounded-md object-cover" />
                     ) : (
-                      <Minus className="h-3 w-3" />
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted/70">
+                        <ShoppingBag className="h-4 w-4 text-muted-foreground/30" />
+                      </div>
                     )}
-                  </Button>
-                  <span className="w-6 text-center text-xs font-bold tabular-nums">{item.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon-xs"
-                    aria-label={`Increase ${item.name} quantity to ${item.quantity + 1}`}
-                    onClick={() => onAction(`Change ${item.name} quantity to ${item.quantity + 1}`)}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-[13px] font-medium leading-tight text-card-foreground">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">₹{item.price} each</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        className="rounded-full"
+                        aria-label={
+                          item.quantity <= 1
+                            ? `Remove ${item.name} from cart`
+                            : `Decrease ${item.name} quantity to ${item.quantity - 1}`
+                        }
+                        onClick={() => {
+                          if (item.quantity <= 1) {
+                            onAction(`Remove ${item.name} from my cart`);
+                          } else {
+                            onAction(`Change ${item.name} quantity to ${item.quantity - 1}`);
+                          }
+                        }}
+                      >
+                        {item.quantity <= 1 ? (
+                          <Trash2 className="h-3.5 w-3.5 text-destructive/70" />
+                        ) : (
+                          <Minus className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                      <span className="w-6 text-center text-xs font-bold tabular-nums">{item.quantity}</span>
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        className="rounded-full"
+                        aria-label={`Increase ${item.name} quantity to ${item.quantity + 1}`}
+                        onClick={() => onAction(`Change ${item.name} quantity to ${item.quantity + 1}`)}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </ScrollArea>
           </div>
-        </ScrollArea>
+        </div>
 
-        {/* Footer - Bill */}
-        <div className="mt-auto border-t border-border/80 bg-background px-4 pb-4 pt-3">
-          <div className="mb-3 space-y-1.5">
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Subtotal</span>
-              <span className="tabular-nums">₹{cart.subtotal}</span>
-            </div>
-            {cart.deliveryFee > 0 && (
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Delivery Fee</span>
-                <span className="tabular-nums">₹{cart.deliveryFee}</span>
-              </div>
-            )}
-            <Separator className="my-2" />
-            <div className="flex justify-between text-sm font-bold text-foreground">
-              <span>Total</span>
-              <span className="tabular-nums">₹{cart.total}</span>
-            </div>
-          </div>
+        {/* Footer - CTA */}
+        <div className="mt-auto bg-background px-4 pb-2 pt-3">
           <Button
             onClick={() => setShowConfirm(true)}
             className="w-full rounded-xl text-sm font-semibold shadow-sm"
           >
-            Place Order (COD)
+            Place Order by COD (₹{cart.total})
           </Button>
         </div>
       </div>

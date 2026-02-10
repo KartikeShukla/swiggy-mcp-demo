@@ -15,22 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
-function StepDots({ current }: { current: number }) {
-  return (
-    <div className="flex items-center justify-center gap-1.5 py-2">
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className={cn(
-            "h-1.5 rounded-full transition-all",
-            i === current ? "w-4 bg-foreground" : "w-1.5 bg-muted-foreground/30",
-          )}
-        />
-      ))}
-    </div>
-  );
-}
-
 function ApiKeyStep({ onSave }: { onSave: (key: string) => void }) {
   const [key, setKey] = useState("");
   const [error, setError] = useState("");
@@ -47,7 +31,7 @@ function ApiKeyStep({ onSave }: { onSave: (key: string) => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 px-4 pb-4">
+    <form onSubmit={handleSubmit} className="space-y-4 px-4 pb-4 pt-3">
       <div className="rounded-2xl border border-border/80 bg-card p-4">
         <div className="space-y-2">
           <Label htmlFor="onboarding-api-key">API Key</Label>
@@ -173,12 +157,6 @@ function AddressSelectStep({
   );
 }
 
-const stepIndex: Record<string, number> = {
-  "api-key": 0,
-  "swiggy-connect": 1,
-  "address-select": 2,
-};
-
 function OnboardingHeader({
   title,
   showClose,
@@ -237,10 +215,11 @@ export function OnboardingSheet({
           side="bottom"
           aria-describedby={undefined}
           showCloseButton={false}
-          className="p-0 min-h-0 h-auto max-h-[88dvh]"
+          overlayClassName="backdrop-blur-[3px]"
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          className="p-0 min-h-0 h-auto max-h-[calc(100%-var(--safe-top,0px)-1.5rem)] pb-[calc(var(--safe-bottom,0px)+0.5rem)]"
         >
           <OnboardingHeader title="API Key" showClose={showClose} onClose={onDismiss} />
-          <StepDots current={stepIndex[step]} />
           <ApiKeyStep onSave={onSaveApiKey} />
           <SheetDescription className="sr-only">Enter your API key to continue setup</SheetDescription>
         </SheetContent>
