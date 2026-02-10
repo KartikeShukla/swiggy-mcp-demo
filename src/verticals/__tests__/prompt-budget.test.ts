@@ -1,10 +1,10 @@
 import { verticals } from "@/verticals";
 
-const LEGACY_BASELINE_WORDS = {
-  food: 767,
-  style: 771,
-  dining: 756,
-  foodorder: 740,
+const MAX_PROMPT_WORDS = {
+  food: 470,
+  style: 470,
+  dining: 460,
+  foodorder: 480,
 } as const;
 
 function countWords(text: string): number {
@@ -12,12 +12,11 @@ function countWords(text: string): number {
 }
 
 describe("prompt budget", () => {
-  it("reduces system prompt payload by at least 20% for every vertical", () => {
-    for (const [verticalId, baseline] of Object.entries(LEGACY_BASELINE_WORDS)) {
+  it("keeps prompts compact under per-vertical budgets", () => {
+    for (const [verticalId, budget] of Object.entries(MAX_PROMPT_WORDS)) {
       const prompt = verticals[verticalId].systemPrompt;
-      const nextWords = countWords(prompt);
-      const reduction = (baseline - nextWords) / baseline;
-      expect(reduction).toBeGreaterThanOrEqual(0.2);
+      const words = countWords(prompt);
+      expect(words).toBeLessThanOrEqual(budget);
     }
   });
 });

@@ -11,36 +11,36 @@ const scenarios: Scenario[] = [
     name: "food requires core nutrition context before search",
     verticalId: "food",
     mustContain: [
-      "goal, diet, and servings",
-      "Recommend 2-3 meal options",
-      "Never place an order without explicit confirmation",
+      "goal + diet + servings",
+      "calories/protein/carbs/fats",
+      "Never place order without explicit user confirmation",
     ],
   },
   {
     name: "style branches context for skincare and haircare",
     verticalId: "style",
     mustContain: [
-      "concern + skin_type",
-      "concern + hair_type",
-      "Never place an order without explicit confirmation",
+      "concern + skin_type for skincare",
+      "concern + hair_type for haircare",
+      "Never place order without explicit user confirmation",
     ],
   },
   {
     name: "dining enforces availability-before-booking",
     verticalId: "dining",
     mustContain: [
-      "always call availability",
-      "Never assume requested time is available",
-      "Book only after user selects a slot and explicitly confirms",
+      "Availability check is mandatory before booking",
+      "never assume requested slot exists",
+      "Never submit booking without explicit confirmation",
     ],
   },
   {
     name: "foodorder handles vague hunger and explicit confirmation",
     verticalId: "foodorder",
     mustContain: [
-      "offer 2-3 cuisine options",
-      "fetch menu",
-      "Never place an order without explicit confirmation",
+      "offer 2-3 cuisines",
+      "switch to menu mode",
+      "Never place order without explicit user confirmation",
     ],
   },
 ];

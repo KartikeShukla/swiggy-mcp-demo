@@ -5,14 +5,14 @@ describe("formatHeaderLocation()", () => {
     expect(formatHeaderLocation(null)).toBe("No address");
   });
 
-  it("renders label with shortened locality from selected address", () => {
+  it("renders shortened locality from selected address", () => {
     const location = formatHeaderLocation({
       id: "addr-1",
       label: "Home",
       address: "Room 5, First Floor, 1009/40, Huda Market, Sector 37, Gurugram, Haryana 122001, India",
     });
 
-    expect(location).toBe("Home · Huda Market");
+    expect(location).toBe("Huda Market");
   });
 
   it("uses shortened locality when label is empty", () => {

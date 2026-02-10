@@ -1,6 +1,7 @@
+import { useCallback } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { verticals } from "@/verticals";
-import type { VerticalConfig, ParsedAddress } from "@/lib/types";
+import type { VerticalConfig, ParsedAddress, ChatAction } from "@/lib/types";
 import { useChat } from "@/hooks/useChat";
 import { useCart } from "@/hooks/useCart";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -8,13 +9,13 @@ import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 import { CartFloatingButton } from "../cart/CartFloatingButton";
 import { CartPanel } from "../cart/CartPanel";
-import foodGif from "@/assets/verticals/food.gif";
 import styleGif from "@/assets/verticals/style.gif";
 import diningGif from "@/assets/verticals/dining.gif";
 import foodorderGif from "@/assets/verticals/foodorder.gif";
+import { getActionMessage, isSelectAddressAction } from "@/lib/chat-actions";
 
 const gifMap: Record<string, string> = {
-  food: foodGif,
+  food: "https://media.tenor.com/oiiF1L5rIdYAAAAM/chefcat-cat-chef.gif",
   style: styleGif,
   dining: diningGif,
   foodorder: foodorderGif,
@@ -28,21 +29,44 @@ function ChatViewInner({
   swiggyToken,
   onAuthError,
   selectedAddress,
+  onSelectAddressFromChat,
+  onAddressError,
 }: {
   vertical: VerticalConfig;
   apiKey: string | null;
   swiggyToken: string | null;
   onAuthError?: () => void;
   selectedAddress?: ParsedAddress | null;
+  onSelectAddressFromChat?: (address: ParsedAddress) => void;
+  onAddressError?: () => void;
 }) {
-  const { messages, loading, error, sendMessage } = useChat(
+  const {
+    messages,
+    loading,
+    loadingLabel,
+    loadingElapsedMs,
+    error,
+    sendMessage,
+  } = useChat(
     vertical,
     apiKey,
     swiggyToken,
     onAuthError,
+    onAddressError,
     selectedAddress,
   );
   const { cart, isOpen, setIsOpen, itemCount } = useCart(messages, vertical.id);
+  const handleAction = useCallback(
+    (action: ChatAction) => {
+      if (isSelectAddressAction(action) && onSelectAddressFromChat) {
+        onSelectAddressFromChat(action.address);
+      }
+      const message = getActionMessage(action).trim();
+      if (!message) return;
+      void sendMessage(message);
+    },
+    [onSelectAddressFromChat, sendMessage],
+  );
 
   const hasMessages = messages.length > 0;
 
@@ -63,13 +87,15 @@ function ChatViewInner({
           <MessageList
             messages={messages}
             loading={loading}
+            loadingLabel={loadingLabel}
+            loadingElapsedMs={loadingElapsedMs}
             verticalId={vertical.id}
-            onAction={sendMessage}
+            onAction={handleAction}
           />
         </ErrorBoundary>
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center px-3">
-          <div className="mb-4 h-[4.5rem] w-[4.5rem] overflow-hidden rounded-2xl">
+        <div className="flex flex-1 flex-col items-center justify-center px-5 pt-4 pb-20">
+          <div className="mb-4 h-[6.3rem] w-[6.3rem] overflow-hidden rounded-2xl">
             <img
               src={gifMap[vertical.id]}
               alt={vertical.name}
@@ -88,7 +114,7 @@ function ChatViewInner({
                 key={prompt}
                 variant="outline"
                 className="rounded-full text-xs max-w-full"
-                onClick={() => sendMessage(prompt)}
+                onClick={() => handleAction(prompt)}
                 disabled={loading || !apiKey}
               >
                 <span className="truncate">{prompt}</span>
@@ -113,7 +139,7 @@ function ChatViewInner({
             <CartPanel
               cart={cart}
               onClose={() => setIsOpen(false)}
-              onAction={sendMessage}
+              onAction={handleAction}
             />
           )}
         </SheetContent>
@@ -121,7 +147,7 @@ function ChatViewInner({
 
       {/* Input — absolutely positioned, overlays messages with gradient */}
       <ChatInput
-        onSend={sendMessage}
+        onSend={handleAction}
         disabled={loading || !apiKey}
       />
     </div>
@@ -133,6 +159,8 @@ export function ChatView(props: {
   swiggyToken: string | null;
   onAuthError?: () => void;
   selectedAddress?: ParsedAddress | null;
+  onSelectAddressFromChat?: (address: ParsedAddress) => void;
+  onAddressError?: () => void;
 }) {
   const { verticalId } = useParams<{ verticalId: string }>();
   const vertical = verticalId ? verticals[verticalId] : undefined;

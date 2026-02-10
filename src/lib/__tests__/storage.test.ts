@@ -7,6 +7,10 @@ import {
   setSwiggyToken,
   removeSwiggyToken,
   getSwiggyTokenAge,
+  getSelectedAddress,
+  getValidatedSelectedAddress,
+  isValidPersistedAddressId,
+  setSelectedAddress,
   getChatHistory,
   setChatHistory,
   clearChatHistory,
@@ -65,6 +69,36 @@ describe("Swiggy token helpers", () => {
     removeSwiggyToken();
     expect(getSwiggyToken()).toBeNull();
     expect(localStorage.getItem("mcp-demo:swiggy-token-ts")).toBeNull();
+  });
+});
+
+describe("selected address helpers", () => {
+  it("validates persisted address IDs", () => {
+    expect(isValidPersistedAddressId("addr_123")).toBe(true);
+    expect(isValidPersistedAddressId("chat-home-123")).toBe(false);
+    expect(isValidPersistedAddressId("Address")).toBe(false);
+    expect(isValidPersistedAddressId("")).toBe(false);
+  });
+
+  it("returns persisted selected address when ID is valid", () => {
+    setSelectedAddress({
+      id: "addr_123",
+      label: "Home",
+      address: "Sector 37, Gurugram",
+    });
+
+    expect(getValidatedSelectedAddress()).toEqual(getSelectedAddress());
+  });
+
+  it("clears invalid selected address IDs from storage", () => {
+    setSelectedAddress({
+      id: "chat-home-123",
+      label: "Home",
+      address: "Sector 37, Gurugram",
+    });
+
+    expect(getValidatedSelectedAddress()).toBeNull();
+    expect(getSelectedAddress()).toBeNull();
   });
 });
 

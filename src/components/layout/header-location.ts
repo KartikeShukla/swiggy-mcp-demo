@@ -31,13 +31,10 @@ function extractLocality(address: string): string {
 
 export function formatHeaderLocation(selectedAddress?: ParsedAddress | null): string {
   if (!selectedAddress) return "No address";
-  const label = selectedAddress.label?.trim();
   const address = selectedAddress.address?.trim();
 
-  if (!address) return label || "No address";
-  const locality = extractLocality(address);
-  if (!label) return locality;
-
-  return `${label} · ${locality}`;
+  if (address) return extractLocality(address);
+  const label = selectedAddress.label?.trim();
+  if (label) return truncate(label, MAX_LOCATION_LEN);
+  return "No address";
 }
-

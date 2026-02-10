@@ -10,7 +10,7 @@ export function LandingPage() {
           MCP Vertical Demo
         </h1>
         <p className="mx-auto max-w-2xl text-xs text-muted-foreground leading-relaxed">
-          Same MCP tools, different system prompts — three distinct AI-powered
+          Same MCP tools, different system prompts — four distinct AI-powered
           verticals. Connect your Anthropic API key and Swiggy account to see it
           in action.
         </p>

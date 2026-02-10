@@ -21,9 +21,7 @@ describe("food product interactions", () => {
     await user.click(screen.getByRole("button", { name: "Add 3 items to cart" }));
 
     expect(onAction).toHaveBeenCalledTimes(1);
-    expect(onAction).toHaveBeenCalledWith(
-      "Add the following items to my cart: 2x Apple, 1x Banana",
-    );
+    expect(onAction).toHaveBeenCalledWith("Add to cart: 2x Apple, 1x Banana");
     expect(screen.getByRole("button", { name: "Add Apple to cart" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Banana to cart" })).toBeInTheDocument();
   });

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
-import type { CartState } from "@/lib/types";
+import type { CartState, ChatAction } from "@/lib/types";
 import { CartPanel } from "../CartPanel";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
@@ -16,7 +16,7 @@ const sampleCart: CartState = {
 };
 
 describe("foodorder cart interactions", () => {
-  function renderInSheet(onAction: (message: string) => void, onClose: () => void) {
+  function renderInSheet(onAction: (action: ChatAction) => void, onClose: () => void) {
     return render(
       <Sheet open onOpenChange={() => {}}>
         <SheetContent

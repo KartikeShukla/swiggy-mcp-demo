@@ -19,12 +19,12 @@ export default function App() {
     changeApiKey,
     disconnectSwiggy,
     reconnectSwiggy,
-    saveSwiggyToken,
     startOAuth,
     clearChats,
     markTokenExpired,
     selectAddress,
     changeAddress,
+    dismissOnboarding,
   } = useAuth();
 
   return (
@@ -36,8 +36,8 @@ export default function App() {
           swiggyToken={swiggyToken}
           onSaveApiKey={saveApiKey}
           onStartOAuth={startOAuth}
-          onPasteToken={saveSwiggyToken}
           onSelectAddress={selectAddress}
+          onDismiss={dismissOnboarding}
         />
 
         <Header
@@ -70,7 +70,9 @@ export default function App() {
                     apiKey={apiKey}
                     swiggyToken={swiggyToken}
                     onAuthError={markTokenExpired}
+                    onAddressError={changeAddress}
                     selectedAddress={selectedAddress}
+                    onSelectAddressFromChat={selectAddress}
                   />
                 }
               />

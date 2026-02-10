@@ -33,6 +33,12 @@ const PRODUCT_SIGNAL_KEYS = new Set([
   "size",
   "pack_size",
   "isVeg",
+  "vegClassifier",
+  "itemAttribute",
+  "itemAttributes",
+  "category",
+  "dishType",
+  "menu_item_id",
 ]);
 
 const STRONG_RESTAURANT_SIGNAL_KEYS = new Set([
@@ -59,30 +65,49 @@ const WEAK_RESTAURANT_SIGNAL_KEYS = new Set([
   "avg_rating",
 ]);
 
+const DISH_NAME_HINT_PATTERN =
+  /\b(paneer|chicken|mutton|fish|prawn|biryani|pizza|burger|sandwich|roll|wrap|tikka|masala|curry|thali|noodles|fries|rice|soup|salad|kebab|falafel|shawarma)\b/i;
+
 function inferPayloadSignals(payload: unknown): {
   hasProductSignals: boolean;
+  hasMenuSignals: boolean;
   hasStrongRestaurantSignals: boolean;
   hasWeakRestaurantSignals: boolean;
+  hasDishNameSignals: boolean;
 } {
   const arr = asArrayOrWrap(payload);
   if (!arr || arr.length === 0) {
     return {
       hasProductSignals: false,
+      hasMenuSignals: false,
       hasStrongRestaurantSignals: false,
       hasWeakRestaurantSignals: false,
+      hasDishNameSignals: false,
     };
   }
 
   let hasProductSignals = false;
+  let hasMenuSignals = false;
   let hasStrongRestaurantSignals = false;
   let hasWeakRestaurantSignals = false;
+  let hasDishNameSignals = false;
 
   for (const item of arr.slice(0, 5)) {
     if (typeof item !== "object" || item === null) continue;
     const keys = Object.keys(item as Record<string, unknown>);
+    const name = typeof (item as Record<string, unknown>).name === "string"
+      ? (item as Record<string, unknown>).name as string
+      : "";
 
     if (keys.some((key) => PRODUCT_SIGNAL_KEYS.has(key))) {
       hasProductSignals = true;
+    }
+    if (
+      keys.some((key) =>
+        /menu|dish|itemattribute|veg|addon|variant|option/i.test(key),
+      )
+    ) {
+      hasMenuSignals = true;
     }
     if (keys.some((key) => STRONG_RESTAURANT_SIGNAL_KEYS.has(key))) {
       hasStrongRestaurantSignals = true;
@@ -90,16 +115,21 @@ function inferPayloadSignals(payload: unknown): {
     if (keys.some((key) => WEAK_RESTAURANT_SIGNAL_KEYS.has(key))) {
       hasWeakRestaurantSignals = true;
     }
+    if (name && DISH_NAME_HINT_PATTERN.test(name)) {
+      hasDishNameSignals = true;
+    }
 
-    if (hasProductSignals && hasStrongRestaurantSignals && hasWeakRestaurantSignals) {
+    if (hasProductSignals && hasMenuSignals && hasStrongRestaurantSignals && hasWeakRestaurantSignals && hasDishNameSignals) {
       break;
     }
   }
 
   return {
     hasProductSignals,
+    hasMenuSignals,
     hasStrongRestaurantSignals,
     hasWeakRestaurantSignals,
+    hasDishNameSignals,
   };
 }
 
@@ -120,26 +150,32 @@ export function parseToolResult(
     // Match by tool name patterns
     if (/search|find|discover|browse|menu|list|recommend|suggest|get_.*(?:product|restaurant|item|dish|cuisine)/i.test(toolName)) {
       if (verticalId === "foodorder") {
+        const isRestaurantDiscoveryTool =
+          /restaurant/i.test(toolName) && !/menu|dish|item/i.test(toolName);
         const isMenuIntentTool = /menu|dish|item/i.test(toolName);
         const signals = inferPayloadSignals(payload);
-        const shouldPreferProducts = isMenuIntentTool || (
-          signals.hasProductSignals && !signals.hasStrongRestaurantSignals
-        );
+        const weakRestaurantOnly =
+          signals.hasWeakRestaurantSignals && !signals.hasStrongRestaurantSignals;
+        const shouldPreferProducts =
+          isMenuIntentTool ||
+          signals.hasMenuSignals ||
+          (signals.hasProductSignals && !signals.hasStrongRestaurantSignals) ||
+          (weakRestaurantOnly && (!isRestaurantDiscoveryTool || signals.hasDishNameSignals));
 
         if (shouldPreferProducts) {
           const products = tryParseProducts(payload);
           if (products) return products;
         }
 
-        if (signals.hasStrongRestaurantSignals || signals.hasWeakRestaurantSignals) {
+        if (signals.hasStrongRestaurantSignals || (signals.hasWeakRestaurantSignals && isRestaurantDiscoveryTool)) {
           const restaurants = tryParseRestaurants(payload);
           if (restaurants) return restaurants;
         }
 
-        const restaurants = tryParseRestaurants(payload);
-        if (restaurants) return restaurants;
         const products = tryParseProducts(payload);
         if (products) return products;
+        const restaurants = tryParseRestaurants(payload);
+        if (restaurants) return restaurants;
       }
 
       if (verticalId === "dining") {
@@ -183,7 +219,7 @@ export function parseToolResult(
     }
 
     // Fall back to shape detection
-    const shaped = detectByShape(payload, verticalId);
+    const shaped = detectByShape(payload, verticalId, toolName);
     if (shaped) return shaped;
 
     // Try status on pre-extracted data (has success/message at top level)

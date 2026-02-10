@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import type { ChatMessage } from "@/lib/types";
+import { useEffect, useRef, useState } from "react";
+import type { ChatAction, ChatMessage } from "@/lib/types";
 import { MessageBubble } from "./MessageBubble";
 import { LoadingIndicator } from "./LoadingIndicator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,43 +7,78 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 export function MessageList({
   messages,
   loading,
+  loadingLabel,
+  loadingElapsedMs,
   verticalId,
   onAction,
 }: {
   messages: ChatMessage[];
   loading: boolean;
+  loadingLabel?: string | null;
+  loadingElapsedMs?: number;
   verticalId?: string;
-  onAction?: (message: string) => void;
+  onAction?: (action: ChatAction) => void;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [toolSectionMaxHeight, setToolSectionMaxHeight] = useState(420);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateMaxHeight = () => {
+      const next = Math.floor(container.clientHeight * 0.75);
+      const resolvedNext = next > 0 ? Math.max(240, next) : 420;
+      setToolSectionMaxHeight((prev) => (prev === resolvedNext ? prev : resolvedNext));
+    };
+
+    updateMaxHeight();
+    if (typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(updateMaxHeight);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <ScrollArea type="always" className="flex-1 min-h-0" role="log" aria-live="polite">
-      <div
-        data-testid="message-list-content"
-        className="pr-2"
-        style={{ paddingBottom: "calc(var(--safe-bottom) + 8rem)" }}
-      >
-        {messages.map((msg, i) => {
-          const prevRole = i > 0 ? messages[i - 1].role : msg.role;
-          const roleChanged = prevRole !== msg.role;
-          return (
-            <div key={i} className={i === 0 ? "" : roleChanged ? "mt-4" : "mt-1"}>
-              <MessageBubble
-                message={msg}
-                verticalId={verticalId}
-                onAction={onAction}
-              />
-            </div>
-          );
-        })}
-        {loading && <LoadingIndicator />}
-        <div ref={bottomRef} />
-      </div>
-    </ScrollArea>
+    <div ref={containerRef} className="flex-1 min-h-0">
+      <ScrollArea type="always" className="h-full" role="log" aria-live="polite">
+        <div
+          data-testid="message-list-content"
+          className="pr-2"
+          style={{
+            paddingTop: "1rem",
+            paddingBottom: "calc(var(--safe-bottom) + 8rem)",
+            ["--tool-section-max-h" as string]: `${toolSectionMaxHeight}px`,
+          }}
+        >
+          {messages.map((msg, i) => {
+            const prevRole = i > 0 ? messages[i - 1].role : msg.role;
+            const roleChanged = prevRole !== msg.role;
+            return (
+              <div key={i} className={i === 0 ? "" : roleChanged ? "mt-4" : "mt-1"}>
+                <MessageBubble
+                  message={msg}
+                  verticalId={verticalId}
+                  onAction={onAction}
+                />
+              </div>
+            );
+          })}
+          {loading && (
+            <LoadingIndicator
+              label={loadingLabel}
+              elapsedMs={loadingElapsedMs}
+            />
+          )}
+          <div ref={bottomRef} />
+        </div>
+      </ScrollArea>
+    </div>
   );
 }

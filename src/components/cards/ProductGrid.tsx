@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { ShoppingCart } from "lucide-react";
-import type { ParsedProduct } from "@/lib/types";
+import type { ChatAction, ParsedProduct } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { ProductCard } from "./ProductCard";
+import { ToolSectionCard } from "./ToolSectionCard";
 
 export function ProductGrid({
   items,
   onAction,
 }: {
   items: ParsedProduct[];
-  onAction: (message: string) => void;
+  onAction: (action: ChatAction) => void;
 }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
@@ -39,7 +39,7 @@ export function ProductGrid({
 
   const handleBulkAdd = () => {
     const parts = selectedItems.map((p) => `${quantities[p.id]}x ${p.name}`);
-    onAction(`Add the following items to my cart: ${parts.join(", ")}`);
+    onAction(`Add to cart: ${parts.join(", ")}`);
     setQuantities({});
   };
 
@@ -49,25 +49,19 @@ export function ProductGrid({
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(item);
   }
+  const groupedEntries = [...grouped.entries()];
 
   return (
     <div>
-      {[...grouped.entries()].map(([brand, groupItems]) => {
+      {groupedEntries.map(([brand, groupItems], index) => {
         const isMultiRow = groupItems.length > 3;
+        const sectionTitle = brand || (groupedEntries.length === 1 ? "Products" : `Products ${index + 1}`);
 
         return (
-          <div key={brand}>
-            {brand && (
-              <div className="mb-2 mt-3 flex items-center gap-2.5">
-                <h5 className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                  {brand}
-                </h5>
-                <Separator className="flex-1" />
-              </div>
-            )}
+          <ToolSectionCard key={brand || `products-${index}`} title={sectionTitle}>
             <div
               className={cn(
-                "my-2 overflow-x-auto scrollbar-thin-h snap-x snap-mandatory scroll-px-3 pb-2 -mx-3 px-3",
+                "overflow-x-auto scrollbar-thin-h snap-x snap-mandatory pb-2",
                 isMultiRow
                   ? "grid grid-rows-2 grid-flow-col auto-cols-[calc(50%_-_5px)] gap-2.5"
                   : "flex items-stretch gap-2.5",
@@ -90,7 +84,7 @@ export function ProductGrid({
                 </div>
               ))}
             </div>
-          </div>
+          </ToolSectionCard>
         );
       })}
       {totalCount > 0 && (

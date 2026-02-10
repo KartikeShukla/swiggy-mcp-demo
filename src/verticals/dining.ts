@@ -7,19 +7,19 @@ export const diningVertical: VerticalConfig = {
   id: "dining",
   name: "TableScout",
   tabName: "Dine",
-  tagline: "AI dining concierge with table bookings",
+  tagline: "Travel-aware dining concierge with table bookings",
   description:
-    "Discover restaurants, check availability, and book tables — your personal dining concierge powered by Dineout.",
+    "Find great places across your itinerary, check live availability, and book tables through Dineout.",
   color: "dining",
   icon: "UtensilsCrossed",
   systemPrompt: buildSystemPrompt(diningPromptProfile),
   promptProfileId: diningPromptProfile.id,
   welcomeMessage:
-    "Welcome to TableScout! Tell me what you're looking for — cuisine, occasion, location, group size — and I'll find the perfect restaurant and book a table.",
+    "Welcome to TableScout. Share your city plan, cuisine mood, location, and group size, and I'll find the right places and book a slot.",
   examplePrompts: [
+    "I am visiting Gurugram this weekend, suggest lunch spots near Cyber Hub",
     "Find a romantic Italian restaurant in Koramangala for tonight",
-    "Best rated places for a birthday dinner, group of 8, in South Bangalore",
-    "Any good rooftop restaurants with weekend offers?",
+    "Best places for a birthday dinner, group of 8, with table availability",
   ],
   mcpServer: MCP_SERVERS.dineout,
 };

@@ -1,5 +1,5 @@
 import { UtensilsCrossed, Star, Tag, MapPin } from "lucide-react";
-import type { ParsedRestaurant } from "@/lib/types";
+import type { ChatAction, ParsedRestaurant } from "@/lib/types";
 import { MAX_OFFERS_SHOWN } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +12,7 @@ export function RestaurantCard({
   actionMessage,
 }: {
   restaurant: ParsedRestaurant;
-  onAction: (message: string) => void;
+  onAction: (action: ChatAction) => void;
   actionLabel?: string;
   actionMessage?: (name: string) => string;
 }) {

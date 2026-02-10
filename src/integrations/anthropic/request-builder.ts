@@ -4,6 +4,7 @@ import {
   MODEL_ID,
 } from "@/lib/constants";
 import type { ChatMessage, ParsedAddress, VerticalConfig } from "@/lib/types";
+import { sanitizeMessagesForApi } from "./message-sanitizer";
 
 export function buildMessageStreamParams(
   messages: ChatMessage[],
@@ -12,7 +13,9 @@ export function buildMessageStreamParams(
   selectedAddress?: ParsedAddress | null,
   sessionStateSummary?: string | null,
 ): Record<string, unknown> {
-  const apiMessages = messages.map((msg) => ({
+  const { sanitizedMessages } = sanitizeMessagesForApi(messages);
+
+  const apiMessages = sanitizedMessages.map((msg) => ({
     role: msg.role as "user" | "assistant",
     content: msg.content,
   }));
@@ -28,7 +31,12 @@ export function buildMessageStreamParams(
   if (selectedAddress?.address) {
     systemBlocks.push({
       type: "text",
-      text: `The user's delivery address is: "${selectedAddress.label}" — ${selectedAddress.address}. Use this as the default delivery location for all operations.`,
+      text: [
+        `Active delivery address ID: "${selectedAddress.id}".`,
+        `Active default delivery address: "${selectedAddress.label}" — ${selectedAddress.address}.`,
+        "Treat this as the user's current location for search, availability, and checkout.",
+        "Do not call address/location tools unless the user explicitly asks to change location or a tool requires address correction.",
+      ].join(" "),
       cache_control: { type: "ephemeral" },
     });
   }

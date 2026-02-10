@@ -1,6 +1,9 @@
 import { buildMessageStreamParams } from "@/integrations/anthropic/request-builder";
 import { MCP_BETA_FLAG, MCP_SERVERS } from "@/lib/constants";
 import { foodVertical } from "@/verticals/food";
+import { styleVertical } from "@/verticals/style";
+import { diningVertical } from "@/verticals/dining";
+import { foodOrderVertical } from "@/verticals/foodOrder";
 import type { ParsedAddress } from "@/lib/types";
 
 describe("buildMessageStreamParams()", () => {
@@ -43,8 +46,10 @@ describe("buildMessageStreamParams()", () => {
     const systemBlocks = params.system as Array<Record<string, unknown>>;
 
     expect(systemBlocks).toHaveLength(2);
+    expect(systemBlocks[1].text).toContain('Active delivery address ID: "1"');
     expect(systemBlocks[1].text).toContain("Home");
     expect(systemBlocks[1].text).toContain("123 Main Street");
+    expect(systemBlocks[1].text).toContain("Do not call address/location tools");
   });
 
   it("includes compact session state summary when provided", () => {
@@ -79,5 +84,32 @@ describe("buildMessageStreamParams()", () => {
         },
       ],
     });
+  });
+
+  it("maps each tab to its MCP server toolset when token is available", () => {
+    const cases = [
+      { vertical: foodVertical, expected: MCP_SERVERS.instamart },
+      { vertical: styleVertical, expected: MCP_SERVERS.instamart },
+      { vertical: diningVertical, expected: MCP_SERVERS.dineout },
+      { vertical: foodOrderVertical, expected: MCP_SERVERS.food },
+    ];
+
+    for (const { vertical, expected } of cases) {
+      const params = buildMessageStreamParams(messages, vertical, "swiggy-token");
+      expect(params.mcp_servers).toEqual([
+        {
+          type: "url",
+          url: expected.url,
+          name: expected.name,
+          authorization_token: "swiggy-token",
+        },
+      ]);
+      expect(params.tools).toEqual([
+        {
+          type: "mcp_toolset",
+          mcp_server_name: expected.name,
+        },
+      ]);
+    }
   });
 });

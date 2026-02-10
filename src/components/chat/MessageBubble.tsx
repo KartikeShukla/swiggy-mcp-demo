@@ -1,4 +1,4 @@
-import type { ChatMessage } from "@/lib/types";
+import type { ChatAction, ChatMessage } from "@/lib/types";
 import { AssistantMessageBubble } from "./AssistantMessageBubble";
 import { UserMessageBubble } from "./UserMessageBubble";
 
@@ -8,7 +8,7 @@ export function MessageBubble({
   verticalId,
 }: {
   message: ChatMessage;
-  onAction?: (message: string) => void;
+  onAction?: (action: ChatAction) => void;
   verticalId?: string;
 }) {
   if (message.role === "user") {

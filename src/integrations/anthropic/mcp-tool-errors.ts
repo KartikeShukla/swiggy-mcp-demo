@@ -26,6 +26,14 @@ function extractMcpErrorText(content: unknown): string {
 export function classifyMcpError(content: unknown): McpErrorCategory {
   const text = extractMcpErrorText(content).toLowerCase();
 
+  const addressPatterns = [
+    "address with id",
+    "address not found",
+    "invalid address",
+    "delivery address",
+  ];
+  if (addressPatterns.some((p) => text.includes(p))) return "address";
+
   const authPatterns = [
     "403",
     "401",
@@ -59,4 +67,6 @@ export const ABORT_MESSAGES: Record<McpErrorCategory, string> = {
     "The Swiggy service is temporarily unavailable. Please try again in a moment.",
   validation:
     "I encountered repeated errors from the service and stopped retrying. Please try a different request — for example, different search terms or options.",
+  address:
+    "Your saved location seems invalid for Swiggy right now. Please open **Settings → Change location**, pick a valid address, and retry.",
 };

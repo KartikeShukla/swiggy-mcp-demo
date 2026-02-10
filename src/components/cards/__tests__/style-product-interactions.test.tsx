@@ -19,8 +19,6 @@ describe("style product interactions", () => {
     await user.click(screen.getByRole("button", { name: "Add SPF 50 Sunscreen to cart" }));
     await user.click(screen.getByRole("button", { name: "Add 2 items to cart" }));
 
-    expect(onAction).toHaveBeenCalledWith(
-      "Add the following items to my cart: 1x Hydrating Cleanser, 1x SPF 50 Sunscreen",
-    );
+    expect(onAction).toHaveBeenCalledWith("Add to cart: 1x Hydrating Cleanser, 1x SPF 50 Sunscreen");
   });
 });

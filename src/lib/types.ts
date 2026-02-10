@@ -97,6 +97,11 @@ export interface ParsedAddress {
   lng?: number;
 }
 
+export type ChatAction =
+  | string
+  | { kind: "text"; text: string }
+  | { kind: "select_address"; address: ParsedAddress; message: string };
+
 export interface ParsedStatus {
   success: boolean;
   message: string;
@@ -130,7 +135,22 @@ export interface TextParseResult {
   >;
 }
 
-export type McpErrorCategory = "auth" | "server" | "validation";
+export type McpErrorCategory = "auth" | "server" | "validation" | "address";
+
+export type ParserIntentHint =
+  | "discover"
+  | "menu"
+  | "availability"
+  | "cart"
+  | "confirm";
+
+export interface ConversationStateSnapshot {
+  slots: string[];
+  selectedAddress?: string;
+  selectedRestaurant?: string;
+  pendingConfirmation: boolean;
+  intent: ParserIntentHint;
+}
 
 export type ParsedToolResult =
   | { type: "products"; items: ParsedProduct[] }

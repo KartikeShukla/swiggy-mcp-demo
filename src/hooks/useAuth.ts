@@ -8,7 +8,8 @@ import {
   removeSwiggyToken,
   getSwiggyTokenAge,
   clearAllChatHistory,
-  getSelectedAddress,
+  getValidatedSelectedAddress,
+  sanitizeAllStoredHistories,
   setSelectedAddress as storeSelectedAddress,
 } from "@/lib/storage";
 import { TOKEN_STALENESS_MS, OAUTH_POPUP_WIDTH, OAUTH_POPUP_HEIGHT } from "@/lib/constants";
@@ -19,7 +20,7 @@ export type OnboardingStep = "idle" | "api-key" | "swiggy-connect" | "address-se
 function computeInitialStep(): OnboardingStep {
   if (!getApiKey()) return "api-key";
   if (!getSwiggyToken()) return "swiggy-connect";
-  if (!getSelectedAddress()) return "address-select";
+  if (!getValidatedSelectedAddress()) return "address-select";
   return "idle";
 }
 
@@ -29,7 +30,11 @@ export function useAuth() {
     getSwiggyToken,
   );
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(computeInitialStep);
-  const [selectedAddress, setSelectedAddressState] = useState<ParsedAddress | null>(getSelectedAddress);
+  const [selectedAddress, setSelectedAddressState] = useState<ParsedAddress | null>(getValidatedSelectedAddress);
+
+  useEffect(() => {
+    sanitizeAllStoredHistories();
+  }, []);
 
   // Backward compat
   const showApiKeyModal = onboardingStep === "api-key";
@@ -39,7 +44,7 @@ export function useAuth() {
     setApiKeyState(key);
     // Advance to next step
     if (getSwiggyToken()) {
-      if (getSelectedAddress()) {
+      if (getValidatedSelectedAddress()) {
         setOnboardingStep("idle");
       } else {
         setOnboardingStep("address-select");
@@ -70,7 +75,7 @@ export function useAuth() {
     setSwiggyTokenState(token);
     setForceStale(false);
     // Advance to next step
-    if (getSelectedAddress()) {
+    if (getValidatedSelectedAddress()) {
       setOnboardingStep("idle");
     } else {
       setOnboardingStep("address-select");
@@ -98,6 +103,10 @@ export function useAuth() {
 
   const changeAddress = useCallback(() => {
     setOnboardingStep("address-select");
+  }, []);
+
+  const dismissOnboarding = useCallback(() => {
+    setOnboardingStep("idle");
   }, []);
 
   const clearChats = useCallback(() => {
@@ -146,5 +155,6 @@ export function useAuth() {
     markTokenExpired,
     selectAddress,
     changeAddress,
+    dismissOnboarding,
   };
 }

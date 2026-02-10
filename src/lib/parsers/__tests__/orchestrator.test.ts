@@ -267,6 +267,14 @@ describe("parseToolResult()", () => {
       expect(result.type).toBe("restaurants");
     });
 
+    it("prefers products for foodorder discovery payloads with weak restaurant fields but dish-like names", () => {
+      const content = JSON.stringify([
+        { name: "Aftaabi Paneer Tikka Masala", rating: 4.4 },
+      ]);
+      const result = parseToolResult("search_restaurants", content, "foodorder");
+      expect(result.type).toBe("products");
+    });
+
     it("parses single restaurant object from get_restaurant_details", () => {
       const content = JSON.stringify({
         name: "Taj Mahal Restaurant",

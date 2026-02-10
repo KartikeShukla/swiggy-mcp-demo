@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { KeyRound, ExternalLink, Link2, ClipboardPaste, MapPin, Loader2 } from "lucide-react";
+import { ExternalLink, Link2, Loader2, X } from "lucide-react";
 import type { OnboardingStep } from "@/hooks/useAuth";
 import type { ParsedAddress } from "@/lib/types";
 import { fetchAddresses } from "@/lib/fetchAddresses";
@@ -14,7 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
 function StepDots({ current }: { current: number }) {
   return (
@@ -49,35 +48,27 @@ function ApiKeyStep({ onSave }: { onSave: (key: string) => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 px-4 pb-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
-          <KeyRound className="h-5 w-5 text-foreground" />
+      <div className="rounded-2xl border border-border/80 bg-card p-4">
+        <div className="space-y-2">
+          <Label htmlFor="onboarding-api-key">API Key</Label>
+          <Input
+            id="onboarding-api-key"
+            type="password"
+            value={key}
+            onChange={(e) => {
+              setKey(e.target.value);
+              setError("");
+            }}
+            placeholder="sk-ant-..."
+            autoFocus
+          />
+          {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
-        <div>
-          <h3 className="text-sm font-semibold">Enter your API key</h3>
-          <p className="text-xs text-muted-foreground">Required to connect to Claude</p>
-        </div>
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="onboarding-api-key">API Key</Label>
-        <Input
-          id="onboarding-api-key"
-          type="password"
-          value={key}
-          onChange={(e) => {
-            setKey(e.target.value);
-            setError("");
-          }}
-          placeholder="sk-ant-..."
-          autoFocus
-        />
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        <Button type="submit" className="mt-4 w-full rounded-full">
+          Connect
+        </Button>
       </div>
-
-      <Button type="submit" className="w-full">
-        Connect
-      </Button>
 
       <a
         href="https://console.anthropic.com/settings/keys"
@@ -94,57 +85,16 @@ function ApiKeyStep({ onSave }: { onSave: (key: string) => void }) {
 
 function SwiggyConnectStep({
   onStartOAuth,
-  onPasteToken,
 }: {
   onStartOAuth: () => void;
-  onPasteToken: (token: string) => void;
 }) {
-  const [token, setToken] = useState("");
-
   return (
-    <div className="space-y-4 px-4 pb-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
-          <Link2 className="h-5 w-5 text-foreground" />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold">Connect Swiggy</h3>
-          <p className="text-xs text-muted-foreground">Link your account for live data</p>
-        </div>
-      </div>
-
-      <Button onClick={onStartOAuth} className="w-full gap-1.5">
-        <Link2 className="h-4 w-4" />
-        Connect via OAuth
-      </Button>
-
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Separator className="flex-1" />
-        or paste token
-        <Separator className="flex-1" />
-      </div>
-
-      <div className="flex gap-2">
-        <Input
-          type="text"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          placeholder="Paste access token..."
-          className="text-xs"
-        />
-        <Button
-          onClick={() => {
-            if (token.trim()) {
-              onPasteToken(token.trim());
-              setToken("");
-            }
-          }}
-          disabled={!token.trim()}
-          size="sm"
-          className="gap-1"
-        >
-          <ClipboardPaste className="h-3 w-3" />
-          Save
+    <div className="px-4 pb-1 pt-3">
+      <div className="rounded-2xl border border-border/80 bg-card p-4">
+        <p className="mb-4 text-sm text-muted-foreground">Link your account for live data</p>
+        <Button onClick={onStartOAuth} className="w-full rounded-full gap-1.5">
+          <Link2 className="h-4 w-4" />
+          Connect via OAuth
         </Button>
       </div>
     </div>
@@ -162,6 +112,7 @@ function AddressSelectStep({
 }) {
   const [addresses, setAddresses] = useState<ParsedAddress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -175,47 +126,49 @@ function AddressSelectStep({
   }, [apiKey, swiggyToken]);
 
   return (
-    <div className="space-y-4 px-4 pb-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
-          <MapPin className="h-5 w-5 text-foreground" />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold">Select delivery address</h3>
-          <p className="text-xs text-muted-foreground">Choose your default location</p>
-        </div>
+    <div className="px-4 pb-1 pt-3">
+      <div className="rounded-2xl border border-border/80 bg-card p-2.5">
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : addresses.length > 0 ? (
+          <div className="max-h-[min(48dvh,26rem)] space-y-2 overflow-y-auto pr-1">
+            {addresses.map((addr) => (
+              <button
+                key={addr.id}
+                onClick={() => {
+                  setSelectedId(addr.id);
+                  onSelect(addr);
+                }}
+                className="w-full rounded-xl border border-border/70 bg-background px-3 py-3.5 text-left transition-colors hover:bg-muted/40"
+              >
+                <div className="flex min-h-[3.5rem] items-center gap-3">
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border/80",
+                      selectedId === addr.id && "border-primary",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "h-2 w-2 rounded-full bg-primary transition-opacity",
+                        selectedId === addr.id ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                  </span>
+                  <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{addr.address}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="py-4 text-center text-xs text-muted-foreground">
+            No saved addresses found.
+          </p>
+        )}
       </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : addresses.length > 0 ? (
-        <div className="space-y-2 max-h-[280px] overflow-y-auto">
-          {addresses.map((addr) => (
-            <button
-              key={addr.id}
-              onClick={() => onSelect(addr)}
-              className="w-full text-left rounded-xl border border-border px-3 py-3 hover:bg-muted/50 transition-colors"
-            >
-              <p className="text-xs font-medium text-foreground">{addr.label}</p>
-              <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{addr.address}</p>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <p className="text-xs text-muted-foreground text-center py-4">
-          No saved addresses found.
-        </p>
-      )}
-
-      <Button
-        variant="ghost"
-        className="w-full text-xs text-muted-foreground"
-        onClick={() => onSelect({ id: "skip", label: "No address", address: "" })}
-      >
-        Skip for now
-      </Button>
     </div>
   );
 }
@@ -226,50 +179,115 @@ const stepIndex: Record<string, number> = {
   "address-select": 2,
 };
 
+function OnboardingHeader({
+  title,
+  showClose,
+  onClose,
+}: {
+  title: string;
+  showClose: boolean;
+  onClose?: () => void;
+}) {
+  return (
+    <SheetHeader className="px-4 pb-2 pt-5">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+        <span aria-hidden className="h-8 w-8" />
+        <SheetTitle className="text-base text-center">{title}</SheetTitle>
+        {showClose ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="ring-offset-background focus-visible:ring-ring justify-self-end inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/90 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none"
+          >
+            <X className="size-4" />
+            <span className="sr-only">Close</span>
+          </button>
+        ) : (
+          <span aria-hidden className="h-8 w-8" />
+        )}
+      </div>
+    </SheetHeader>
+  );
+}
+
 export function OnboardingSheet({
   step,
   apiKey,
   swiggyToken,
   onSaveApiKey,
   onStartOAuth,
-  onPasteToken,
   onSelectAddress,
+  onDismiss,
 }: {
   step: OnboardingStep;
   apiKey: string | null;
   swiggyToken: string | null;
   onSaveApiKey: (key: string) => void;
   onStartOAuth: () => void;
-  onPasteToken: (token: string) => void;
   onSelectAddress: (addr: ParsedAddress) => void;
+  onDismiss: () => void;
 }) {
   if (step === "idle") return null;
+  const showClose = step !== "api-key" || !!apiKey;
+
+  if (step === "api-key") {
+    return (
+      <Sheet open>
+        <SheetContent
+          side="bottom"
+          aria-describedby={undefined}
+          showCloseButton={false}
+          className="p-0 min-h-0 h-auto max-h-[88dvh]"
+        >
+          <OnboardingHeader title="API Key" showClose={showClose} onClose={onDismiss} />
+          <StepDots current={stepIndex[step]} />
+          <ApiKeyStep onSave={onSaveApiKey} />
+          <SheetDescription className="sr-only">Enter your API key to continue setup</SheetDescription>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  if (step === "swiggy-connect") {
+    return (
+      <Sheet open>
+        <SheetContent
+          side="bottom"
+          aria-describedby={undefined}
+          showCloseButton={false}
+          overlayClassName="backdrop-blur-[3px]"
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          className="p-0 min-h-0 h-auto max-h-[calc(100%-var(--safe-top,0px)-1.5rem)] pb-[calc(var(--safe-bottom,0px)+0.5rem)]"
+        >
+          <OnboardingHeader title="Connect Swiggy" showClose={showClose} onClose={onDismiss} />
+          <SwiggyConnectStep onStartOAuth={onStartOAuth} />
+          <SheetDescription className="sr-only">Connect your Swiggy account to continue setup</SheetDescription>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  if (!apiKey || !swiggyToken) return null;
 
   return (
     <Sheet open>
       <SheetContent
         side="bottom"
+        aria-describedby={undefined}
         showCloseButton={false}
-        className="rounded-t-2xl"
+        overlayClassName="backdrop-blur-[3px]"
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        className="p-0 min-h-0 h-auto max-h-[calc(100%-var(--safe-top,0px)-1.5rem)] pb-[calc(var(--safe-bottom,0px)+0.5rem)]"
       >
-        <SheetHeader className="sr-only">
-          <SheetTitle>Setup</SheetTitle>
-          <SheetDescription>Complete the setup steps to get started</SheetDescription>
-        </SheetHeader>
-
-        <StepDots current={stepIndex[step] ?? 0} />
-
-        {step === "api-key" && <ApiKeyStep onSave={onSaveApiKey} />}
-        {step === "swiggy-connect" && (
-          <SwiggyConnectStep onStartOAuth={onStartOAuth} onPasteToken={onPasteToken} />
-        )}
-        {step === "address-select" && apiKey && swiggyToken && (
+        <OnboardingHeader title="Select delivery address" showClose={showClose} onClose={onDismiss} />
+        <div className="min-h-0 overflow-hidden">
           <AddressSelectStep
             apiKey={apiKey}
             swiggyToken={swiggyToken}
             onSelect={onSelectAddress}
           />
-        )}
+        </div>
+        <SheetDescription className="sr-only">Select a delivery address to continue setup</SheetDescription>
       </SheetContent>
     </Sheet>
   );

@@ -1,4 +1,4 @@
-import type { ParsedToolResult } from "@/lib/types";
+import type { ChatAction, ParsedToolResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ProductGrid } from "./ProductGrid";
 import { RestaurantCard } from "./RestaurantCard";
@@ -9,6 +9,7 @@ import { OrderConfirmationCard } from "./OrderConfirmationCard";
 import { BookingConfirmedCard } from "./BookingConfirmedCard";
 import { StatusCard } from "./StatusCard";
 import { InfoCard } from "./InfoCard";
+import { ToolSectionCard } from "./ToolSectionCard";
 
 export function ItemCardGrid({
   result,
@@ -16,7 +17,7 @@ export function ItemCardGrid({
   verticalId,
 }: {
   result: ParsedToolResult;
-  onAction: (message: string) => void;
+  onAction: (action: ChatAction) => void;
   verticalId?: string;
 }) {
   switch (result.type) {
@@ -33,15 +34,15 @@ export function ItemCardGrid({
       const isMultiRow = result.items.length > 3;
       const actionLabel = isFoodOrder ? "View Menu" : "Check Availability";
       const actionMessage = isFoodOrder
-        ? (name: string) => `Show me the menu at ${name}`
+        ? (name: string) => `Open menu for restaurant: ${name}`
         : undefined;
       return (
-        <div className="my-2">
-          <p className="mb-2 text-[11px] font-medium text-muted-foreground/70">
-            {result.items.length} {result.items.length === 1 ? "restaurant" : "restaurants"} found
-          </p>
+        <ToolSectionCard
+          title={`${result.items.length} ${result.items.length === 1 ? "restaurant" : "restaurants"} found`}
+          titleClassName="text-[11px] font-medium text-muted-foreground/70"
+        >
           <div className={cn(
-            "overflow-x-auto scrollbar-thin-h snap-x snap-mandatory scroll-px-3 pb-2 -mx-3 px-3",
+            "overflow-x-auto scrollbar-thin-h snap-x snap-mandatory pb-2",
             isMultiRow
               ? "grid grid-rows-2 grid-flow-col auto-cols-[calc(50%_-_5px)] gap-2.5"
               : "flex items-stretch gap-2.5",
@@ -63,29 +64,25 @@ export function ItemCardGrid({
               </div>
             ))}
           </div>
-        </div>
+        </ToolSectionCard>
       );
     }
 
     case "time_slots":
       return (
-        <div className="my-2">
-          <TimeSlotPicker
-            slots={result.slots}
-            restaurantName={result.restaurantName}
-            onAction={onAction}
-          />
-        </div>
+        <TimeSlotPicker
+          slots={result.slots}
+          restaurantName={result.restaurantName}
+          onAction={onAction}
+        />
       );
 
     case "addresses":
       return (
-        <div className="my-2">
-          <AddressPicker
-            addresses={result.addresses}
-            onAction={onAction}
-          />
-        </div>
+        <AddressPicker
+          addresses={result.addresses}
+          onAction={onAction}
+        />
       );
 
     case "cart":

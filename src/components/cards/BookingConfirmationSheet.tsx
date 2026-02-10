@@ -1,6 +1,7 @@
-import { CalendarCheck2 } from "lucide-react";
+import { X } from "lucide-react";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -27,20 +28,22 @@ export function BookingConfirmationSheet({
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="max-h-[78dvh] p-0"
+        overlayClassName="backdrop-blur-[3px]"
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        className="min-h-0 h-auto max-h-[88dvh] p-0"
       >
-        <SheetHeader>
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <CalendarCheck2 className="h-4 w-4" />
-            </div>
-            <div className="space-y-1">
-              <SheetTitle className="text-base">Are you sure you want to book this slot?</SheetTitle>
-              <SheetDescription>
-                Confirm your table booking details before we proceed.
-              </SheetDescription>
-            </div>
+        <SheetHeader className="px-4 pb-3 pt-5">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+            <span aria-hidden className="h-8 w-8" />
+            <SheetTitle className="text-base text-center">Are you sure you want to book this slot?</SheetTitle>
+            <SheetClose className="ring-offset-background focus-visible:ring-ring justify-self-end inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/90 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none">
+              <X className="size-4" />
+              <span className="sr-only">Close</span>
+            </SheetClose>
           </div>
+          <SheetDescription className="pt-1 text-center">
+            Confirm your table booking details before we proceed.
+          </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-2 px-4 pb-1 text-sm">

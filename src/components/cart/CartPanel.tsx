@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
-import type { CartState } from "@/lib/types";
+import type { CartState, ChatAction } from "@/lib/types";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -14,7 +14,7 @@ export function CartPanel({
 }: {
   cart: CartState;
   onClose: () => void;
-  onAction: (message: string) => void;
+  onAction: (action: ChatAction) => void;
 }) {
   const [showConfirm, setShowConfirm] = useState(false);
 

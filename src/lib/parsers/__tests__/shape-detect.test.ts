@@ -34,12 +34,30 @@ describe("detectByShape()", () => {
       expect(result?.type).toBe("restaurants");
     });
 
-    it("detects restaurant by avg_rating + name", () => {
+    it("treats rating-only rows as products for foodorder by default", () => {
       const result = detectByShape(
         [{ name: "Rated", avg_rating: 3.8 }],
         "foodorder",
       );
+      expect(result?.type).toBe("products");
+    });
+
+    it("keeps rating-only rows as restaurants for explicit restaurant discovery tools", () => {
+      const result = detectByShape(
+        [{ name: "Rated", avg_rating: 3.8 }],
+        "foodorder",
+        "search_restaurants",
+      );
       expect(result?.type).toBe("restaurants");
+    });
+
+    it("prefers products for dish-like names even when tool says search_restaurants", () => {
+      const result = detectByShape(
+        [{ name: "Paneer Tikka Masala", avg_rating: 4.2 }],
+        "foodorder",
+        "search_restaurants",
+      );
+      expect(result?.type).toBe("products");
     });
 
     it("detects restaurant by deliveryTime + name", () => {

@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
+import { MapPin } from "lucide-react";
 import type { ParsedAddress } from "@/lib/types";
 import { formatHeaderLocation } from "./header-location";
 import { VerticalNav } from "./VerticalNav";
 
 function Logo67() {
   return (
-    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-100 dark:bg-stone-800 overflow-hidden">
-      <svg viewBox="0 0 28 28" className="h-6 w-6" aria-hidden="true">
+    <div className="flex h-[34px] w-[34px] items-center justify-center overflow-hidden rounded-md bg-stone-100 dark:bg-stone-800">
+      <svg viewBox="0 0 28 28" className="h-[29px] w-[29px]" aria-hidden="true">
         {/* "6" in gray */}
         <text
           x="5"
@@ -52,20 +53,21 @@ export function Header({
       <div className="flex h-12 items-center justify-between px-4">
         <Link
           to="/"
-          className="flex items-center gap-2 text-foreground hover:text-foreground/80"
+          className="flex items-center gap-3 text-foreground hover:text-foreground/80"
         >
           <Logo67 />
           <div className="flex flex-col">
             <span className="flex items-center gap-2 text-sm font-semibold">
               MCP Demo
               <span
-                className={`h-2.5 w-2.5 rounded-full ${connectionActive ? "bg-green-500" : "bg-red-400"}`}
+                className={`h-1.5 w-1.5 rounded-full ${connectionActive ? "bg-green-500" : "bg-red-400"}`}
                 aria-label={connectionActive ? "Connection active" : "Connection inactive"}
                 title={connectionActive ? "Connection active" : "Connection inactive"}
               />
             </span>
-            <span className="text-[10px] text-muted-foreground truncate max-w-[170px]">
-              {locationText}
+            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <MapPin className="h-2.5 w-2.5 shrink-0" />
+              <span className="truncate max-w-[170px]">{locationText}</span>
             </span>
           </div>
         </Link>
@@ -75,7 +77,7 @@ export function Header({
       </div>
 
       {/* Row 2: Vertical Nav Tabs */}
-      <div className="flex items-center justify-center px-2 py-2.5">
+      <div className="flex items-center justify-center px-[9.6px] pt-2.5 pb-3">
         <VerticalNav />
       </div>
     </header>

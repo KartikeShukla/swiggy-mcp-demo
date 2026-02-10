@@ -24,6 +24,7 @@ describe("buildSessionStateSummary", () => {
     expect(summary).toContain("slots=");
     expect(summary).toContain("diet");
     expect(summary).toContain("servings");
+    expect(summary).toContain("intent=discover");
     expect(summary).toContain("confirm=no");
   });
 
@@ -38,5 +39,31 @@ describe("buildSessionStateSummary", () => {
 
     expect(summary).toContain("slots=");
     expect(summary).toContain("confirm=yes");
+    expect(summary).toContain("intent=confirm");
+  });
+
+  it("captures foodorder menu intent and selected restaurant", () => {
+    const summary = buildSessionStateSummary(
+      [user("Open menu for restaurant: Behrouz Biryani")],
+      "foodorder",
+    );
+
+    expect(summary).toContain("intent=menu");
+    expect(summary).toContain("restaurant=Behrouz Biryani");
+  });
+
+  it("adds location lock when selected address exists", () => {
+    const summary = buildSessionStateSummary(
+      [user("find top biryani places")],
+      "foodorder",
+      {
+        id: "a1",
+        label: "Home",
+        address: "Sector 37, Gurugram",
+      },
+    );
+
+    expect(summary).toContain("location=locked:Home");
+    expect(summary).toContain("a1");
   });
 });

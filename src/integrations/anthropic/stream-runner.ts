@@ -10,11 +10,18 @@ import type {
   McpErrorCategory,
 } from "@/lib/types";
 import { ABORT_MESSAGES, classifyMcpError } from "./mcp-tool-errors";
+import { sanitizeAssistantBlocks } from "./message-sanitizer";
+
+function ensureNonEmptyContent(content: ContentBlock[], fallbackText: string): ContentBlock[] {
+  if (content.length > 0) return content;
+  return [{ type: "text", text: fallbackText }];
+}
 
 export async function runMessageStream(
   client: Anthropic,
   params: Record<string, unknown>,
   onAuthError?: () => void,
+  onAddressError?: () => void,
 ): Promise<ApiResponse> {
   const stream = client.beta.messages.stream(
     params as unknown as Parameters<Anthropic["beta"]["messages"]["stream"]>[0],
@@ -46,6 +53,15 @@ export async function runMessageStream(
         }
       }
 
+      if (category === "address") {
+        onAddressError?.();
+        logger.warn("MCP address error — aborting stream and requesting reselection");
+        abortedDueToRetryLoop = true;
+        abortCategory = "address";
+        stream.abort();
+        return;
+      }
+
       if (category === "server" && mcpToolErrorCount >= MCP_TOOL_ERROR_LIMIT) {
         logger.warn("MCP server error limit reached — aborting stream");
         abortedDueToRetryLoop = true;
@@ -65,6 +81,13 @@ export async function runMessageStream(
 
   try {
     const response = await stream.finalMessage();
+    const sanitized = sanitizeAssistantBlocks(
+      response.content as ApiResponse["content"],
+    );
+    const safeContent = ensureNonEmptyContent(
+      sanitized.blocks,
+      "I completed that request but did not receive a final assistant message. Please try once.",
+    );
 
     const usage = {
       input_tokens: response.usage.input_tokens,
@@ -78,13 +101,15 @@ export async function runMessageStream(
     console.log("[Token Usage]", usage);
 
     return {
-      content: response.content as ApiResponse["content"],
+      content: safeContent,
       usage,
     };
   } catch (err) {
     if (abortedDueToRetryLoop && err instanceof APIUserAbortError) {
       const partial = stream.currentMessage;
-      const partialContent = (partial?.content ?? []) as ContentBlock[];
+      const partialContent = sanitizeAssistantBlocks(
+        (partial?.content ?? []) as ContentBlock[],
+      ).blocks;
       const partialUsage = partial?.usage;
 
       const syntheticBlock: ContentBlock = {
@@ -106,10 +131,46 @@ export async function runMessageStream(
       console.log(`[Token Usage] (aborted — ${abortCategory})`, usage);
 
       return {
-        content: [...partialContent, syntheticBlock],
+        content: ensureNonEmptyContent(
+          [...partialContent, syntheticBlock],
+          ABORT_MESSAGES[abortCategory],
+        ),
         usage,
       };
     }
+
+    if (
+      err instanceof Error &&
+      /stream ended without producing a Message with role=assistant/i.test(
+        err.message,
+      )
+    ) {
+      const partial = stream.currentMessage;
+      const partialContent = sanitizeAssistantBlocks(
+        (partial?.content ?? []) as ContentBlock[],
+      ).blocks;
+      const partialUsage = partial?.usage;
+
+      const usage = {
+        input_tokens: partialUsage?.input_tokens ?? 0,
+        output_tokens: partialUsage?.output_tokens ?? 0,
+        cache_creation_input_tokens: (
+          partialUsage as Record<string, number> | undefined
+        )?.cache_creation_input_tokens,
+        cache_read_input_tokens: (
+          partialUsage as Record<string, number> | undefined
+        )?.cache_read_input_tokens,
+      };
+
+      return {
+        content: ensureNonEmptyContent(
+          partialContent,
+          "I finished processing but the stream ended unexpectedly. Please retry once.",
+        ),
+        usage,
+      };
+    }
+
     throw err;
   }
 }

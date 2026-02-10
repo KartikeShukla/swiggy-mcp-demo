@@ -16,6 +16,7 @@ export function useChatApi(
   vertical: VerticalConfig,
   swiggyToken: string | null,
   onAuthError?: () => void,
+  onAddressError?: () => void,
   selectedAddress?: ParsedAddress | null,
 ) {
   const client = useMemo(() => (apiKey ? createClient(apiKey) : null), [apiKey]);
@@ -35,9 +36,9 @@ export function useChatApi(
         sessionStateSummary,
       );
 
-      return runMessageStream(client, params, onAuthError);
+      return runMessageStream(client, params, onAuthError, onAddressError);
     },
-    [client, vertical, swiggyToken, selectedAddress, onAuthError],
+    [client, vertical, swiggyToken, selectedAddress, onAuthError, onAddressError],
   );
 
   return { sendToApi, classifyError: classifyApiError };

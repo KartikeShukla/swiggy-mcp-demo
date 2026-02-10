@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function UserMessageBubble({ message }: { message: ChatMessage }) {
   return (
-    <div className="flex flex-col items-end gap-1 px-3 py-2 animate-[fade-in_200ms_ease-out]">
+    <div className="flex flex-col items-end gap-3 px-3 py-2 animate-[fade-in_200ms_ease-out]">
       <div className="flex items-center gap-1.5">
         <span className="text-[10px] text-muted-foreground">You</span>
         <Avatar className="h-5 w-5 shrink-0">

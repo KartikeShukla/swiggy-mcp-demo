@@ -1,5 +1,6 @@
-import { Bot } from "lucide-react";
-import type { ChatMessage, ContentBlock } from "@/lib/types";
+import { useState } from "react";
+import { Bot, ChevronRight } from "lucide-react";
+import type { ChatAction, ChatMessage, ContentBlock } from "@/lib/types";
 import { renderMarkdownLite } from "@/lib/markdown";
 import { findPrecedingToolName, groupBlocks } from "@/lib/content-blocks";
 import { parseToolResult, parseVariantsFromText } from "@/lib/parsers";
@@ -7,6 +8,7 @@ import { TEXT_COLLAPSE_THRESHOLD } from "@/lib/constants";
 import { ProductGrid } from "../cards/ProductGrid";
 import { CollapsibleText } from "./CollapsibleText";
 import { CollapsibleToolGroup } from "./CollapsibleToolGroup";
+import { DetailSheet } from "./DetailSheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function AssistantMessageBubble({
@@ -15,7 +17,7 @@ export function AssistantMessageBubble({
   verticalId,
 }: {
   message: ChatMessage;
-  onAction?: (message: string) => void;
+  onAction?: (action: ChatAction) => void;
   verticalId?: string;
 }) {
   const blocks: ContentBlock[] =
@@ -46,16 +48,35 @@ export function AssistantMessageBubble({
     }
   }
   const collapsibleText = collapsibleTexts.join("\n\n");
+  const detailBlocks = segments.flatMap((segment) => (
+    segment.kind === "tool_group" ? segment.blocks : []
+  ));
+  const hasDetails = detailBlocks.length > 0;
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const resolvedVerticalId = verticalId ?? "";
 
   return (
-    <div className="flex flex-col items-start gap-1 px-3 py-2 animate-[fade-in_200ms_ease-out]">
-      <div className="flex items-center gap-1.5">
-        <Avatar className="h-5 w-5 shrink-0">
-          <AvatarFallback className="bg-primary/10 text-[10px]">
-            <Bot className="h-3 w-3 text-primary" />
-          </AvatarFallback>
-        </Avatar>
-        <span className="text-[10px] text-muted-foreground">Assistant</span>
+    <div className="flex flex-col items-start gap-3 px-3 py-2 animate-[fade-in_200ms_ease-out]">
+      <div className="flex w-full items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <Avatar className="h-5 w-5 shrink-0">
+            <AvatarFallback className="bg-primary/10 text-[10px]">
+              <Bot className="h-3 w-3 text-primary" />
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-[10px] text-muted-foreground">Assistant</span>
+        </div>
+        {hasDetails && (
+          <button
+            type="button"
+            onClick={() => setDetailSheetOpen(true)}
+            className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="See Details"
+          >
+            See Details
+            <ChevronRight className="h-3 w-3" />
+          </button>
+        )}
       </div>
       <div className="min-w-0 w-full space-y-2">
         {segments.map((segment, si) => {
@@ -113,9 +134,8 @@ export function AssistantMessageBubble({
                 key={si}
                 blocks={segment.blocks}
                 allBlocks={blocks}
-                verticalId={verticalId ?? ""}
+                verticalId={resolvedVerticalId}
                 onAction={onAction}
-                collapsibleText={collapsibleText}
               />
             );
           }
@@ -123,6 +143,16 @@ export function AssistantMessageBubble({
           return null;
         })}
       </div>
+      {hasDetails && (
+        <DetailSheet
+          open={detailSheetOpen}
+          onOpenChange={setDetailSheetOpen}
+          text={collapsibleText}
+          blocks={detailBlocks}
+          allBlocks={blocks}
+          verticalId={resolvedVerticalId}
+        />
+      )}
     </div>
   );
 }

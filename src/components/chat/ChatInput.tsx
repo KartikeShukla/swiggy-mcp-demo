@@ -40,7 +40,7 @@ export function ChatInput({
       <div className="mx-auto">
         <div
           className={cn(
-            "flex items-end gap-2 rounded-full border-[1.2px] border-border/90 bg-background/95 px-4 py-2.5 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)]",
+            "flex items-center gap-2 rounded-full border-[1.5px] border-border dark:border-stone-600 bg-background/95 pl-4 pr-2 py-2 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)]",
             "focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/60",
           )}
         >
@@ -53,16 +53,16 @@ export function ChatInput({
             aria-label="Ask anything"
             rows={1}
             disabled={disabled}
-            className="flex-1 resize-none border-0 bg-transparent py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
+            className="min-h-11 self-center flex-1 resize-none border-0 bg-transparent py-[11px] text-sm leading-[22px] text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
           />
           <Button
             onClick={handleSubmit}
             disabled={disabled || !text.trim()}
             aria-label="Send message"
             size="icon"
-            className="h-9 w-9 shrink-0 rounded-full"
+            className="h-11 w-11 shrink-0 rounded-full"
           >
-            <ArrowUp className="h-4 w-4" />
+            <ArrowUp className="h-7 w-7" />
           </Button>
         </div>
       </div>

@@ -29,9 +29,15 @@ describe("prompt compiler", () => {
   });
 
   it("preserves key vertical behavior rules", () => {
-    expect(verticals.food.systemPrompt).toContain("calories, protein, carbs, and fats");
-    expect(verticals.style.systemPrompt).toContain("concern + skin_type");
-    expect(verticals.dining.systemPrompt).toContain("always call availability");
-    expect(verticals.foodorder.systemPrompt).toContain("offer 2-3 cuisine options");
+    expect(verticals.food.systemPrompt).toContain("calories/protein/carbs/fats");
+    expect(verticals.style.systemPrompt).toContain(
+      "concern + skin_type for skincare",
+    );
+    expect(verticals.dining.systemPrompt).toContain(
+      "Availability check is mandatory before booking",
+    );
+    expect(verticals.foodorder.systemPrompt).toContain(
+      "switch to menu mode",
+    );
   });
 });

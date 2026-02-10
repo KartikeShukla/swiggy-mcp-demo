@@ -1,22 +1,24 @@
 export type VerticalId = "food" | "style" | "dining" | "foodorder";
 
-export interface PromptContextRule {
+export interface PromptSlotRule {
   key: string;
-  requirement: string;
-  optional?: boolean;
-  condition?: string;
+  prompt: string;
+  required?: boolean;
+  when?: string;
 }
 
 export interface PromptProfile {
   id: VerticalId;
   assistantName: string;
-  intro: string;
-  scope: string[];
-  declinePolicy: string;
-  contextRules: PromptContextRule[];
-  contextMinimum: string;
-  workflow: string[];
-  resultPolicy: string[];
-  safetyRules: string[];
+  mission: string;
+  inScope: string[];
+  outOfScope: string;
+  slots: PromptSlotRule[];
+  preToolRequirement: string;
+  phaseFlow: string[];
+  toolPolicies: string[];
+  responseStyle: string[];
+  confirmationRules: string[];
+  fallbackRules: string[];
   includeCodRule?: boolean;
 }

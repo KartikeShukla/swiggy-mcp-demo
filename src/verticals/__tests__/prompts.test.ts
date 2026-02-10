@@ -1,7 +1,8 @@
 import { verticals } from "@/verticals";
 import {
-  CARD_RENDERING_RULE,
   COD_CANCELLATION_RULE,
+  LOCATION_LOCK_RULE,
+  RESULT_FILTERING_RULE,
   SEARCH_EFFICIENCY_RULE,
   TOOL_ERROR_RULE,
 } from "@/verticals/shared-prompt";
@@ -11,7 +12,8 @@ describe("vertical system prompts", () => {
     for (const vertical of Object.values(verticals)) {
       expect(vertical.systemPrompt).toContain(SEARCH_EFFICIENCY_RULE);
       expect(vertical.systemPrompt).toContain(TOOL_ERROR_RULE);
-      expect(vertical.systemPrompt).toContain(CARD_RENDERING_RULE);
+      expect(vertical.systemPrompt).toContain(RESULT_FILTERING_RULE);
+      expect(vertical.systemPrompt).toContain(LOCATION_LOCK_RULE);
     }
   });
 

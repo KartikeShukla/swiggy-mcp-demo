@@ -31,7 +31,6 @@ function findLatestCartState(
 
       // Find the preceding tool_use to get the tool name
       const toolName = findPrecedingToolName(blocks, j);
-      if (!/cart|basket/i.test(toolName)) continue;
 
       const parsed = parseToolResult(toolName, block.content, verticalId);
       if (parsed.type === "cart") {

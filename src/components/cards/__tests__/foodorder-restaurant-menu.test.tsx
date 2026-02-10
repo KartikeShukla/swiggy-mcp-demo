@@ -25,7 +25,7 @@ describe("foodorder restaurant interactions", () => {
 
     await user.click(screen.getByRole("button", { name: "View Menu Spice Route" }));
 
-    expect(onAction).toHaveBeenCalledWith("Show me the menu at Spice Route");
+    expect(onAction).toHaveBeenCalledWith("Open menu for restaurant: Spice Route");
   });
 
   it("renders menu cards with add actions (not view-menu actions) for product results", () => {

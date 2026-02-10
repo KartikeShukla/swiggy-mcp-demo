@@ -17,7 +17,7 @@ Keep behavior stable across all four verticals while reducing prompt token usage
 
 1. Cached system prompt block (compiled vertical prompt)
 2. Optional delivery address block
-3. Optional compact session-state block (`slots=...; confirm=...`)
+3. Optional compact session-state block (`slots=...; intent=...; confirm=...; ...`)
 4. Message history
 5. MCP server + toolset config when Swiggy token exists
 6. Beta flags for MCP + prompt caching + context management
@@ -30,6 +30,8 @@ Purpose:
 
 1. Keep model aligned on collected context without long repeated clarifications
 2. Keep added token overhead minimal
+3. Preserve mode continuity (for example: foodorder restaurant-to-menu transition)
+4. Carry location lock signal when a default address exists
 
 ## Safety + Behavior Invariants
 
@@ -37,6 +39,8 @@ Purpose:
 2. Card-first response style remains mandatory
 3. MCP error handling stays aligned with stream abort guards
 4. Dining availability check remains mandatory before booking
+5. Default selected address is treated as active location unless user asks to change it
+6. Foodorder menu mode avoids restaurant rediscovery loops after restaurant selection
 
 ## Tests
 

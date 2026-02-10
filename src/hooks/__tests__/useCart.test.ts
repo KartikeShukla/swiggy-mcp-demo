@@ -106,9 +106,18 @@ describe("useCart", () => {
     expect(result.current.itemCount).toBe(4); // 3 + 1
   });
 
-  it("ignores tool results whose name does not match cart/basket", () => {
-    // The tool name "search_products" won't match /cart|basket/i,
-    // so parseToolResult should never be called.
+  it("extracts cart state even when tool name is non-cart", () => {
+    const parsedCart: CartState = {
+      items: [
+        { id: "i1", name: "Milk", price: 50, quantity: 3 },
+        { id: "i3", name: "Eggs", price: 60, quantity: 1 },
+      ],
+      subtotal: 210,
+      deliveryFee: 20,
+      total: 230,
+    };
+    mockedParseToolResult.mockReturnValue({ type: "cart", cart: parsedCart });
+
     const messages: ChatMessage[] = [
       {
         role: "assistant",
@@ -120,8 +129,14 @@ describe("useCart", () => {
       },
     ];
     const { result } = renderHook(() => useCart(messages, "instamart"));
-    expect(result.current.cart).toBeNull();
-    expect(mockedParseToolResult).not.toHaveBeenCalled();
+    expect(result.current.cart).toEqual(parsedCart);
+    expect(result.current.itemCount).toBe(4);
+    expect(mockedParseToolResult).toHaveBeenCalledTimes(1);
+    expect(mockedParseToolResult).toHaveBeenCalledWith(
+      "search_products",
+      "stuff",
+      "instamart",
+    );
   });
 
   it("ignores user messages (only processes assistant messages)", () => {

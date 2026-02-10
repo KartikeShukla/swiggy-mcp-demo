@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Settings, KeyRound, Link2, Link2Off, Trash2, Sun, Moon, MapPin } from "lucide-react";
+import { MoreVertical, KeyRound, Link2, Link2Off, Trash2, Sun, Moon, MapPin, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -46,15 +47,28 @@ export function SettingsMenu({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" aria-label="Settings">
-          <Settings className="h-4 w-4" />
+          <MoreVertical className="h-4 w-4" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="h-[min(72dvh,34rem)] p-0">
-        <SheetHeader className="pb-4 pt-8">
-          <SheetTitle className="text-base">Settings</SheetTitle>
+      <SheetContent
+        side="bottom"
+        showCloseButton={false}
+        overlayClassName="backdrop-blur-[3px]"
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        className="min-h-0 h-auto max-h-[88dvh] p-0"
+      >
+        <SheetHeader className="px-4 pb-4 pt-8 pr-4">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+            <span aria-hidden className="h-8 w-8" />
+            <SheetTitle className="text-base text-center">Settings</SheetTitle>
+            <SheetClose className="ring-offset-background focus-visible:ring-ring justify-self-end inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/90 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none">
+              <X className="size-4" />
+              <span className="sr-only">Close</span>
+            </SheetClose>
+          </div>
         </SheetHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8">
+        <div className="max-h-[min(68dvh,32rem)] overflow-y-auto px-4 pb-12">
           <div className="space-y-4">
             <div className="rounded-2xl border border-border/80 bg-card p-1">
               <button

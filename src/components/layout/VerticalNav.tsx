@@ -19,7 +19,7 @@ const activeClasses = {
 
 export function VerticalNav() {
   const gridCols = verticalList
-    .map((v) => (v.id === "food" ? "1.2fr" : "1fr"))
+    .map((v) => (v.id === "food" ? "1.3fr" : "1fr"))
     .join(" ");
 
   return (

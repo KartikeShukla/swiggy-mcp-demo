@@ -1,4 +1,4 @@
-import type { PromptContextRule, PromptProfile } from "./types";
+import type { PromptProfile, PromptSlotRule } from "./types";
 
 function normalizeRule(rule: string): string {
   return rule
@@ -25,59 +25,72 @@ export function findDuplicateInstructionLines(lines: string[]): string[] {
   return [...duplicates];
 }
 
-function formatContextRule(rule: PromptContextRule): string {
+function formatSlotRule(rule: PromptSlotRule): string {
   const tags: string[] = [];
-  if (rule.optional) tags.push("optional");
-  if (rule.condition) tags.push(rule.condition);
-  if (tags.length === 0) return `- ${rule.key}: ${rule.requirement}`;
-  return `- ${rule.key}: ${rule.requirement} [${tags.join("; ")}]`;
+  if (!rule.required) tags.push("optional");
+  if (rule.when) tags.push(rule.when);
+  if (tags.length === 0) return `- ${rule.key}: ${rule.prompt}`;
+  return `- ${rule.key}: ${rule.prompt} [${tags.join("; ")}]`;
 }
 
 export function collectProfileRules(profile: PromptProfile): string[] {
   return [
-    ...profile.scope,
-    profile.declinePolicy,
-    ...profile.contextRules.map((rule) => formatContextRule(rule)),
-    profile.contextMinimum,
-    ...profile.workflow,
-    ...profile.resultPolicy,
-    ...profile.safetyRules,
+    profile.mission,
+    ...profile.inScope,
+    profile.outOfScope,
+    ...profile.slots.map((rule) => formatSlotRule(rule)),
+    profile.preToolRequirement,
+    ...profile.phaseFlow,
+    ...profile.toolPolicies,
+    ...profile.responseStyle,
+    ...profile.confirmationRules,
+    ...profile.fallbackRules,
   ];
 }
 
 export function compilePromptProfile(profile: PromptProfile): string {
   const sections: string[] = [];
 
-  sections.push(`You are ${profile.assistantName}. ${profile.intro}`);
+  sections.push(`You are ${profile.assistantName}. ${profile.mission}`);
 
   sections.push(
     [
-      "Scope:",
-      ...profile.scope.map((line) => `- ${line}`),
-      `- ${profile.declinePolicy}`,
+      "Scope",
+      ...profile.inScope.map((line) => `- ${line}`),
+      `- ${profile.outOfScope}`,
     ].join("\n"),
   );
 
   sections.push(
     [
-      "Context Before Tool Calls:",
-      ...profile.contextRules.map((rule) => formatContextRule(rule)),
-      `- ${profile.contextMinimum}`,
+      "Slots To Collect",
+      ...profile.slots.map((rule) => formatSlotRule(rule)),
+      `- ${profile.preToolRequirement}`,
     ].join("\n"),
   );
 
   sections.push(
-    ["Workflow:", ...profile.workflow.map((line, index) => `${index + 1}. ${line}`)].join(
+    ["Execution Phases", ...profile.phaseFlow.map((line, index) => `${index + 1}. ${line}`)].join(
       "\n",
     ),
   );
 
   sections.push(
-    ["Result Policy:", ...profile.resultPolicy.map((line) => `- ${line}`)].join("\n"),
+    ["Tool Policy", ...profile.toolPolicies.map((line) => `- ${line}`)].join("\n"),
   );
 
   sections.push(
-    ["Safety:", ...profile.safetyRules.map((line) => `- ${line}`)].join("\n"),
+    ["Response Style", ...profile.responseStyle.map((line) => `- ${line}`)].join("\n"),
+  );
+
+  sections.push(
+    ["Confirmation", ...profile.confirmationRules.map((line) => `- ${line}`)].join(
+      "\n",
+    ),
+  );
+
+  sections.push(
+    ["Fallbacks", ...profile.fallbackRules.map((line) => `- ${line}`)].join("\n"),
   );
 
   return sections.join("\n\n");
