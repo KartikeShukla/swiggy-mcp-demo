@@ -22,9 +22,11 @@ export async function handleAuthStart(
       createdAt: Date.now(),
     });
 
+    const isSecure = req.headers.host && !req.headers.host.startsWith("localhost");
+    const secureSuffix = isSecure ? "; Secure" : "";
     res.setHeader(
       "Set-Cookie",
-      `mcp_token_endpoint=${encodeURIComponent(tokenEndpoint)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
+      `mcp_token_endpoint=${encodeURIComponent(tokenEndpoint)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600${secureSuffix}`,
     );
 
     const authUrl = new URL(authorizationEndpoint);

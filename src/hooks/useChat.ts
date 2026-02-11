@@ -4,7 +4,6 @@ import { useChatApi } from "./useChatApi";
 import { useChatPersistence } from "./useChatPersistence";
 import { buildSessionStateSummary } from "@/integrations/anthropic/session-summary";
 import type { VerticalId } from "@/verticals/prompt-spec/types";
-import { sanitizeAssistantBlocks } from "@/integrations/anthropic/message-sanitizer";
 
 const SUPPORTED_VERTICAL_IDS: VerticalId[] = [
   "food",
@@ -46,42 +45,32 @@ function isVerticalId(verticalId: string): verticalId is VerticalId {
   return SUPPORTED_VERTICAL_IDS.includes(verticalId as VerticalId);
 }
 
+const LOADING_ADDRESS_RE = /\b(address|location|deliver|delivery|sector|city|area|pin)\b/;
+const LOADING_AUTH_RE = /\b(connect|oauth|token|login|signin|auth|swiggy)\b/;
+const LOADING_CART_RE = /\b(cart|basket|add|remove|quantity|checkout)\b/;
+const LOADING_SLOTS_RE = /\b(slot|time|timeslot|availability)\b/;
+const LOADING_BOOKING_RE = /\b(book|booking|reservation|reserve|table)\b/;
+const LOADING_RESTAURANT_RE = /\b(restaurant|dine|dining|cafe|nearby)\b/;
+const LOADING_ORDER_RE = /\b(order|pay|payment|track)\b/;
+const LOADING_MENU_RE = /\b(menu|item|dish|pizza|biryani|burger|meal|cuisine)\b/;
+const LOADING_NUTRITION_RE = /\b(calorie|protein|macro|nutrition|diet|keto|vegan|meal prep)\b/;
+const LOADING_STYLE_RE = /\b(outfit|style|look|dress|shirt|jeans|fashion)\b/;
+const LOADING_GROOMING_RE = /\b(groom|skincare|hair|beard|serum|cleanser)\b/;
+
 function detectLoadingContext(text: string, verticalId: string): LoadingContext {
   const input = text.toLowerCase();
 
-  if (/\b(address|location|deliver|delivery|sector|city|area|pin)\b/.test(input)) {
-    return "address";
-  }
-  if (/\b(connect|oauth|token|login|signin|auth|swiggy)\b/.test(input)) {
-    return "auth";
-  }
-  if (/\b(cart|basket|add|remove|quantity|checkout)\b/.test(input)) {
-    return "cart";
-  }
-  if (/\b(slot|time|timeslot|availability)\b/.test(input)) {
-    return "slots";
-  }
-  if (/\b(book|booking|reservation|reserve|table)\b/.test(input)) {
-    return "booking";
-  }
-  if (/\b(restaurant|dine|dining|cafe|nearby)\b/.test(input)) {
-    return "restaurant";
-  }
-  if (/\b(order|pay|payment|track)\b/.test(input)) {
-    return "order";
-  }
-  if (/\b(menu|item|dish|pizza|biryani|burger|meal|cuisine)\b/.test(input)) {
-    return "menu";
-  }
-  if (/\b(calorie|protein|macro|nutrition|diet|keto|vegan|meal prep)\b/.test(input)) {
-    return "nutrition";
-  }
-  if (/\b(outfit|style|look|dress|shirt|jeans|fashion)\b/.test(input)) {
-    return "style";
-  }
-  if (/\b(groom|skincare|hair|beard|serum|cleanser)\b/.test(input)) {
-    return "grooming";
-  }
+  if (LOADING_ADDRESS_RE.test(input)) return "address";
+  if (LOADING_AUTH_RE.test(input)) return "auth";
+  if (LOADING_CART_RE.test(input)) return "cart";
+  if (LOADING_SLOTS_RE.test(input)) return "slots";
+  if (LOADING_BOOKING_RE.test(input)) return "booking";
+  if (LOADING_RESTAURANT_RE.test(input)) return "restaurant";
+  if (LOADING_ORDER_RE.test(input)) return "order";
+  if (LOADING_MENU_RE.test(input)) return "menu";
+  if (LOADING_NUTRITION_RE.test(input)) return "nutrition";
+  if (LOADING_STYLE_RE.test(input)) return "style";
+  if (LOADING_GROOMING_RE.test(input)) return "grooming";
 
   if (verticalId === "food") return "nutrition";
   if (verticalId === "style") return "style";
@@ -175,16 +164,16 @@ export function useChat(
           : null;
         const response = await sendToApi(allMessages, sessionStateSummary);
 
-        const normalizedContent = (() => {
-          const sanitized = sanitizeAssistantBlocks(response.content);
-          if (sanitized.blocks.length > 0) return sanitized.blocks;
-          return [
-            {
-              type: "text" as const,
-              text: "I completed that request but the final response was empty. Please try once.",
-            },
-          ];
-        })();
+        // stream-runner.ts already sanitizes and ensures non-empty content;
+        // only guard against the edge case of an empty array here.
+        const normalizedContent = response.content.length > 0
+          ? response.content
+          : [
+              {
+                type: "text" as const,
+                text: "I completed that request but the final response was empty. Please try once.",
+              },
+            ];
 
         const assistantMessage: ChatMessage = {
           role: "assistant",

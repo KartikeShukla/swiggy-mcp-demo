@@ -109,7 +109,7 @@ export async function handleAuthCallback(
             window.opener.postMessage({
               type: "swiggy-oauth-token",
               token: ${JSON.stringify(accessToken)}
-            }, "*");
+            }, window.location.origin);
             setTimeout(() => window.close(), 1500);
           </script>
         </body></html>

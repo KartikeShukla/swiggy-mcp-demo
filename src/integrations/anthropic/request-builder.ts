@@ -45,7 +45,6 @@ export function buildMessageStreamParams(
     systemBlocks.push({
       type: "text",
       text: `Conversation state snapshot: ${sessionStateSummary}.`,
-      cache_control: { type: "ephemeral" },
     });
   }
 
@@ -65,6 +64,7 @@ export function buildMessageStreamParams(
           type: "clear_tool_uses_20250919",
           trigger: { type: "input_tokens", value: 10000 },
           keep: { type: "tool_uses", value: 3 },
+          clear_at_least: { type: "input_tokens", value: 2000 },
         },
       ],
     },

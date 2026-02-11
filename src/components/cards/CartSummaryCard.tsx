@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { ShoppingBag } from "lucide-react";
 import type { CartState } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-export function CartSummaryCard({
+export const CartSummaryCard = memo(function CartSummaryCard({
   cart,
 }: {
   cart: CartState;
@@ -41,4 +42,4 @@ export function CartSummaryCard({
       </CardContent>
     </Card>
   );
-}
+});

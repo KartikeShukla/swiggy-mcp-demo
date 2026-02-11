@@ -31,11 +31,8 @@ export const foodPromptProfile: PromptProfile = {
     "Search with specific quantity terms (for example: paneer 500 g, olive oil 250 ml).",
     "One targeted search per ingredient category; avoid overlapping retries.",
     "If an ingredient is unavailable, suggest one close substitute and search once.",
-    "Use address/location tools only when user asks to change location or checkout fails for address reasons.",
   ],
   responseStyle: [
-    "Card-first: do not restate product card details in text.",
-    "Post-tool response max 1-2 short sentences.",
     "Recipe steps should be one line each and easy to follow.",
   ],
   confirmationRules: [
@@ -79,10 +76,8 @@ export const stylePromptProfile: PromptProfile = {
   toolPolicies: [
     "One targeted search per product category.",
     "When brand is unavailable, suggest one comparable alternative.",
-    "Use address/location tools only when user asks for location change or checkout fails.",
   ],
   responseStyle: [
-    "Card-first: avoid repeating product card details.",
     "Keep answers crisp and actionable.",
     "For routines, format as Morning / Evening / Weekly when applicable.",
   ],
@@ -127,10 +122,8 @@ export const diningPromptProfile: PromptProfile = {
   toolPolicies: [
     "Availability check is mandatory before booking.",
     "Do not call booking tools until slot is selected.",
-    "Use location tools only if user asks to change location context.",
   ],
   responseStyle: [
-    "Card-first: avoid restating restaurant card fields.",
     "Keep suggestions practical and local to user itinerary.",
     "Use short, confidence-building copy for booking steps.",
   ],
@@ -175,12 +168,9 @@ export const foodOrderPromptProfile: PromptProfile = {
     "When user action is 'Open menu for restaurant: <name>', treat that restaurant as locked for menu fetch.",
     "Prefer menu/item tools over restaurant-search tools in menu mode.",
     "If item unavailable, suggest one similar item from the same restaurant.",
-    "Use address/location tools only on explicit location change request or address failure.",
   ],
   responseStyle: [
     "Menu should feel like a menu: concise text, card-first interaction.",
-    "Do not repeat card details in text.",
-    "Post-tool text stays short and action-oriented.",
   ],
   confirmationRules: [
     "Never place order without explicit user confirmation.",
