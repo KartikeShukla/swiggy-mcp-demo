@@ -52,6 +52,19 @@ describe("buildSessionStateSummary", () => {
     expect(summary).toContain("restaurant=Behrouz Biryani");
   });
 
+  it("keeps latest selected restaurant even after subsequent cart actions", () => {
+    const summary = buildSessionStateSummary(
+      [
+        user("Open menu for restaurant: Behrouz Biryani"),
+        user("Add to cart: 1x Chicken Biryani"),
+      ],
+      "foodorder",
+    );
+
+    expect(summary).toContain("intent=cart");
+    expect(summary).toContain("restaurant=Behrouz Biryani");
+  });
+
   it("adds location lock when selected address exists", () => {
     const summary = buildSessionStateSummary(
       [user("find top biryani places")],

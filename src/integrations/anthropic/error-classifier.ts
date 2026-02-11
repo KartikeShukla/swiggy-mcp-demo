@@ -47,6 +47,12 @@ export function classifyApiError(err: unknown): ApiError {
         message: "Rate limit exceeded. Please wait a moment and try again.",
       };
     }
+    if (/(rate[_\s-]?limit|exceed(?:ed|s)?)/i.test(msg)) {
+      return {
+        status: 429,
+        message: "Rate limit exceeded. Please wait a moment and try again.",
+      };
+    }
     if (
       msg.includes("Failed to fetch") ||
       msg.includes("NetworkError") ||

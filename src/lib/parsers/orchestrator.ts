@@ -1,4 +1,5 @@
 import type { ParsedToolResult } from "@/lib/types";
+import { MAX_MENU_PRODUCTS_SHOWN } from "@/lib/constants";
 import { logger } from "@/lib/logger";
 import { unwrapContent, extractPayload } from "./unwrap";
 import { tryParseProducts } from "./products";
@@ -156,6 +157,10 @@ export function parseToolResult(
   try {
     const data = unwrapContent(content);
     const payload = extractPayload(data);
+    const productParseContext = {
+      toolInput,
+      maxItems: verticalId === "foodorder" ? MAX_MENU_PRODUCTS_SHOWN : undefined,
+    };
 
     // Match by tool name patterns
     if (SEARCH_TOOL_RE.test(toolName)) {
@@ -173,7 +178,7 @@ export function parseToolResult(
           (weakRestaurantOnly && (!isRestaurantDiscoveryTool || signals.hasDishNameSignals));
 
         if (shouldPreferProducts) {
-          const products = tryParseProducts(payload, { toolInput });
+          const products = tryParseProducts(payload, productParseContext);
           if (products) return products;
         }
 
@@ -182,7 +187,7 @@ export function parseToolResult(
           if (restaurants) return restaurants;
         }
 
-        const products = tryParseProducts(payload, { toolInput });
+        const products = tryParseProducts(payload, productParseContext);
         if (products) return products;
         const restaurants = tryParseRestaurants(payload);
         if (restaurants) return restaurants;
@@ -194,7 +199,7 @@ export function parseToolResult(
       }
 
       // Always try products (including dining — dining can have menu/dish searches)
-      const products = tryParseProducts(payload, { toolInput });
+      const products = tryParseProducts(payload, productParseContext);
       if (products) return products;
     }
     if (CART_TOOL_RE.test(toolName)) {

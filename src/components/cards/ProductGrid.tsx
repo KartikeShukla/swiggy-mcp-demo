@@ -102,19 +102,41 @@ export function ProductGrid({
     setQuantities({});
   };
 
-  const useTypeGrouping = verticalId === "food" || verticalId === "style";
+  const isFoodOrder = verticalId === "foodorder";
+  const useTypeGrouping = verticalId === "food" || verticalId === "style" || isFoodOrder;
   const groupedEntries = useMemo(() => {
-    const grouped = new Map<string, { title: string; items: ParsedProduct[] }>();
-    for (const item of items) {
+    const grouped = new Map<string, { title: string; items: ParsedProduct[]; order?: number; firstIndex: number }>();
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
       const metadataTitle = item.groupLabel?.trim();
-      const inferredTitle = useTypeGrouping ? inferItemType(item) : ((item.brand || "").trim() || "Products");
+      const inferredTitle = isFoodOrder
+        ? (item.itemType?.trim() || "Menu Items")
+        : useTypeGrouping
+          ? inferItemType(item)
+          : ((item.brand || "").trim() || "Products");
       const title = metadataTitle || inferredTitle;
       const key = (item.groupKey?.trim().toLowerCase() || title.toLowerCase());
-      if (!grouped.has(key)) grouped.set(key, { title, items: [] });
-      grouped.get(key)!.items.push(item);
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          title,
+          items: [],
+          order: item.groupOrder,
+          firstIndex: index,
+        });
+      }
+      const current = grouped.get(key)!;
+      current.items.push(item);
+      if (item.groupOrder != null) {
+        current.order = current.order == null ? item.groupOrder : Math.min(current.order, item.groupOrder);
+      }
     }
-    return [...grouped.values()];
-  }, [items, useTypeGrouping]);
+    return [...grouped.values()].sort((a, b) => {
+      const aOrder = a.order ?? Number.POSITIVE_INFINITY;
+      const bOrder = b.order ?? Number.POSITIVE_INFINITY;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return a.firstIndex - b.firstIndex;
+    });
+  }, [items, isFoodOrder, useTypeGrouping]);
   const isRailSection =
     verticalId === "foodorder" || verticalId === "food" || verticalId === "style";
   const isOrangeRailSection = isRailSection;

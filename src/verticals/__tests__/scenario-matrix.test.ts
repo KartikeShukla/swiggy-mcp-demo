@@ -13,6 +13,7 @@ const scenarios: Scenario[] = [
     mustContain: [
       "goal + diet + servings",
       "calories/protein/carbs/fats",
+      "show product options first",
       "Never place order without explicit user confirmation",
     ],
   },
@@ -22,6 +23,7 @@ const scenarios: Scenario[] = [
     mustContain: [
       "concern + skin_type for skincare",
       "concern + hair_type for haircare",
+      "only update cart when user explicitly asks",
       "Never place order without explicit user confirmation",
     ],
   },
@@ -40,6 +42,7 @@ const scenarios: Scenario[] = [
     mustContain: [
       "offer 2-3 cuisines",
       "switch to menu mode",
+      "original craving/cuisine intent as a filter",
       "Never place order without explicit user confirmation",
     ],
   },

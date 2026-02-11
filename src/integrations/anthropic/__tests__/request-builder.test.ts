@@ -113,4 +113,19 @@ describe("buildMessageStreamParams()", () => {
       ]);
     }
   });
+
+  it("bounds message context to the most recent entries", () => {
+    const manyMessages = Array.from({ length: 30 }, (_, i) => ({
+      role: (i % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
+      content: `message-${i}`,
+      timestamp: i,
+    }));
+
+    const params = buildMessageStreamParams(manyMessages, foodVertical, null);
+    const apiMessages = params.messages as Array<{ content: string }>;
+
+    expect(apiMessages).toHaveLength(24);
+    expect(apiMessages[0]?.content).toBe("message-6");
+    expect(apiMessages[23]?.content).toBe("message-29");
+  });
 });

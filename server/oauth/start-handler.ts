@@ -3,6 +3,21 @@ import type { PendingAuth } from "./types";
 import { createPkce } from "./pkce";
 import { discoverSwiggyOAuth } from "./discovery";
 
+function firstHeaderValue(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+export function resolveRequestProtocol(req: IncomingMessage): "http" | "https" {
+  const forwardedProtoRaw = firstHeaderValue(req.headers["x-forwarded-proto"]);
+  const forwardedProto = forwardedProtoRaw?.split(",")[0]?.trim().toLowerCase();
+  if (forwardedProto === "https") return "https";
+  if (forwardedProto === "http") return "http";
+
+  const socket = req.socket as IncomingMessage["socket"] & { encrypted?: boolean };
+  return socket.encrypted ? "https" : "http";
+}
+
 export async function handleAuthStart(
   req: IncomingMessage,
   res: ServerResponse,
@@ -14,15 +29,20 @@ export async function handleAuthStart(
     const tokenEndpoint = discovery.tokenEndpoint;
 
     const { codeVerifier, codeChallenge, state } = await createPkce();
+    const protocol = resolveRequestProtocol(req);
+    const host = req.headers.host;
+    if (!host) {
+      throw new Error("Missing Host header");
+    }
 
-    const redirectUri = `http://${req.headers.host}/api/auth/callback`;
+    const redirectUri = `${protocol}://${host}/api/auth/callback`;
     pendingAuths.set(state, {
       codeVerifier,
       redirectUri,
       createdAt: Date.now(),
     });
 
-    const isSecure = req.headers.host && !req.headers.host.startsWith("localhost");
+    const isSecure = protocol === "https";
     const secureSuffix = isSecure ? "; Secure" : "";
     res.setHeader(
       "Set-Cookie",

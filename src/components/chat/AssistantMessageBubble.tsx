@@ -38,12 +38,25 @@ export function AssistantMessageBubble({
     const segs = groupBlocks(blocks);
     const resultsMap = new Map<number, PrecomputedToolResult>();
     let cards = false;
+    const toolUseById = new Map<string, Extract<ContentBlock, { type: "mcp_tool_use" }>>();
+
+    for (const block of blocks) {
+      if (block.type === "mcp_tool_use") {
+        toolUseById.set(block.id, block);
+      }
+    }
 
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
       if (block.type !== "mcp_tool_result") continue;
-      const tn = findPrecedingToolName(blocks, i);
-      const parsed = parseToolResult(tn, block.content, resolvedVerticalId);
+      const matchedToolUse = toolUseById.get(block.tool_use_id);
+      const tn = matchedToolUse?.name || findPrecedingToolName(blocks, i);
+      const parsed = parseToolResult(
+        tn,
+        block.content,
+        resolvedVerticalId,
+        matchedToolUse?.input,
+      );
       if (parsed.type !== "raw") {
         cards = true;
         resultsMap.set(i, { parsed, toolName: tn });

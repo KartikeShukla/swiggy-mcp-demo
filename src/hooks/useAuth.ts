@@ -111,6 +111,7 @@ export function useAuth() {
 
   const clearChats = useCallback(() => {
     clearAllChatHistory();
+    window.location.reload();
   }, []);
 
   const tokenAge = getSwiggyTokenAge();

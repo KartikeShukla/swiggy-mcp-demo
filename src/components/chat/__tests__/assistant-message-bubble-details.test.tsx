@@ -40,4 +40,42 @@ describe("AssistantMessageBubble details trigger", () => {
 
     expect(await screen.findByRole("button", { name: "Tool Calls" })).toBeInTheDocument();
   });
+
+  it("uses tool_use_id tool input when precomputing tool results", () => {
+    const message: ChatMessage = {
+      role: "assistant",
+      timestamp: Date.now(),
+      content: [
+        {
+          type: "mcp_tool_use",
+          id: "tool_1",
+          name: "search_products",
+          input: { query: "bread" },
+        },
+        {
+          type: "mcp_tool_use",
+          id: "tool_2",
+          name: "search_products",
+          input: { query: "cheddar cheese" },
+        },
+        {
+          // tool_2 appears before this result; correct grouping must still come from tool_1 input.
+          type: "mcp_tool_result",
+          tool_use_id: "tool_1",
+          content: [{ id: "p1", name: "Classic Pack", price: 40 }],
+        },
+      ],
+    };
+
+    render(
+      <AssistantMessageBubble
+        message={message}
+        verticalId="food"
+        onAction={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("Bread")).toBeInTheDocument();
+    expect(screen.queryByText("Cheddar Cheese")).not.toBeInTheDocument();
+  });
 });

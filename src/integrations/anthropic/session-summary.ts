@@ -61,7 +61,7 @@ function compactText(text: string, max = 36): string {
   return `${clean.slice(0, max - 1)}…`;
 }
 
-function recentUserMessages(messages: ChatMessage[], maxMessages = 8): string[] {
+function recentUserMessages(messages: ChatMessage[], maxMessages = 16): string[] {
   return messages
     .filter(isUserTextMessage)
     .slice(-maxMessages)
@@ -72,12 +72,20 @@ function hasAny(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
 }
 
-function detectSelectedRestaurant(lastUserMessage: string): string | null {
+function detectSelectedRestaurantFromMessage(message: string): string | null {
   for (const pattern of RESTAURANT_SELECT_PATTERNS) {
-    const match = lastUserMessage.match(pattern);
+    const match = message.match(pattern);
     if (!match?.[1]) continue;
     const value = match[1].replace(/[.?!]$/, "").trim();
     if (value) return compactText(value);
+  }
+  return null;
+}
+
+function detectLatestSelectedRestaurant(userMessages: string[]): string | null {
+  for (let i = userMessages.length - 1; i >= 0; i--) {
+    const selectedRestaurant = detectSelectedRestaurantFromMessage(userMessages[i]);
+    if (selectedRestaurant) return selectedRestaurant;
   }
   return null;
 }
@@ -154,7 +162,7 @@ export function buildSessionStateSummary(
 
   const slots = detectSlots(allUserText, verticalId);
   const pendingConfirmation = hasAny(lastUserLower, PENDING_CONFIRM_PATTERNS);
-  const selectedRestaurant = detectSelectedRestaurant(lastUserMessage);
+  const selectedRestaurant = detectLatestSelectedRestaurant(userMessages);
   const intent = detectIntent(lastUserLower, verticalId);
   const locationSignal = formatLocationSignal(selectedAddress);
 

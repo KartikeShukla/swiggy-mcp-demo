@@ -6,6 +6,8 @@ import {
 import type { ChatMessage, ParsedAddress, VerticalConfig } from "@/lib/types";
 import { sanitizeMessagesForApi } from "./message-sanitizer";
 
+const MAX_CONTEXT_MESSAGES = 24;
+
 export function buildMessageStreamParams(
   messages: ChatMessage[],
   vertical: VerticalConfig,
@@ -14,8 +16,9 @@ export function buildMessageStreamParams(
   sessionStateSummary?: string | null,
 ): Record<string, unknown> {
   const { sanitizedMessages } = sanitizeMessagesForApi(messages);
+  const boundedMessages = sanitizedMessages.slice(-MAX_CONTEXT_MESSAGES);
 
-  const apiMessages = sanitizedMessages.map((msg) => ({
+  const apiMessages = boundedMessages.map((msg) => ({
     role: msg.role as "user" | "assistant",
     content: msg.content,
   }));

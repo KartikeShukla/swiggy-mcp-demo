@@ -110,6 +110,7 @@ export function useChat(
   const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
   const cumulativeUsageRef = useRef({ input_tokens: 0, output_tokens: 0 });
   const messagesRef = useRef(messages);
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -137,12 +138,12 @@ export function useChat(
   }, [loading]);
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string): Promise<boolean> => {
       if (!apiKey) {
         setError("API key required");
-        return;
+        return false;
       }
-      if (loading) return;
+      if (loading || inFlightRef.current) return false;
 
       const userMessage: ChatMessage = {
         role: "user",
@@ -150,6 +151,7 @@ export function useChat(
         timestamp: Date.now(),
       };
 
+      inFlightRef.current = true;
       loadingContextRef.current = detectLoadingContext(text, vertical.id);
 
       setMessages((prev) => [...prev, userMessage]);
@@ -175,6 +177,12 @@ export function useChat(
               },
             ];
 
+        const timedOut = normalizedContent.some(
+          (block) =>
+            block.type === "text" &&
+            /timed out/i.test(block.text),
+        );
+
         const assistantMessage: ChatMessage = {
           role: "assistant",
           content: normalizedContent,
@@ -188,11 +196,14 @@ export function useChat(
         cumulativeUsageRef.current.input_tokens += response.usage.input_tokens;
         cumulativeUsageRef.current.output_tokens += response.usage.output_tokens;
         console.log("[Cumulative Token Usage]", { ...cumulativeUsageRef.current });
+        return !timedOut;
       } catch (err) {
         const classified = classifyError(err);
         setError(classified.message);
+        return false;
       } finally {
         setLoading(false);
+        inFlightRef.current = false;
       }
     },
     [

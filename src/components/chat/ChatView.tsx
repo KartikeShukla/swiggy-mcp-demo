@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { verticals } from "@/verticals";
-import type { VerticalConfig, ParsedAddress, ChatAction, ParsedProduct } from "@/lib/types";
+import type { VerticalConfig, ParsedAddress, ChatAction, ParsedProduct, CartState } from "@/lib/types";
 import { useChat } from "@/hooks/useChat";
 import { useCart } from "@/hooks/useCart";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -41,9 +41,12 @@ function ChatViewInner({
   onSelectAddressFromChat?: (address: ParsedAddress) => void;
   onAddressError?: () => void;
 }) {
+  type OptimisticCartItem = CartState["items"][number];
   const [pendingSelection, setPendingSelection] = useState<
     Record<string, { product: ParsedProduct; quantity: number }>
   >({});
+  const [lockedRestaurant, setLockedRestaurant] = useState<string | null>(null);
+  const [optimisticCartItems, setOptimisticCartItems] = useState<Record<string, OptimisticCartItem>>({});
   const {
     messages,
     loading,
@@ -59,8 +62,9 @@ function ChatViewInner({
     onAddressError,
     selectedAddress,
   );
-  const { cart, isOpen, setIsOpen, itemCount } = useCart(messages, vertical.id);
-  const isUnifiedSelectionVertical = vertical.id === "food" || vertical.id === "style";
+  const { cart, isOpen, setIsOpen } = useCart(messages, vertical.id);
+  const isUnifiedSelectionVertical =
+    vertical.id === "food" || vertical.id === "style" || vertical.id === "foodorder";
 
   const sharedSelection = useMemo(() => {
     if (!isUnifiedSelectionVertical) return undefined;
@@ -111,6 +115,59 @@ function ChatViewInner({
     [pendingSelectedItems],
   );
 
+  const optimisticCart = useMemo<CartState | null>(() => {
+    const items = Object.values(optimisticCartItems);
+    if (items.length === 0) return null;
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return {
+      items,
+      subtotal,
+      deliveryFee: 0,
+      total: subtotal,
+    };
+  }, [optimisticCartItems]);
+
+  const effectiveCart = cart ?? optimisticCart;
+  const effectiveItemCount = effectiveCart?.items.reduce((sum, i) => sum + i.quantity, 0) ?? 0;
+
+  const applyFoodOrderOptimisticAction = useCallback((actionText: string) => {
+    if (vertical.id !== "foodorder" || cart) return;
+    if (Object.keys(optimisticCartItems).length === 0) return;
+
+    const removeMatch = actionText.match(/^Remove (.+) from my cart$/i);
+    if (removeMatch?.[1]) {
+      const target = removeMatch[1].trim().toLowerCase();
+      setOptimisticCartItems((prev) => {
+        const next = { ...prev };
+        const entry = Object.entries(next).find(([, item]) => item.name.trim().toLowerCase() === target);
+        if (entry) {
+          delete next[entry[0]];
+        }
+        return next;
+      });
+      return;
+    }
+
+    const changeQtyMatch = actionText.match(/^Change (.+) quantity to (\d+)$/i);
+    if (changeQtyMatch?.[1] && changeQtyMatch?.[2]) {
+      const target = changeQtyMatch[1].trim().toLowerCase();
+      const qty = Number.parseInt(changeQtyMatch[2], 10);
+      if (!Number.isFinite(qty) || qty < 0) return;
+      setOptimisticCartItems((prev) => {
+        const next = { ...prev };
+        const entry = Object.entries(next).find(([, item]) => item.name.trim().toLowerCase() === target);
+        if (!entry) return prev;
+        const [key, item] = entry;
+        if (qty === 0) {
+          delete next[key];
+        } else {
+          next[key] = { ...item, quantity: qty };
+        }
+        return next;
+      });
+    }
+  }, [cart, optimisticCartItems, vertical.id]);
+
   const handleAction = useCallback(
     (action: ChatAction) => {
       if (isSelectAddressAction(action) && onSelectAddressFromChat) {
@@ -118,19 +175,60 @@ function ChatViewInner({
       }
       const message = getActionMessage(action).trim();
       if (!message) return;
+      const menuOpenMatch = message.match(/^Open menu for restaurant:\s*(.+)$/i);
+      if (menuOpenMatch?.[1]) {
+        setLockedRestaurant(menuOpenMatch[1].trim());
+      }
+      applyFoodOrderOptimisticAction(message);
       void sendMessage(message);
     },
-    [onSelectAddressFromChat, sendMessage],
+    [applyFoodOrderOptimisticAction, onSelectAddressFromChat, sendMessage],
   );
 
-  const handleUnifiedAddToCart = useCallback(() => {
+  const handleUnifiedAddToCart = useCallback(async () => {
     if (!pendingSelectedItems.length) return;
     const parts = pendingSelectedItems.map(
       (entry) => `${entry.quantity}x ${entry.product.name}`,
     );
-    handleAction(`Add to cart: ${parts.join(", ")}`);
-    setPendingSelection({});
-  }, [handleAction, pendingSelectedItems]);
+    const addToCartMessage = vertical.id === "foodorder"
+      ? [
+          "Cart update request (menu mode):",
+          lockedRestaurant
+            ? `Selected restaurant: ${lockedRestaurant}.`
+            : "Selected restaurant: currently opened menu context.",
+          `Add to cart: ${parts.join(", ")}.`,
+          `Structured items: ${JSON.stringify(
+            pendingSelectedItems.map((entry) => ({
+              item_id: entry.product.id,
+              name: entry.product.name,
+              quantity: entry.quantity,
+            })),
+          )}.`,
+          "Execute cart update directly. Do not run restaurant discovery.",
+          "Do not run menu discovery or fetch/show menu items for this restaurant again unless the user explicitly asks to see the menu.",
+        ].join(" ")
+      : `Add to cart: ${parts.join(", ")}`;
+    const ok = await sendMessage(addToCartMessage);
+    if (vertical.id === "foodorder" && ok) {
+      setOptimisticCartItems((prev) => {
+        const next = { ...prev };
+        for (const entry of pendingSelectedItems) {
+          const existing = next[entry.product.id];
+          next[entry.product.id] = {
+            id: entry.product.id,
+            name: entry.product.name,
+            price: entry.product.price ?? existing?.price ?? 0,
+            quantity: (existing?.quantity ?? 0) + entry.quantity,
+            image: entry.product.image,
+          };
+        }
+        return next;
+      });
+    }
+    if (ok) {
+      setPendingSelection({});
+    }
+  }, [lockedRestaurant, pendingSelectedItems, sendMessage, vertical.id]);
 
   const hasMessages = messages.length > 0;
 
@@ -189,21 +287,22 @@ function ChatViewInner({
         </div>
       )}
 
-      {(itemCount > 0 || (isUnifiedSelectionVertical && pendingCount > 0)) && (
+      {(effectiveItemCount > 0 || (isUnifiedSelectionVertical && pendingCount > 0)) && (
         <div className="pointer-events-none absolute bottom-[6.9rem] left-4 right-4 z-50">
           <div className="flex items-center justify-end gap-4">
             {isUnifiedSelectionVertical && pendingCount > 0 && (
               <Button
                 onClick={handleUnifiedAddToCart}
+                disabled={loading}
                 className="pointer-events-auto h-12 whitespace-nowrap rounded-full border-2 border-orange-400 bg-[#4a3527] px-4 has-[>svg]:px-4 text-sm font-semibold text-white shadow-[0_8px_16px_-12px_rgba(249,115,22,0.11)] hover:bg-[#553d2d]"
               >
                 <ShoppingCart className="h-5 w-5" />
                 Add {pendingCount} {pendingCount === 1 ? "item" : "items"} to cart
               </Button>
             )}
-            {itemCount > 0 && (
+            {effectiveItemCount > 0 && (
               <CartFloatingButton
-                count={itemCount}
+                count={effectiveItemCount}
                 onClick={() => setIsOpen(true)}
                 className="pointer-events-auto z-50 h-12 w-12"
               />
@@ -213,7 +312,7 @@ function ChatViewInner({
       )}
 
       {/* Cart bottom sheet */}
-      <Sheet open={isOpen && !!cart} onOpenChange={setIsOpen}>
+      <Sheet open={isOpen && !!effectiveCart} onOpenChange={setIsOpen}>
         <SheetContent
           side="bottom"
           showCloseButton={false}
@@ -221,9 +320,9 @@ function ChatViewInner({
           onCloseAutoFocus={(event) => event.preventDefault()}
           className="p-0 min-h-0 h-auto max-h-[calc(100%-var(--safe-top,0px)-1.5rem)] pb-[calc(var(--safe-bottom,0px)+0.5rem)]"
         >
-          {cart && (
+          {effectiveCart && (
             <CartPanel
-              cart={cart}
+              cart={effectiveCart}
               onClose={() => setIsOpen(false)}
               onAction={handleAction}
             />

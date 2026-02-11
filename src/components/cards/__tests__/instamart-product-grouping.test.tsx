@@ -52,4 +52,19 @@ describe("instamart product grouping", () => {
     expect(sectionCard?.className).toContain("border-orange-500/20");
     expect(sectionCard?.className).toContain("bg-orange-500/6");
   });
+
+  it("groups order-tab menu items by category as horizontal rails", () => {
+    const items: ParsedProduct[] = [
+      { id: "m1", name: "Margherita Pizza", price: 299, groupLabel: "Pizzas", groupKey: "pizzas", groupOrder: 1 },
+      { id: "m2", name: "Farmhouse Pizza", price: 349, groupLabel: "Pizzas", groupKey: "pizzas", groupOrder: 1 },
+      { id: "m3", name: "Garlic Bread", price: 129, groupLabel: "Sides", groupKey: "sides", groupOrder: 0 },
+    ];
+
+    render(<ProductGrid items={items} onAction={vi.fn()} verticalId="foodorder" />);
+
+    const titles = screen.getAllByText(/Pizzas|Sides/).map((node) => node.textContent);
+    expect(titles).toEqual(["Sides", "Pizzas"]);
+    expect(screen.getByText("Margherita Pizza")).toBeInTheDocument();
+    expect(screen.getByText("Garlic Bread")).toBeInTheDocument();
+  });
 });

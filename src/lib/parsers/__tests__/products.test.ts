@@ -307,4 +307,29 @@ describe("tryParseProducts()", () => {
     expect(result.items[0].groupLabel).toBe("Salted Butter For Toast");
     expect(result.items[0].groupKey).toBe("salted butter for toast");
   });
+
+  it("uses category_name from menu payloads for grouping metadata", () => {
+    const result = tryParseProducts([
+      {
+        name: "Margherita Pizza",
+        price: 299,
+        category_name: "Pizzas",
+      },
+    ]);
+    if (result!.type !== "products") return;
+    expect(result.items[0].groupLabel).toBe("Pizzas");
+    expect(result.items[0].groupKey).toBe("pizzas");
+  });
+
+  it("supports explicit maxItems override", () => {
+    const payload = Array.from({ length: 12 }, (_, index) => ({
+      name: `Item ${index + 1}`,
+      price: 100 + index,
+    }));
+    const result = tryParseProducts(payload, { maxItems: 10 });
+    if (result!.type !== "products") return;
+    expect(result.items).toHaveLength(10);
+    expect(result.items[0].name).toBe("Item 1");
+    expect(result.items[9].name).toBe("Item 10");
+  });
 });

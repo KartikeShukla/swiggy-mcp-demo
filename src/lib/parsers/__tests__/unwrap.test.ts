@@ -212,9 +212,9 @@ describe("extractPayload()", () => {
     };
     const result = extractPayload(payload);
     expect(result).toEqual([
-      { name: "Spring Roll" },
-      { name: "Soup" },
-      { name: "Biryani" },
+      { name: "Spring Roll", category: "Starters", group_order: 0 },
+      { name: "Soup", category: "Starters", group_order: 0 },
+      { name: "Biryani", category: "Mains", group_order: 1 },
     ]);
   });
 
@@ -225,7 +225,7 @@ describe("extractPayload()", () => {
       ],
     };
     const result = extractPayload(payload);
-    expect(result).toEqual([{ name: "Samosa" }]);
+    expect(result).toEqual([{ name: "Samosa", category: "Appetizers", group_order: 0 }]);
   });
 
   it("unwraps Swiggy-style double-nested card.info in categories", () => {
@@ -242,8 +242,8 @@ describe("extractPayload()", () => {
     };
     const result = extractPayload(payload);
     expect(result).toEqual([
-      { name: "Butter Chicken", price: 350 },
-      { name: "Dal Makhani", price: 250 },
+      { name: "Butter Chicken", price: 350, category: "Recommended", group_order: 0 },
+      { name: "Dal Makhani", price: 250, category: "Recommended", group_order: 0 },
     ]);
   });
 
@@ -263,28 +263,32 @@ describe("flattenCategoryItems()", () => {
       { name: "Cat1", items: [{ name: "A" }, { name: "B" }] },
       { name: "Cat2", items: [{ name: "C" }] },
     ]);
-    expect(result).toEqual([{ name: "A" }, { name: "B" }, { name: "C" }]);
+    expect(result).toEqual([
+      { name: "A", category: "Cat1", group_order: 0 },
+      { name: "B", category: "Cat1", group_order: 0 },
+      { name: "C", category: "Cat2", group_order: 1 },
+    ]);
   });
 
   it("handles dishes key", () => {
     const result = flattenCategoryItems([
       { name: "Cat", dishes: [{ name: "D" }] },
     ]);
-    expect(result).toEqual([{ name: "D" }]);
+    expect(result).toEqual([{ name: "D", category: "Cat", group_order: 0 }]);
   });
 
   it("handles itemCards key", () => {
     const result = flattenCategoryItems([
       { name: "Cat", itemCards: [{ name: "I" }] },
     ]);
-    expect(result).toEqual([{ name: "I" }]);
+    expect(result).toEqual([{ name: "I", category: "Cat", group_order: 0 }]);
   });
 
   it("handles products key", () => {
     const result = flattenCategoryItems([
       { name: "Cat", products: [{ name: "P" }] },
     ]);
-    expect(result).toEqual([{ name: "P" }]);
+    expect(result).toEqual([{ name: "P", category: "Cat", group_order: 0 }]);
   });
 
   it("unwraps card.info nested items", () => {
@@ -296,7 +300,7 @@ describe("flattenCategoryItems()", () => {
         ],
       },
     ]);
-    expect(result).toEqual([{ name: "Unwrapped" }]);
+    expect(result).toEqual([{ name: "Unwrapped", category: "Cat", group_order: 0 }]);
   });
 
   it("skips non-object categories", () => {

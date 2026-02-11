@@ -89,7 +89,14 @@ function resolveGroupingMeta(
     obj.sub_category,
     obj.subCategory,
     obj.category,
+    obj.category_name,
+    obj.categoryName,
     obj.product_category,
+    obj.menu_category,
+    obj.menuCategory,
+    obj.section,
+    obj.section_name,
+    obj.sectionName,
     obj.sku,
     obj.sku_id,
     obj.skuId,
@@ -112,7 +119,7 @@ function resolveGroupingMeta(
 
 export function tryParseProducts(
   payload: unknown,
-  context?: { toolInput?: Record<string, unknown> },
+  context?: { toolInput?: Record<string, unknown>; maxItems?: number },
 ): ParsedToolResult | null {
   const arr = asArrayOrWrap(payload);
   if (!arr || arr.length === 0) return null;
@@ -203,7 +210,8 @@ export function tryParseProducts(
     }
   }
 
-  return { type: "products", items: items.slice(0, MAX_PRODUCTS_SHOWN) };
+  const maxItems = context?.maxItems ?? MAX_PRODUCTS_SHOWN;
+  return { type: "products", items: items.slice(0, maxItems) };
 }
 
 export function allVariations(variations: unknown): Record<string, unknown>[] {

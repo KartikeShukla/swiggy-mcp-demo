@@ -136,6 +136,39 @@ describe("useCart", () => {
       "search_products",
       "stuff",
       "instamart",
+      undefined,
+    );
+  });
+
+  it("matches tool result to tool_use_id when blocks are interleaved", () => {
+    const parsedCart: CartState = {
+      items: [{ id: "i1", name: "Milk", price: 50, quantity: 1 }],
+      subtotal: 50,
+      deliveryFee: 0,
+      total: 50,
+    };
+    mockedParseToolResult.mockReturnValue({ type: "cart", cart: parsedCart });
+
+    const messages: ChatMessage[] = [
+      {
+        role: "assistant",
+        content: [
+          { type: "mcp_tool_use", id: "u-search", name: "search_menu_items", input: { query: "biryani" } },
+          { type: "mcp_tool_use", id: "u-cart", name: "add_to_cart", input: { item_id: "123", qty: 1 } },
+          { type: "mcp_tool_result", tool_use_id: "u-search", content: "search-result" },
+          { type: "mcp_tool_result", tool_use_id: "u-cart", content: "cart-result" },
+        ],
+        timestamp: 1,
+      },
+    ];
+
+    const { result } = renderHook(() => useCart(messages, "foodorder"));
+    expect(result.current.cart).toEqual(parsedCart);
+    expect(mockedParseToolResult).toHaveBeenCalledWith(
+      "add_to_cart",
+      "cart-result",
+      "foodorder",
+      { item_id: "123", qty: 1 },
     );
   });
 
