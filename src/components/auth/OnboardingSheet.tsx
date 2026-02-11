@@ -97,17 +97,29 @@ function AddressSelectStep({
   const [addresses, setAddresses] = useState<ParsedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    fetchAddresses(apiKey, swiggyToken).then((result) => {
-      if (!cancelled) {
-        setAddresses(result);
+    fetchAddresses(apiKey, swiggyToken)
+      .then((result) => {
+        if (!cancelled) {
+          setAddresses(result);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const message = err instanceof Error
+          ? err.message
+          : "Unable to load saved addresses right now.";
+        setLoadError(message);
+        setAddresses([]);
         setLoading(false);
-      }
-    });
+      });
     return () => { cancelled = true; };
-  }, [apiKey, swiggyToken]);
+  }, [apiKey, swiggyToken, reloadKey]);
 
   return (
     <div className="px-4 pb-1 pt-3">
@@ -115,6 +127,24 @@ function AddressSelectStep({
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : loadError ? (
+          <div className="space-y-3 px-2 py-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              Unable to load saved addresses right now.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-8 rounded-full px-4 text-xs"
+              onClick={() => {
+                setLoading(true);
+                setLoadError(null);
+                setReloadKey((v) => v + 1);
+              }}
+            >
+              Retry
+            </Button>
           </div>
         ) : addresses.length > 0 ? (
           <div className="max-h-[min(48dvh,26rem)] space-y-2 overflow-y-auto pr-1">

@@ -79,8 +79,8 @@ describe("buildMessageStreamParams()", () => {
       edits: [
         {
           type: "clear_tool_uses_20250919",
-          trigger: { type: "input_tokens", value: 10000 },
-          keep: { type: "tool_uses", value: 3 },
+          trigger: { type: "input_tokens", value: 25000 },
+          keep: { type: "tool_uses", value: 5 },
           clear_at_least: { type: "input_tokens", value: 2000 },
         },
       ],
@@ -127,5 +127,32 @@ describe("buildMessageStreamParams()", () => {
     expect(apiMessages).toHaveLength(24);
     expect(apiMessages[0]?.content).toBe("message-6");
     expect(apiMessages[23]?.content).toBe("message-29");
+  });
+
+  it("preserves all content blocks including tool blocks in older messages", () => {
+    const toolHeavyAssistant = {
+      role: "assistant" as const,
+      timestamp: 2,
+      content: [
+        { type: "text" as const, text: "Summary text" },
+        { type: "mcp_tool_use" as const, id: "u-1", name: "search_menu", input: { q: "pizza" } },
+        { type: "mcp_tool_result" as const, tool_use_id: "u-1", content: "{\"items\":[1,2,3]}" },
+      ],
+    };
+
+    const messages = [
+      { role: "user" as const, content: "hello", timestamp: 1 },
+      toolHeavyAssistant,
+      { role: "user" as const, content: "latest", timestamp: 3 },
+      { role: "assistant" as const, content: "latest response", timestamp: 4 },
+    ];
+
+    const params = buildMessageStreamParams(messages, foodVertical, null);
+    const apiMessages = params.messages as Array<{ role: string; content: unknown }>;
+    const assistantWithTools = apiMessages.find((m) => Array.isArray(m.content));
+    const blocks = assistantWithTools?.content as Array<{ type: string }>;
+
+    expect(blocks).toHaveLength(3);
+    expect(blocks.map((b) => b.type)).toEqual(["text", "mcp_tool_use", "mcp_tool_result"]);
   });
 });

@@ -27,6 +27,12 @@ export function classifyApiError(err: unknown): ApiError {
           message: "Rate limit exceeded. Please wait a moment and try again.",
         };
       }
+      if (status === 529) {
+        return {
+          status: 529,
+          message: "Service is temporarily overloaded. Please try again in a moment.",
+        };
+      }
       if (status === 500) {
         return { status: 500, message: "Server error. Please try again later." };
       }
@@ -51,6 +57,14 @@ export function classifyApiError(err: unknown): ApiError {
       return {
         status: 429,
         message: "Rate limit exceeded. Please wait a moment and try again.",
+      };
+    }
+    if (
+      /(overload(?:ed)?|overloaded_error|capacity|temporarily unavailable|internal server error|api_error)/i.test(msg)
+    ) {
+      return {
+        status: 529,
+        message: "Service is temporarily overloaded. Please try again in a moment.",
       };
     }
     if (

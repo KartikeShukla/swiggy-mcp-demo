@@ -9,6 +9,12 @@ import type {
 import { classifyApiError } from "@/integrations/anthropic/error-classifier";
 import { buildMessageStreamParams } from "@/integrations/anthropic/request-builder";
 import { runMessageStream } from "@/integrations/anthropic/stream-runner";
+import {
+  isRetryableAnthropicError,
+  waitForRetryAttempt,
+} from "@/integrations/anthropic/retry-policy";
+
+const CHAT_REQUEST_MAX_RETRIES = 2;
 
 /** Encapsulates the Anthropic API call with MCP server configuration. */
 export function useChatApi(
@@ -36,7 +42,20 @@ export function useChatApi(
         sessionStateSummary,
       );
 
-      return runMessageStream(client, params, onAuthError, onAddressError);
+      let lastError: unknown;
+      for (let attempt = 0; attempt <= CHAT_REQUEST_MAX_RETRIES; attempt++) {
+        try {
+          return await runMessageStream(client, params, onAuthError, onAddressError);
+        } catch (err) {
+          lastError = err;
+          if (attempt >= CHAT_REQUEST_MAX_RETRIES || !isRetryableAnthropicError(err)) {
+            throw err;
+          }
+          await waitForRetryAttempt(attempt + 1);
+        }
+      }
+
+      throw lastError instanceof Error ? lastError : new Error("Request failed");
     },
     [client, vertical, swiggyToken, selectedAddress, onAuthError, onAddressError],
   );

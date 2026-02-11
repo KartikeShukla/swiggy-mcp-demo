@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 export function createClient(apiKey: string): Anthropic {
-  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true, maxRetries: 0 });
 }
