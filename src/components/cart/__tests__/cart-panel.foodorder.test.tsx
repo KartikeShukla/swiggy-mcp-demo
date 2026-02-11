@@ -56,7 +56,7 @@ describe("foodorder cart interactions", () => {
 
     renderInSheet(onAction, onClose);
 
-    await user.click(screen.getByRole("button", { name: "Place Order (COD)" }));
+    await user.click(screen.getByRole("button", { name: "Place Order by COD (₹440)" }));
     await user.click(screen.getByRole("button", { name: "Yes, place COD order" }));
 
     expect(onAction).toHaveBeenCalledWith("I confirm. Please place the order.");

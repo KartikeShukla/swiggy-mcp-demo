@@ -33,6 +33,7 @@ class FakeStream {
   };
 
   private handlers = new Map<string, Handler[]>();
+  private abortReject?: (reason?: unknown) => void;
 
   constructor(
     private readonly cfg: {
@@ -56,6 +57,7 @@ class FakeStream {
           cache_read_input_tokens?: number;
         };
       };
+      waitForAbort?: boolean;
     } = {},
   ) {
     this.currentMessage = cfg.currentMessage;
@@ -68,7 +70,9 @@ class FakeStream {
   }
 
   abort(): void {
-    this.cfg.finalError = new APIUserAbortError("aborted");
+    const abortError = new APIUserAbortError("aborted");
+    this.cfg.finalError = abortError;
+    this.abortReject?.(abortError);
   }
 
   async finalMessage() {
@@ -76,6 +80,20 @@ class FakeStream {
       for (const handler of this.handlers.get("contentBlock") ?? []) {
         handler(block);
       }
+    }
+
+    if (this.cfg.waitForAbort) {
+      return await new Promise<{
+        content: ContentBlock[];
+        usage: {
+          input_tokens: number;
+          output_tokens: number;
+          cache_creation_input_tokens?: number;
+          cache_read_input_tokens?: number;
+        };
+      }>((_, reject) => {
+        this.abortReject = reject;
+      });
     }
 
     if (this.cfg.finalError) {
@@ -103,6 +121,7 @@ function makeClient(stream: FakeStream) {
 describe("runMessageStream", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it("returns sanitized final content and usage when stream completes", async () => {
@@ -216,5 +235,28 @@ describe("runMessageStream", () => {
       type: "text",
       text: ABORT_MESSAGES.address,
     });
+  });
+
+  it("times out hanging streams and returns a timeout guidance message", async () => {
+    vi.useFakeTimers();
+    const stream = new FakeStream({
+      waitForAbort: true,
+      currentMessage: {
+        content: [],
+        usage: { input_tokens: 19, output_tokens: 2 },
+      },
+    });
+
+    const resultPromise = runMessageStream(makeClient(stream) as never, {});
+    await vi.advanceTimersByTimeAsync(91_000);
+    const result = await resultPromise;
+
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: "This request took longer than expected and timed out. Please try again with a shorter or more specific request.",
+      },
+    ]);
+    expect(result.usage.input_tokens).toBe(19);
   });
 });

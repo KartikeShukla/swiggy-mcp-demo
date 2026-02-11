@@ -1,4 +1,5 @@
 import type { ParsedToolResult } from "@/lib/types";
+import { MAX_MENU_PRODUCTS_SHOWN } from "@/lib/constants";
 import { logger } from "@/lib/logger";
 import { unwrapContent, extractPayload } from "./unwrap";
 import { tryParseProducts } from "./products";
@@ -68,6 +69,15 @@ const WEAK_RESTAURANT_SIGNAL_KEYS = new Set([
 const DISH_NAME_HINT_PATTERN =
   /\b(paneer|chicken|mutton|fish|prawn|biryani|pizza|burger|sandwich|roll|wrap|tikka|masala|curry|thali|noodles|fries|rice|soup|salad|kebab|falafel|shawarma)\b/i;
 
+const MENU_SIGNAL_KEY_RE = /menu|dish|itemattribute|veg|addon|variant|option/i;
+const SEARCH_TOOL_RE = /search|find|discover|browse|menu|list|recommend|suggest|get_.*(?:product|restaurant|item|dish|cuisine)/i;
+const RESTAURANT_TOOL_RE = /restaurant/i;
+const MENU_INTENT_TOOL_RE = /menu|dish|item/i;
+const CART_TOOL_RE = /cart|basket|add_item|remove_item|update_item|modify_item|add_to|remove_from/i;
+const SLOT_TOOL_RE = /slot|avail|schedule|timeslot/i;
+const ADDRESS_TOOL_RE = /address|location|deliver/i;
+const CONFIRM_TOOL_RE = /order|place|book|reserve|confirm|checkout|submit/i;
+
 function inferPayloadSignals(payload: unknown): {
   hasProductSignals: boolean;
   hasMenuSignals: boolean;
@@ -104,7 +114,7 @@ function inferPayloadSignals(payload: unknown): {
     }
     if (
       keys.some((key) =>
-        /menu|dish|itemattribute|veg|addon|variant|option/i.test(key),
+        MENU_SIGNAL_KEY_RE.test(key),
       )
     ) {
       hasMenuSignals = true;
@@ -147,13 +157,17 @@ export function parseToolResult(
   try {
     const data = unwrapContent(content);
     const payload = extractPayload(data);
+    const productParseContext = {
+      toolInput,
+      maxItems: verticalId === "foodorder" ? MAX_MENU_PRODUCTS_SHOWN : undefined,
+    };
 
     // Match by tool name patterns
-    if (/search|find|discover|browse|menu|list|recommend|suggest|get_.*(?:product|restaurant|item|dish|cuisine)/i.test(toolName)) {
+    if (SEARCH_TOOL_RE.test(toolName)) {
       if (verticalId === "foodorder") {
         const isRestaurantDiscoveryTool =
-          /restaurant/i.test(toolName) && !/menu|dish|item/i.test(toolName);
-        const isMenuIntentTool = /menu|dish|item/i.test(toolName);
+          RESTAURANT_TOOL_RE.test(toolName) && !MENU_INTENT_TOOL_RE.test(toolName);
+        const isMenuIntentTool = MENU_INTENT_TOOL_RE.test(toolName);
         const signals = inferPayloadSignals(payload);
         const weakRestaurantOnly =
           signals.hasWeakRestaurantSignals && !signals.hasStrongRestaurantSignals;
@@ -164,7 +178,7 @@ export function parseToolResult(
           (weakRestaurantOnly && (!isRestaurantDiscoveryTool || signals.hasDishNameSignals));
 
         if (shouldPreferProducts) {
-          const products = tryParseProducts(payload, { toolInput });
+          const products = tryParseProducts(payload, productParseContext);
           if (products) return products;
         }
 
@@ -173,7 +187,7 @@ export function parseToolResult(
           if (restaurants) return restaurants;
         }
 
-        const products = tryParseProducts(payload, { toolInput });
+        const products = tryParseProducts(payload, productParseContext);
         if (products) return products;
         const restaurants = tryParseRestaurants(payload);
         if (restaurants) return restaurants;
@@ -185,24 +199,24 @@ export function parseToolResult(
       }
 
       // Always try products (including dining — dining can have menu/dish searches)
-      const products = tryParseProducts(payload, { toolInput });
+      const products = tryParseProducts(payload, productParseContext);
       if (products) return products;
     }
-    if (/cart|basket|add_item|remove_item|update_item|modify_item|add_to|remove_from/i.test(toolName)) {
+    if (CART_TOOL_RE.test(toolName)) {
       // Try original data first (before extractPayload strips the structure)
       // so we preserve lineItems / bill breakdown alongside cart items
       const cart = tryParseCart(data) || tryParseCart(payload);
       if (cart) return cart;
     }
-    if (/slot|avail|schedule|timeslot/i.test(toolName)) {
+    if (SLOT_TOOL_RE.test(toolName)) {
       const slots = tryParseTimeSlots(payload);
       if (slots) return slots;
     }
-    if (/address|location|deliver/i.test(toolName)) {
+    if (ADDRESS_TOOL_RE.test(toolName)) {
       const addresses = tryParseAddresses(payload);
       if (addresses) return addresses;
     }
-    if (/order|place|book|reserve|confirm|checkout|submit/i.test(toolName)) {
+    if (CONFIRM_TOOL_RE.test(toolName)) {
       const confirmation = tryParseConfirmation(payload, toolName);
       if (confirmation) return confirmation;
     }

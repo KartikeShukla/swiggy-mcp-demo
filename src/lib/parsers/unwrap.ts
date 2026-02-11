@@ -73,9 +73,15 @@ export function extractPayload(content: unknown, depth = 0): unknown {
 /** Flatten category arrays like [{ name: "Starters", items: [...] }] into a single items array. */
 export function flattenCategoryItems(categories: unknown[]): unknown[] {
   const items: unknown[] = [];
-  for (const cat of categories) {
+  for (let catIndex = 0; catIndex < categories.length; catIndex++) {
+    const cat = categories[catIndex];
     if (typeof cat !== "object" || cat === null) continue;
     const catObj = cat as Record<string, unknown>;
+    const categoryLabel =
+      (typeof catObj.name === "string" && catObj.name.trim()) ||
+      (typeof catObj.title === "string" && catObj.title.trim()) ||
+      (typeof catObj.category === "string" && catObj.category.trim()) ||
+      "";
     const catItems = asArray(catObj.items) || asArray(catObj.dishes) || asArray(catObj.itemCards) || asArray(catObj.products);
     if (catItems) {
       for (const item of catItems) {
@@ -85,11 +91,20 @@ export function flattenCategoryItems(categories: unknown[]): unknown[] {
           if (typeof itemObj.card === "object" && itemObj.card !== null) {
             const card = itemObj.card as Record<string, unknown>;
             if (typeof card.info === "object" && card.info !== null) {
-              items.push(card.info);
+              const info = card.info as Record<string, unknown>;
+              items.push({
+                ...info,
+                ...(categoryLabel && info.category == null ? { category: categoryLabel } : {}),
+                ...(info.group_order == null ? { group_order: catIndex } : {}),
+              });
               continue;
             }
           }
-          items.push(item);
+          items.push({
+            ...itemObj,
+            ...(categoryLabel && itemObj.category == null ? { category: categoryLabel } : {}),
+            ...(itemObj.group_order == null ? { group_order: catIndex } : {}),
+          });
         }
       }
     }

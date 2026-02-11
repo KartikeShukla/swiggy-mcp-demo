@@ -2,6 +2,7 @@ import Anthropic, { APIUserAbortError } from "@anthropic-ai/sdk";
 import {
   MCP_AUTH_ERROR_LIMIT,
   MCP_TOOL_ERROR_LIMIT,
+  STREAM_REQUEST_TIMEOUT_MS,
 } from "@/lib/constants";
 import { logger } from "@/lib/logger";
 import type {
@@ -31,6 +32,12 @@ export async function runMessageStream(
   let mcpAuthErrorCount = 0;
   let abortedDueToRetryLoop = false;
   let abortCategory: McpErrorCategory = "validation";
+  let timedOut = false;
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    logger.warn(`Stream timed out after ${STREAM_REQUEST_TIMEOUT_MS}ms — aborting`);
+    stream.abort();
+  }, STREAM_REQUEST_TIMEOUT_MS);
 
   stream.on("contentBlock", (block) => {
     if (
@@ -105,6 +112,33 @@ export async function runMessageStream(
       usage,
     };
   } catch (err) {
+    if (timedOut) {
+      const partial = stream.currentMessage;
+      const partialContent = sanitizeAssistantBlocks(
+        (partial?.content ?? []) as ContentBlock[],
+      ).blocks;
+      const partialUsage = partial?.usage;
+
+      const usage = {
+        input_tokens: partialUsage?.input_tokens ?? 0,
+        output_tokens: partialUsage?.output_tokens ?? 0,
+        cache_creation_input_tokens: (
+          partialUsage as Record<string, number> | undefined
+        )?.cache_creation_input_tokens,
+        cache_read_input_tokens: (
+          partialUsage as Record<string, number> | undefined
+        )?.cache_read_input_tokens,
+      };
+
+      return {
+        content: ensureNonEmptyContent(
+          partialContent,
+          "This request took longer than expected and timed out. Please try again with a shorter or more specific request.",
+        ),
+        usage,
+      };
+    }
+
     if (abortedDueToRetryLoop && err instanceof APIUserAbortError) {
       const partial = stream.currentMessage;
       const partialContent = sanitizeAssistantBlocks(
@@ -172,5 +206,7 @@ export async function runMessageStream(
     }
 
     throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

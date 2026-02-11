@@ -1,6 +1,47 @@
 import type { ParsedAddress, ChatMessage } from "@/lib/types";
 import type { VerticalId } from "@/verticals/prompt-spec/types";
 
+// Module-scope regex constants (avoid per-call RegExp allocation)
+const RESTAURANT_SELECT_PATTERNS = [
+  /open menu for restaurant:\s*"?(.*?)"?$/i,
+  /show(?: me)? the menu at\s+(.+)$/i,
+  /menu at\s+(.+)$/i,
+  /check availability at\s+(.+)$/i,
+  /book a table at\s+(.+)$/i,
+];
+
+const CONFIRM_INTENT_PATTERNS = [/confirm/, /go ahead/, /place order/, /book it/, /yes do it/];
+const FOOD_MENU_PATTERNS = [/open menu for restaurant:/, /menu at /];
+const DINING_AVAIL_PATTERNS = [/availability/, /time slot/, /book a table/];
+const CART_INTENT_PATTERNS = [/add /, /remove /, /cart/, /basket/];
+
+const FOOD_GOAL_PATTERNS = [/meal prep/, /recipe/, /diet/, /calori/, /protein/, /nutrition/];
+const FOOD_DIET_PATTERNS = [/vegan/, /vegetarian/, /gluten/, /allerg/, /keto/, /low[- ]?carb/, /diabetic/, /jain/];
+const FOOD_SERVINGS_PATTERNS = [/for\s+\d+/, /\d+\s*(people|persons|servings?|portions?)/];
+const BUDGET_PATTERNS = [/budget/, /under\s+\d+/, /₹\s*\d+/, /inr\s*\d+/, /rupees?/];
+
+const STYLE_CONCERN_PATTERNS = [/acne/, /routine/, /wedding/, /beard/, /groom/, /haircare/, /skincare/, /dandruff/];
+const STYLE_SKIN_PATTERNS = [/oily skin/, /dry skin/, /combination skin/, /sensitive skin/];
+const STYLE_HAIR_PATTERNS = [/straight hair/, /wavy hair/, /curly hair/, /coily hair/, /oily scalp/, /dry scalp/];
+
+const DINING_CUISINE_PATTERNS = [/italian/, /asian/, /north indian/, /south indian/, /fine[- ]?dining/, /rooftop/, /casual/, /romantic/];
+const DINING_LOCATION_PATTERNS = [/ in [a-z]/, /near /, /area/, /sector/, /koramangala/, /indiranagar/, /whitefield/, /gurugram/, /gurgaon/];
+const DINING_PARTY_PATTERNS = [/for\s+\d+/, /\d+\s*(people|persons|guests)/];
+const DINING_DATE_PATTERNS = [/today/, /tomorrow/, /tonight/, /weekend/, /\d{1,2}\s*(am|pm)/, /saturday/, /sunday/];
+
+const FOODORDER_CRAVING_PATTERNS = [/craving/, /biryani/, /pizza/, /burger/, /butter chicken/, /dish/, /cuisine/, /hungry/];
+const FOODORDER_DIET_PATTERNS = [/veg/, /non[- ]?veg/, /vegan/, /allerg/];
+const FOODORDER_SPEED_PATTERNS = [/fast/, /quick/, /under\s*30\s*min/, /delivery\s*time/];
+
+const PENDING_CONFIRM_PATTERNS = [
+  /confirm/,
+  /go ahead/,
+  /place (it|order)/,
+  /book (it|table)/,
+  /checkout/,
+  /yes do it/,
+];
+
 interface SummarySignals {
   slots: string[];
   intent: "discover" | "menu" | "availability" | "cart" | "confirm";
@@ -20,7 +61,7 @@ function compactText(text: string, max = 36): string {
   return `${clean.slice(0, max - 1)}…`;
 }
 
-function recentUserMessages(messages: ChatMessage[], maxMessages = 8): string[] {
+function recentUserMessages(messages: ChatMessage[], maxMessages = 16): string[] {
   return messages
     .filter(isUserTextMessage)
     .slice(-maxMessages)
@@ -31,17 +72,9 @@ function hasAny(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
 }
 
-function detectSelectedRestaurant(lastUserMessage: string): string | null {
-  const patterns = [
-    /open menu for restaurant:\s*"?(.*?)"?$/i,
-    /show(?: me)? the menu at\s+(.+)$/i,
-    /menu at\s+(.+)$/i,
-    /check availability at\s+(.+)$/i,
-    /book a table at\s+(.+)$/i,
-  ];
-
-  for (const pattern of patterns) {
-    const match = lastUserMessage.match(pattern);
+function detectSelectedRestaurantFromMessage(message: string): string | null {
+  for (const pattern of RESTAURANT_SELECT_PATTERNS) {
+    const match = message.match(pattern);
     if (!match?.[1]) continue;
     const value = match[1].replace(/[.?!]$/, "").trim();
     if (value) return compactText(value);
@@ -49,17 +82,25 @@ function detectSelectedRestaurant(lastUserMessage: string): string | null {
   return null;
 }
 
+function detectLatestSelectedRestaurant(userMessages: string[]): string | null {
+  for (let i = userMessages.length - 1; i >= 0; i--) {
+    const selectedRestaurant = detectSelectedRestaurantFromMessage(userMessages[i]);
+    if (selectedRestaurant) return selectedRestaurant;
+  }
+  return null;
+}
+
 function detectIntent(lastUserText: string, verticalId: VerticalId): SummarySignals["intent"] {
-  if (hasAny(lastUserText, [/confirm/, /go ahead/, /place order/, /book it/, /yes do it/])) {
+  if (hasAny(lastUserText, CONFIRM_INTENT_PATTERNS)) {
     return "confirm";
   }
-  if (verticalId === "foodorder" && hasAny(lastUserText, [/open menu for restaurant:/, /menu at /])) {
+  if (verticalId === "foodorder" && hasAny(lastUserText, FOOD_MENU_PATTERNS)) {
     return "menu";
   }
-  if (verticalId === "dining" && hasAny(lastUserText, [/availability/, /time slot/, /book a table/])) {
+  if (verticalId === "dining" && hasAny(lastUserText, DINING_AVAIL_PATTERNS)) {
     return "availability";
   }
-  if (hasAny(lastUserText, [/add /, /remove /, /cart/, /basket/])) {
+  if (hasAny(lastUserText, CART_INTENT_PATTERNS)) {
     return "cart";
   }
   return "discover";
@@ -69,32 +110,32 @@ function detectSlots(allUserText: string, verticalId: VerticalId): string[] {
   const slots: string[] = [];
 
   if (verticalId === "food") {
-    if (hasAny(allUserText, [/meal prep/, /recipe/, /diet/, /calori/, /protein/, /nutrition/])) slots.push("goal");
-    if (hasAny(allUserText, [/vegan/, /vegetarian/, /gluten/, /allerg/, /keto/, /low[- ]?carb/, /diabetic/, /jain/])) slots.push("diet");
-    if (hasAny(allUserText, [/for\s+\d+/, /\d+\s*(people|persons|servings?|portions?)/])) slots.push("servings");
-    if (hasAny(allUserText, [/budget/, /under\s+\d+/, /₹\s*\d+/, /inr\s*\d+/, /rupees?/])) slots.push("budget");
+    if (hasAny(allUserText, FOOD_GOAL_PATTERNS)) slots.push("goal");
+    if (hasAny(allUserText, FOOD_DIET_PATTERNS)) slots.push("diet");
+    if (hasAny(allUserText, FOOD_SERVINGS_PATTERNS)) slots.push("servings");
+    if (hasAny(allUserText, BUDGET_PATTERNS)) slots.push("budget");
   }
 
   if (verticalId === "style") {
-    if (hasAny(allUserText, [/acne/, /routine/, /wedding/, /beard/, /groom/, /haircare/, /skincare/, /dandruff/])) slots.push("concern");
-    if (hasAny(allUserText, [/oily skin/, /dry skin/, /combination skin/, /sensitive skin/])) slots.push("skin_type");
-    if (hasAny(allUserText, [/straight hair/, /wavy hair/, /curly hair/, /coily hair/, /oily scalp/, /dry scalp/])) slots.push("hair_type");
-    if (hasAny(allUserText, [/budget/, /under\s+\d+/, /₹\s*\d+/, /inr\s*\d+/, /rupees?/])) slots.push("budget");
+    if (hasAny(allUserText, STYLE_CONCERN_PATTERNS)) slots.push("concern");
+    if (hasAny(allUserText, STYLE_SKIN_PATTERNS)) slots.push("skin_type");
+    if (hasAny(allUserText, STYLE_HAIR_PATTERNS)) slots.push("hair_type");
+    if (hasAny(allUserText, BUDGET_PATTERNS)) slots.push("budget");
   }
 
   if (verticalId === "dining") {
-    if (hasAny(allUserText, [/italian/, /asian/, /north indian/, /south indian/, /fine[- ]?dining/, /rooftop/, /casual/, /romantic/])) slots.push("cuisine_or_vibe");
-    if (hasAny(allUserText, [/ in [a-z]/, /near /, /area/, /sector/, /koramangala/, /indiranagar/, /whitefield/, /gurugram/, /gurgaon/])) slots.push("location");
-    if (hasAny(allUserText, [/for\s+\d+/, /\d+\s*(people|persons|guests)/])) slots.push("party_size");
-    if (hasAny(allUserText, [/today/, /tomorrow/, /tonight/, /weekend/, /\d{1,2}\s*(am|pm)/, /saturday/, /sunday/])) slots.push("date_time");
-    if (hasAny(allUserText, [/budget/, /under\s+\d+/, /₹\s*\d+/, /inr\s*\d+/, /rupees?/])) slots.push("budget");
+    if (hasAny(allUserText, DINING_CUISINE_PATTERNS)) slots.push("cuisine_or_vibe");
+    if (hasAny(allUserText, DINING_LOCATION_PATTERNS)) slots.push("location");
+    if (hasAny(allUserText, DINING_PARTY_PATTERNS)) slots.push("party_size");
+    if (hasAny(allUserText, DINING_DATE_PATTERNS)) slots.push("date_time");
+    if (hasAny(allUserText, BUDGET_PATTERNS)) slots.push("budget");
   }
 
   if (verticalId === "foodorder") {
-    if (hasAny(allUserText, [/craving/, /biryani/, /pizza/, /burger/, /butter chicken/, /dish/, /cuisine/, /hungry/])) slots.push("craving");
-    if (hasAny(allUserText, [/veg/, /non[- ]?veg/, /vegan/, /allerg/])) slots.push("diet");
-    if (hasAny(allUserText, [/budget/, /under\s+\d+/, /₹\s*\d+/, /inr\s*\d+/, /rupees?/])) slots.push("budget");
-    if (hasAny(allUserText, [/fast/, /quick/, /under\s*30\s*min/, /delivery\s*time/])) slots.push("speed");
+    if (hasAny(allUserText, FOODORDER_CRAVING_PATTERNS)) slots.push("craving");
+    if (hasAny(allUserText, FOODORDER_DIET_PATTERNS)) slots.push("diet");
+    if (hasAny(allUserText, BUDGET_PATTERNS)) slots.push("budget");
+    if (hasAny(allUserText, FOODORDER_SPEED_PATTERNS)) slots.push("speed");
   }
 
   return [...new Set(slots)].sort();
@@ -120,15 +161,8 @@ export function buildSessionStateSummary(
   const lastUserLower = lastUserMessage.toLowerCase();
 
   const slots = detectSlots(allUserText, verticalId);
-  const pendingConfirmation = hasAny(lastUserLower, [
-    /confirm/,
-    /go ahead/,
-    /place (it|order)/,
-    /book (it|table)/,
-    /checkout/,
-    /yes do it/,
-  ]);
-  const selectedRestaurant = detectSelectedRestaurant(lastUserMessage);
+  const pendingConfirmation = hasAny(lastUserLower, PENDING_CONFIRM_PATTERNS);
+  const selectedRestaurant = detectLatestSelectedRestaurant(userMessages);
   const intent = detectIntent(lastUserLower, verticalId);
   const locationSignal = formatLocationSignal(selectedAddress);
 

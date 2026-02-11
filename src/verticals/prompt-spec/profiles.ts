@@ -24,23 +24,23 @@ export const foodPromptProfile: PromptProfile = {
     "Clarify intent quickly and confirm missing required slots.",
     "Propose 2-3 recipe options with per-serving calories/protein/carbs/fats.",
     "After user selects one option, provide concise step-by-step recipe.",
-    "Search ingredients with specific quantities/sizes, then help build cart.",
+    "Search ingredients with specific quantities/sizes and show product options first.",
+    "Only update cart after explicit user intent (for example: add/select/include this item).",
     "Place order only after explicit final confirmation.",
   ],
   toolPolicies: [
     "Search with specific quantity terms (for example: paneer 500 g, olive oil 250 ml).",
     "One targeted search per ingredient category; avoid overlapping retries.",
     "If an ingredient is unavailable, suggest one close substitute and search once.",
-    "Use address/location tools only when user asks to change location or checkout fails for address reasons.",
+    "Do not call cart mutation tools unless the user explicitly asks to add/remove/update items.",
   ],
   responseStyle: [
-    "Card-first: do not restate product card details in text.",
-    "Post-tool response max 1-2 short sentences.",
     "Recipe steps should be one line each and easy to follow.",
   ],
   confirmationRules: [
     "Never place order without explicit user confirmation.",
     "After cart change, acknowledge the change in one short sentence.",
+    "Do not claim items were added to cart unless a cart tool result confirms it.",
   ],
   fallbackRules: [
     "If user is vague, offer 2 concrete meal directions and ask them to pick.",
@@ -73,22 +73,22 @@ export const stylePromptProfile: PromptProfile = {
     "Identify use case (skincare, haircare, beard, event prep, routine reset).",
     "Recommend a focused routine/product stack (2-4 items) with short rationale.",
     "Search for products with specific attributes (ingredient/type/size/concern).",
-    "Help compare options and build cart with minimal text.",
+    "Help compare options first; only update cart when user explicitly asks.",
     "Place order only after explicit final confirmation.",
   ],
   toolPolicies: [
     "One targeted search per product category.",
     "When brand is unavailable, suggest one comparable alternative.",
-    "Use address/location tools only when user asks for location change or checkout fails.",
+    "Do not call cart mutation tools unless the user explicitly asks to add/remove/update items.",
   ],
   responseStyle: [
-    "Card-first: avoid repeating product card details.",
     "Keep answers crisp and actionable.",
     "For routines, format as Morning / Evening / Weekly when applicable.",
   ],
   confirmationRules: [
     "Never place order without explicit user confirmation.",
     "After cart change, confirm the update in one short sentence.",
+    "Do not claim items were added to cart unless a cart tool result confirms it.",
   ],
   fallbackRules: [
     "If context is incomplete, ask one targeted question only.",
@@ -127,10 +127,8 @@ export const diningPromptProfile: PromptProfile = {
   toolPolicies: [
     "Availability check is mandatory before booking.",
     "Do not call booking tools until slot is selected.",
-    "Use location tools only if user asks to change location context.",
   ],
   responseStyle: [
-    "Card-first: avoid restating restaurant card fields.",
     "Keep suggestions practical and local to user itinerary.",
     "Use short, confidence-building copy for booking steps.",
   ],
@@ -167,20 +165,21 @@ export const foodOrderPromptProfile: PromptProfile = {
   phaseFlow: [
     "Discover restaurants for the craving with one focused search.",
     "After user selects a restaurant, switch to menu mode for that same restaurant.",
-    "In menu mode, fetch menu/items and show menu cards; do not re-run restaurant discovery unless user asks to change restaurant.",
+    "In menu mode, keep the user's original craving/cuisine intent as a filter, then fetch matching menu/items and show menu cards.",
+    "Do not re-run restaurant discovery unless user asks to change restaurant.",
     "Support cart edits and summarize total clearly.",
     "Place order only after explicit final confirmation.",
   ],
   toolPolicies: [
     "When user action is 'Open menu for restaurant: <name>', treat that restaurant as locked for menu fetch.",
     "Prefer menu/item tools over restaurant-search tools in menu mode.",
+    "In menu mode, prioritize items that match the user's original craving/cuisine request; if none match, explain and ask whether to broaden.",
+    "When user sends 'Cart update request (menu mode)' with a structured items list, execute cart mutation directly using those item IDs/quantities and the locked/current restaurant context.",
+    "For cart update requests in menu mode, do not re-run restaurant discovery, do not re-run menu discovery/fetch, and avoid exploratory retries.",
     "If item unavailable, suggest one similar item from the same restaurant.",
-    "Use address/location tools only on explicit location change request or address failure.",
   ],
   responseStyle: [
     "Menu should feel like a menu: concise text, card-first interaction.",
-    "Do not repeat card details in text.",
-    "Post-tool text stays short and action-oriented.",
   ],
   confirmationRules: [
     "Never place order without explicit user confirmation.",

@@ -10,6 +10,7 @@ export const OAUTH_POPUP_HEIGHT = 600;
 export const MAX_TOKENS = 1024;
 export const MCP_TOOL_ERROR_LIMIT = 2;
 export const MCP_AUTH_ERROR_LIMIT = 1;
+export const STREAM_REQUEST_TIMEOUT_MS = 90_000;
 export const TEXT_COLLAPSE_THRESHOLD = 120;
 export const TEXTAREA_MAX_HEIGHT = 160;
 
@@ -22,6 +23,7 @@ export const MAX_STATUS_DETAILS = 6;
 export const MAX_STATUS_CARD_DETAILS = 4;
 export const PAYLOAD_EXTRACT_MAX_DEPTH = 2;
 export const MAX_PRODUCTS_SHOWN = 5;
+export const MAX_MENU_PRODUCTS_SHOWN = 10;
 export const MAX_RESTAURANTS_SHOWN = 10;
 
 export const MCP_SERVERS = {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Bot, ChevronRight } from "lucide-react";
 import type { ChatAction, ChatMessage, ContentBlock } from "@/lib/types";
 import { renderMarkdownLite } from "@/lib/markdown";
@@ -9,6 +9,7 @@ import { ProductGrid } from "../cards/ProductGrid";
 import type { SharedProductSelection } from "../cards/ProductGrid";
 import { CollapsibleText } from "./CollapsibleText";
 import { CollapsibleToolGroup } from "./CollapsibleToolGroup";
+import type { PrecomputedToolResult } from "./CollapsibleToolGroup";
 import { DetailSheet } from "./DetailSheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -23,19 +24,47 @@ export function AssistantMessageBubble({
   verticalId?: string;
   sharedSelection?: SharedProductSelection;
 }) {
-  const blocks: ContentBlock[] =
-    typeof message.content === "string"
-      ? [{ type: "text" as const, text: message.content }]
-      : message.content;
+  const blocks: ContentBlock[] = useMemo(
+    () =>
+      typeof message.content === "string"
+        ? [{ type: "text" as const, text: message.content }]
+        : message.content,
+    [message.content],
+  );
 
-  const hasCards = blocks.some((block) => {
-    if (block.type !== "mcp_tool_result") return false;
-    const tn = findPrecedingToolName(blocks, blocks.indexOf(block));
-    const parsed = parseToolResult(tn, block.content, verticalId ?? "");
-    return parsed.type !== "raw";
-  });
+  const resolvedVerticalId = verticalId ?? "";
 
-  const segments = groupBlocks(blocks);
+  const { hasCards, segments, precomputedResults } = useMemo(() => {
+    const segs = groupBlocks(blocks);
+    const resultsMap = new Map<number, PrecomputedToolResult>();
+    let cards = false;
+    const toolUseById = new Map<string, Extract<ContentBlock, { type: "mcp_tool_use" }>>();
+
+    for (const block of blocks) {
+      if (block.type === "mcp_tool_use") {
+        toolUseById.set(block.id, block);
+      }
+    }
+
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      if (block.type !== "mcp_tool_result") continue;
+      const matchedToolUse = toolUseById.get(block.tool_use_id);
+      const tn = matchedToolUse?.name || findPrecedingToolName(blocks, i);
+      const parsed = parseToolResult(
+        tn,
+        block.content,
+        resolvedVerticalId,
+        matchedToolUse?.input,
+      );
+      if (parsed.type !== "raw") {
+        cards = true;
+        resultsMap.set(i, { parsed, toolName: tn });
+      }
+    }
+
+    return { hasCards: cards, segments: segs, precomputedResults: resultsMap };
+  }, [blocks, resolvedVerticalId]);
 
   const collapsibleTexts: string[] = [];
   if (hasCards) {
@@ -56,7 +85,6 @@ export function AssistantMessageBubble({
   ));
   const hasDetails = detailBlocks.length > 0;
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
-  const resolvedVerticalId = verticalId ?? "";
 
   return (
     <div className="flex flex-col items-start gap-3 px-3 py-2 animate-[fade-in_200ms_ease-out]">
@@ -142,6 +170,7 @@ export function AssistantMessageBubble({
                 verticalId={resolvedVerticalId}
                 onAction={onAction}
                 sharedSelection={sharedSelection}
+                precomputedResults={precomputedResults}
               />
             );
           }

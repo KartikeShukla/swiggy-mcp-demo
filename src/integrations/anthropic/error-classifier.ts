@@ -47,6 +47,12 @@ export function classifyApiError(err: unknown): ApiError {
         message: "Rate limit exceeded. Please wait a moment and try again.",
       };
     }
+    if (/(rate[_\s-]?limit|exceed(?:ed|s)?)/i.test(msg)) {
+      return {
+        status: 429,
+        message: "Rate limit exceeded. Please wait a moment and try again.",
+      };
+    }
     if (
       msg.includes("Failed to fetch") ||
       msg.includes("NetworkError") ||
@@ -57,7 +63,11 @@ export function classifyApiError(err: unknown): ApiError {
       };
     }
 
-    return { message: msg };
+    const MAX_ERROR_LENGTH = 200;
+    const safeMsg = msg.length > MAX_ERROR_LENGTH
+      ? msg.slice(0, MAX_ERROR_LENGTH) + "…"
+      : msg;
+    return { message: safeMsg };
   }
   return { message: "Something went wrong" };
 }

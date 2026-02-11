@@ -1,8 +1,9 @@
+import { memo } from "react";
 import { CheckCircle, XCircle } from "lucide-react";
 import type { ParsedStatus } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function StatusCard({
+export const StatusCard = memo(function StatusCard({
   status,
 }: {
   status: ParsedStatus;
@@ -38,4 +39,4 @@ export function StatusCard({
       </CardContent>
     </Card>
   );
-}
+});

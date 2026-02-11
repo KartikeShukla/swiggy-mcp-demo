@@ -303,6 +303,23 @@ describe("parseToolResult()", () => {
       expect(result.items).toHaveLength(2);
       expect(result.items[0].name).toBe("Paneer Tikka");
       expect(result.items[1].name).toBe("Butter Chicken");
+      expect(result.items[0].groupLabel).toBe("Starters");
+      expect(result.items[1].groupLabel).toBe("Mains");
+    });
+
+    it("returns up to 10 menu items for foodorder menu requests", () => {
+      const content = JSON.stringify(
+        Array.from({ length: 12 }, (_, index) => ({
+          name: `Menu Item ${index + 1}`,
+          price: 100 + index,
+        })),
+      );
+      const result = parseToolResult("get_menu", content, "foodorder");
+      expect(result.type).toBe("products");
+      if (result.type !== "products") return;
+      expect(result.items).toHaveLength(10);
+      expect(result.items[0].name).toBe("Menu Item 1");
+      expect(result.items[9].name).toBe("Menu Item 10");
     });
   });
 

@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { Info } from "lucide-react";
 import type { ParsedInfoEntry } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-export function InfoCard({
+export const InfoCard = memo(function InfoCard({
   title,
   entries,
 }: {
@@ -31,4 +32,4 @@ export function InfoCard({
       </CardContent>
     </Card>
   );
-}
+});

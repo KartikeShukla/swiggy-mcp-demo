@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { ChatMessage, CartState, ContentBlock } from "@/lib/types";
+import type { ChatMessage, CartState, ContentBlock, McpToolUseBlock } from "@/lib/types";
 import { findPrecedingToolName } from "@/lib/content-blocks";
 import { parseToolResult } from "@/lib/parsers";
 
@@ -25,14 +25,24 @@ function findLatestCartState(
     if (msg.role !== "assistant" || typeof msg.content === "string") continue;
 
     const blocks = msg.content as ContentBlock[];
+    const toolUseById = new Map<string, McpToolUseBlock>();
+    for (const block of blocks) {
+      if (block.type !== "mcp_tool_use") continue;
+      const id = block.id?.trim();
+      if (!id) continue;
+      toolUseById.set(id, block);
+    }
+
     for (let j = blocks.length - 1; j >= 0; j--) {
       const block = blocks[j];
       if (block.type !== "mcp_tool_result") continue;
 
-      // Find the preceding tool_use to get the tool name
-      const toolName = findPrecedingToolName(blocks, j);
+      const useId = block.tool_use_id?.trim();
+      const matchedUse = useId ? toolUseById.get(useId) : undefined;
+      const toolName = matchedUse?.name ?? findPrecedingToolName(blocks, j);
+      const toolInput = matchedUse?.input;
 
-      const parsed = parseToolResult(toolName, block.content, verticalId);
+      const parsed = parseToolResult(toolName, block.content, verticalId, toolInput);
       if (parsed.type === "cart") {
         return parsed.cart;
       }

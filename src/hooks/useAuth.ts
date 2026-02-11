@@ -111,6 +111,7 @@ export function useAuth() {
 
   const clearChats = useCallback(() => {
     clearAllChatHistory();
+    window.location.reload();
   }, []);
 
   const tokenAge = getSwiggyTokenAge();
@@ -119,6 +120,7 @@ export function useAuth() {
   // Listen for OAuth postMessage from popup
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
       if (event.data?.type === "swiggy-oauth-token" && event.data.token) {
         saveSwiggyToken(event.data.token);
       }

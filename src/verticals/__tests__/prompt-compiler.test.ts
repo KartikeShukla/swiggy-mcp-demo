@@ -30,14 +30,23 @@ describe("prompt compiler", () => {
 
   it("preserves key vertical behavior rules", () => {
     expect(verticals.food.systemPrompt).toContain("calories/protein/carbs/fats");
+    expect(verticals.food.systemPrompt).toContain(
+      "Only update cart after explicit user intent",
+    );
     expect(verticals.style.systemPrompt).toContain(
       "concern + skin_type for skincare",
+    );
+    expect(verticals.style.systemPrompt).toContain(
+      "only update cart when user explicitly asks",
     );
     expect(verticals.dining.systemPrompt).toContain(
       "Availability check is mandatory before booking",
     );
     expect(verticals.foodorder.systemPrompt).toContain(
       "switch to menu mode",
+    );
+    expect(verticals.foodorder.systemPrompt).toContain(
+      "original craving/cuisine intent as a filter",
     );
   });
 });

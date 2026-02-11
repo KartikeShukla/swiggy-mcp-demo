@@ -1,7 +1,8 @@
+import { memo } from "react";
 import { renderMarkdownLite } from "@/lib/markdown";
 import { TEXT_COLLAPSE_THRESHOLD } from "@/lib/constants";
 
-export function CollapsibleText({
+export const CollapsibleText = memo(function CollapsibleText({
   text,
   hasCards,
 }: {
@@ -20,4 +21,4 @@ export function CollapsibleText({
       {renderMarkdownLite(text)}
     </div>
   );
-}
+});

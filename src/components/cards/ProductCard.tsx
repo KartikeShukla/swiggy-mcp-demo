@@ -43,14 +43,14 @@ export function ProductCard({
             {product.brand}
           </span>
         )}
+        <h4 className="mb-0.5 line-clamp-2 text-[15px] font-semibold text-card-foreground leading-tight">
+          {product.name}
+        </h4>
         {product.description && (
           <p className="mb-0.5 line-clamp-1 text-[11px] text-muted-foreground/70 leading-snug">
             {product.description}
           </p>
         )}
-        <h4 className="mb-0.5 line-clamp-2 text-[15px] font-semibold text-card-foreground leading-tight">
-          {product.name}
-        </h4>
         {product.quantity && (
           <span className="mb-1 text-xs text-muted-foreground">{product.quantity}</span>
         )}
