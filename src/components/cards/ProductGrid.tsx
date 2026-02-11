@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ShoppingCart } from "lucide-react";
 import type { ChatAction, ParsedProduct } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -103,16 +103,18 @@ export function ProductGrid({
   };
 
   const useTypeGrouping = verticalId === "food" || verticalId === "style";
-  const grouped = new Map<string, { title: string; items: ParsedProduct[] }>();
-  for (const item of items) {
-    const metadataTitle = item.groupLabel?.trim();
-    const inferredTitle = useTypeGrouping ? inferItemType(item) : ((item.brand || "").trim() || "Products");
-    const title = metadataTitle || inferredTitle;
-    const key = (item.groupKey?.trim().toLowerCase() || title.toLowerCase());
-    if (!grouped.has(key)) grouped.set(key, { title, items: [] });
-    grouped.get(key)!.items.push(item);
-  }
-  const groupedEntries = [...grouped.values()];
+  const groupedEntries = useMemo(() => {
+    const grouped = new Map<string, { title: string; items: ParsedProduct[] }>();
+    for (const item of items) {
+      const metadataTitle = item.groupLabel?.trim();
+      const inferredTitle = useTypeGrouping ? inferItemType(item) : ((item.brand || "").trim() || "Products");
+      const title = metadataTitle || inferredTitle;
+      const key = (item.groupKey?.trim().toLowerCase() || title.toLowerCase());
+      if (!grouped.has(key)) grouped.set(key, { title, items: [] });
+      grouped.get(key)!.items.push(item);
+    }
+    return [...grouped.values()];
+  }, [items, useTypeGrouping]);
   const isRailSection =
     verticalId === "foodorder" || verticalId === "food" || verticalId === "style";
   const isOrangeRailSection = isRailSection;

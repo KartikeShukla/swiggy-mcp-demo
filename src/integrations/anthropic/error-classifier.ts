@@ -57,7 +57,11 @@ export function classifyApiError(err: unknown): ApiError {
       };
     }
 
-    return { message: msg };
+    const MAX_ERROR_LENGTH = 200;
+    const safeMsg = msg.length > MAX_ERROR_LENGTH
+      ? msg.slice(0, MAX_ERROR_LENGTH) + "…"
+      : msg;
+    return { message: safeMsg };
   }
   return { message: "Something went wrong" };
 }
