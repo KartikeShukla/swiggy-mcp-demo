@@ -1,4 +1,4 @@
-# Vertical: style (StyleBox)
+# Vertical: style (StyleKit)
 
 ## Goal
 

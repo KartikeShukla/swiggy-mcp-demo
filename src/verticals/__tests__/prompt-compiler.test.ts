@@ -23,9 +23,9 @@ describe("prompt compiler", () => {
 
   it("keeps vertical identity statements", () => {
     expect(verticals.food.systemPrompt).toContain("You are NutriCart");
-    expect(verticals.style.systemPrompt).toContain("You are StyleBox");
+    expect(verticals.style.systemPrompt).toContain("You are StyleKit");
     expect(verticals.dining.systemPrompt).toContain("You are TableScout");
-    expect(verticals.foodorder.systemPrompt).toContain("You are FoodExpress");
+    expect(verticals.foodorder.systemPrompt).toContain("You are FeedMe");
   });
 
   it("preserves key vertical behavior rules", () => {

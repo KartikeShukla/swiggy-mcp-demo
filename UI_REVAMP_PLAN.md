@@ -566,9 +566,9 @@ These files contain only business logic, types, or server code and require zero 
 | `src/hooks/useCart.ts` | Cart extraction from messages |
 | `src/hooks/useAuth.ts` | Auth state & OAuth flow |
 | `src/verticals/food.ts` | NutriCart vertical config |
-| `src/verticals/style.ts` | StyleBox vertical config |
+| `src/verticals/style.ts` | StyleKit vertical config |
 | `src/verticals/dining.ts` | TableScout vertical config |
-| `src/verticals/foodOrder.ts` | FoodExpress vertical config |
+| `src/verticals/foodOrder.ts` | FeedMe vertical config |
 | `src/verticals/index.ts` | Vertical registry |
 | `server/oauth-plugin.ts` | Vite OAuth plugin |
 

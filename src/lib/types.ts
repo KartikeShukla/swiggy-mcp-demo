@@ -7,7 +7,6 @@ export interface VerticalConfig {
   id: string;
   name: string;
   tabName: string;
-  tagline: string;
   description: string;
   color: "food" | "style" | "dining" | "foodorder";
   icon: string;

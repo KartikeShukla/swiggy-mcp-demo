@@ -40,9 +40,9 @@ Same MCP tools, different system prompts = different product experiences.
 | Vertical | ID | MCP Server | URL |
 |----------|----|------------|-----|
 | NutriCart | `food` | swiggy-instamart | `mcp.swiggy.com/im` |
-| StyleBox | `style` | swiggy-instamart | `mcp.swiggy.com/im` |
+| StyleKit | `style` | swiggy-instamart | `mcp.swiggy.com/im` |
 | TableScout | `dining` | swiggy-dineout | `mcp.swiggy.com/dineout` |
-| FoodOrder | `foodorder` | swiggy-food | `mcp.swiggy.com/food` |
+| FeedMe | `foodorder` | swiggy-food | `mcp.swiggy.com/food` |
 
 Config: `src/verticals/` — each file exports a `VerticalConfig`. Registry in `src/verticals/index.ts`.
 Prompt profiles: `src/verticals/prompt-spec/`; shared compact policy: `src/verticals/shared-prompt.ts`.
@@ -154,7 +154,7 @@ npm run test:coverage     # With coverage report
 - **Token staleness** — Swiggy tokens expire after 1 hour (`TOKEN_STALENESS_MS`). UI shows warning.
 - **OAuth in dev only** — `server/oauth-plugin.ts` is a Vite dev middleware, not a production server
 - **MCP beta flags required** — API calls must include `mcp-client-2025-11-20` beta header
-- **Shared MCP server** — NutriCart and StyleBox both use the same Instamart MCP server; behavior differs only via system prompt
+- **Shared MCP server** — NutriCart and StyleKit both use the same Instamart MCP server; behavior differs only via system prompt
 - **Routes** — `/` = landing, `/:verticalId` = chat. Vertical IDs: `food`, `style`, `dining`, `foodorder`
 - **Dark mode** — detected from localStorage/system preference in `index.html` script tag (before React mounts)
 - **Phone frame** — app renders inside a phone mockup (`PhoneFrame` component) with safe area insets

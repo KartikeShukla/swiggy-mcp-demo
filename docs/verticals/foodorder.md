@@ -1,4 +1,4 @@
-# Vertical: foodorder (FoodExpress)
+# Vertical: foodorder (FeedMe)
 
 ## Goal
 
