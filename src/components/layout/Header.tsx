@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { MapPin } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
 import type { ParsedAddress } from "@/lib/types";
 import { formatHeaderLocation } from "./header-location";
+import { formatHeaderDateTime } from "./header-datetime";
 import { VerticalNav } from "./VerticalNav";
 
 function Logo67() {
@@ -46,6 +47,7 @@ export function Header({
   connectionActive?: boolean;
 }) {
   const locationText = formatHeaderLocation(selectedAddress);
+  const dateTimeText = formatHeaderDateTime();
 
   return (
     <header className="relative z-50 shrink-0 border-b border-border bg-background/95 backdrop-blur-lg pt-[var(--safe-top)]" aria-label="Main navigation">
@@ -67,7 +69,10 @@ export function Header({
             </span>
             <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
               <MapPin className="h-2.5 w-2.5 shrink-0" />
-              <span className="truncate max-w-[170px]">{locationText}</span>
+              <span className="truncate max-w-[110px]">{locationText}</span>
+              <span className="text-muted-foreground/50">|</span>
+              <Clock className="h-2.5 w-2.5 shrink-0" />
+              <span className="truncate max-w-[80px]">{dateTimeText}</span>
             </span>
           </div>
         </Link>

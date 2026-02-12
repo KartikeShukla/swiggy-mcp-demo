@@ -10,9 +10,11 @@ function user(content: string): ChatMessage {
 }
 
 describe("buildSessionStateSummary", () => {
-  it("returns null when confidence is low", () => {
+  it("returns summary with datetime even for simple messages", () => {
     const summary = buildSessionStateSummary([user("hello")], "food");
-    expect(summary).toBeNull();
+    expect(summary).not.toBeNull();
+    expect(summary).toContain("datetime=");
+    expect(summary).toMatch(/datetime=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}[+-]\d{2}:\d{2}/);
   });
 
   it("summarizes food context when key slots are present", () => {
@@ -63,6 +65,16 @@ describe("buildSessionStateSummary", () => {
 
     expect(summary).toContain("intent=cart");
     expect(summary).toContain("restaurant=Behrouz Biryani");
+  });
+
+  it("includes datetime signal in ISO format in all summaries", () => {
+    const summary = buildSessionStateSummary(
+      [user("Need a high-protein vegan dinner for 3 people under 700 rupees")],
+      "food",
+    );
+
+    expect(summary).toContain("datetime=");
+    expect(summary).toMatch(/datetime=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}[+-]\d{2}:\d{2}/);
   });
 
   it("adds location lock when selected address exists", () => {

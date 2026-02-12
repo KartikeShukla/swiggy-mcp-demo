@@ -141,6 +141,17 @@ function detectSlots(allUserText: string, verticalId: VerticalId): string[] {
   return [...new Set(slots)].sort();
 }
 
+function formatDateTimeSignal(): string {
+  const now = new Date();
+  const offset = -now.getTimezoneOffset();
+  const sign = offset >= 0 ? "+" : "-";
+  const absOffset = Math.abs(offset);
+  const hh = String(Math.floor(absOffset / 60)).padStart(2, "0");
+  const mm = String(absOffset % 60).padStart(2, "0");
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}${sign}${hh}:${mm}`;
+}
+
 function formatLocationSignal(selectedAddress?: ParsedAddress | null): string | null {
   if (!selectedAddress?.address) return null;
   const label = compactText(selectedAddress.label || "address", 20);
@@ -166,14 +177,13 @@ export function buildSessionStateSummary(
   const intent = detectIntent(lastUserLower, verticalId);
   const locationSignal = formatLocationSignal(selectedAddress);
 
-  if (!slots.length && !pendingConfirmation && !selectedRestaurant && !locationSignal) {
-    return null;
-  }
+  const datetimeSignal = formatDateTimeSignal();
 
   const parts = [
     `slots=${slots.join(",") || "-"}`,
     `intent=${intent}`,
     `confirm=${pendingConfirmation ? "yes" : "no"}`,
+    `datetime=${datetimeSignal}`,
   ];
 
   if (selectedRestaurant) {
