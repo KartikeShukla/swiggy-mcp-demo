@@ -37,10 +37,10 @@ The browser never talks to Swiggy directly. API requests include an `mcp_servers
 
 | Vertical | ID | MCP Server | What it does |
 |---|---|---|---|
-| **NutriCart** | `food` | swiggy-instamart | Meal planning with macros, recipes, and Instamart grocery ordering |
-| **StyleKit** | `style` | swiggy-instamart | Skincare, haircare, and grooming advice with product delivery |
-| **TableScout** | `dining` | swiggy-dineout | Restaurant discovery, live availability, and table bookings |
-| **FeedMe** | `foodorder` | swiggy-food | Restaurant browsing, menu exploration, and food delivery |
+| **NutriCart** | `food` | swiggy-instamart | Plans meals with macros, walks through recipes, orders ingredients from Instamart |
+| **StyleKit** | `style` | swiggy-instamart | Builds structured grooming routines and orders every product from Instamart |
+| **TableScout** | `dining` | swiggy-dineout | Finds restaurants matching your vibe, checks live availability, books tables via Dineout |
+| **FeedMe** | `foodorder` | swiggy-food | Goes from craving to delivered meal — finds restaurants, browses menus, places orders |
 
 NutriCart and StyleKit share the same Instamart MCP server — behavior differs only via system prompt.
 
