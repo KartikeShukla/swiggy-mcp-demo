@@ -1,20 +1,21 @@
 # Vertical: dining (TableScout)
 
 ## Goal
+Guide restaurant discovery, slot availability checks, and booking via Dineout MCP.
 
-Restaurant discovery + availability-first table booking via Dineout.
+## Primary Runtime Path
+1. Gather cuisine/vibe, party size, and time context.
+2. Run focused restaurant discovery call.
+3. Let user choose a restaurant from cards.
+4. Fetch and render time-slot options.
+5. Require explicit confirmation before booking action.
 
-## Primary Paths
+## Key Signals
+- Cuisine/vibe vocabulary.
+- Party size and date-time intent.
+- Location context from selected address or user override.
 
-1. collect cuisine/location/party context
-2. fetch restaurant cards
-3. mandatory availability call
-4. present slots
-5. explicit booking confirmation
-
-## Key Edge Cases
-
-1. preferred slot unavailable
-2. missing party size/date-time
-3. user asks to skip availability step
-4. non-dining request redirection
+## Edge Cases
+- Requested slot unavailable; must offer returned alternatives.
+- Incomplete party/time context.
+- Non-dining requests in dining context.

@@ -1,41 +1,17 @@
 # System Map
 
 ## Runtime Topology
-
-1. React SPA (`src/`) runs in browser.
-2. Anthropic SDK is used in browser mode (`dangerouslyAllowBrowser: true`).
-3. Anthropic Messages API performs MCP tool discovery/calls server-side.
-4. Swiggy MCP servers:
-- Instamart: `https://mcp.swiggy.com/im`
-- Dineout: `https://mcp.swiggy.com/dineout`
-- Food: `https://mcp.swiggy.com/food`
-5. Local Vite middleware provides OAuth helpers only:
-- `GET /api/auth/start`
-- `GET /api/auth/callback`
-
-## Core User Flows
-
-1. Auth bootstrap:
-- User enters Anthropic key.
-- User connects/pastes Swiggy token.
-- User selects delivery address (optional skip).
-
-2. Chat send:
-- `useChat` appends user message.
-- `useChatApi` builds request (system prompt + MCP config).
-- Request builder adds compact session-state summary when available.
-- Stream response returns text and tool blocks.
-- UI parses tool results and renders cards.
-
-3. Action loop:
-- Card click emits natural-language action message.
-- Message re-enters chat send loop.
+- Browser SPA orchestrates chat and rendering.
+- Anthropic API handles model inference and MCP tool execution.
+- Swiggy MCP endpoints provide commerce tools.
+- Vite OAuth middleware supports local token acquisition in dev.
 
 ## State Boundaries
+1. localStorage: credentials, selected address, per-vertical histories.
+2. React state: loading/error/UI visibility and temporary selections.
+3. Stream state: managed inside `runMessageStream` during each request.
 
-1. Local storage:
-- API key, Swiggy token/timestamp, selected address, per-vertical chat history.
-2. In-memory UI state:
-- Loading/error flags.
-- Sheet/panel open states.
-- Card selection quantities.
+## Core Flows
+1. Auth onboarding flow.
+2. Chat + MCP request/stream flow.
+3. Card action feedback loop into chat.

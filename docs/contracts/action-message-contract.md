@@ -1,30 +1,21 @@
 # Action Message Contract
 
 ## Definition
-
-Card interactions convert UI clicks into natural-language action strings sent back through the same chat pipeline.
+Action messages are deterministic user-intent payloads emitted by card and cart interactions and re-fed into chat.
 
 ## Contract Rules
+1. Emitted actions must preserve user intent without hidden side effects.
+2. Actions must route through the same chat pipeline (`onAction` -> `sendMessage`).
+3. Templates must remain stable for critical interaction families (menu open, availability check, cart adjust, booking confirm).
 
-1. Action messages must be deterministic and user-intent explicit.
-2. Action messages must preserve current behavior semantics (no hidden side effects).
-3. All card action messages must route through `onAction` and then `sendMessage`.
+## Example Families
+- Product/cart: `Add to cart: ...`, `Change {item} quantity to {n}`, `Remove {item} from my cart`.
+- Restaurant transitions: `Open menu for restaurant: ...`, `Check availability at ...`.
+- Slot confirmation: `Book a table at {restaurant} for {slot}`.
+- Address selection: `Use my {label} address: {address}`.
 
-## Current Action Examples
-
-1. Product bulk add:
-- `Add the following items to my cart: ...`
-2. Restaurant action:
-- `Check availability at {restaurant}`
-- `Show me the menu at {restaurant}`
-3. Time slot action:
-- `Book a table at {restaurant} for {slot}`
-4. Address action:
-- `Use my {label} address: {address}`
-5. Cart edits:
-- `Change {item} quantity to {n}`
-- `Remove {item} from my cart`
-
-## Regression Guard
-
-Tests should verify that click interactions emit expected message templates for each card type.
+## Regression Locks
+- `src/components/cards/__tests__/food-product-interactions.test.tsx`
+- `src/components/cards/__tests__/foodorder-restaurant-menu.test.tsx`
+- `src/components/cards/__tests__/dining-restaurant-slot-interactions.test.tsx`
+- `src/lib/__tests__/chat-actions.test.ts`

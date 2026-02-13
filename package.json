@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "docs:sync": "node ./scripts/docs/sync-agent-facts.mjs",
+    "docs:verify": "node ./scripts/docs/verify-docs.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",

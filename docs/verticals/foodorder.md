@@ -1,20 +1,21 @@
 # Vertical: foodorder (FeedMe)
 
 ## Goal
+Handle craving-based restaurant discovery, menu exploration, cart updates, and food ordering.
 
-Craving-driven restaurant/menu discovery + delivery cart/order via Swiggy Food.
+## Primary Runtime Path
+1. Establish craving/cuisine intent.
+2. Discover restaurants and render restaurant cards.
+3. Lock selected restaurant and switch to menu mode.
+4. Render menu products and process cart updates.
+5. Confirm before order placement.
 
-## Primary Paths
+## Key Signals
+- Craving and cuisine language.
+- Diet/speed/budget constraints.
+- Restaurant selection events (`Open menu for restaurant: ...`).
 
-1. collect craving/cuisine intent
-2. fetch restaurant cards
-3. load menu cards
-4. build and adjust cart
-5. explicit order confirmation
-
-## Key Edge Cases
-
-1. vague hunger prompt
-2. unavailable menu item replacement
-3. group budget help request
-4. token expiration or MCP auth errors
+## Edge Cases
+- Vague user hunger prompt with no cuisine.
+- Mixed payloads requiring restaurant-vs-menu parser disambiguation.
+- Optimistic cart state prior to latest MCP cart confirmation.

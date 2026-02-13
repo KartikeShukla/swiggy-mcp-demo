@@ -1,53 +1,108 @@
-# Repository Guidelines
+# Agent Operating Guide
 
-## Project Structure & Module Organization
-- `src/` contains the React + TypeScript app.
-- `src/components/` is organized by feature (`auth`, `chat`, `cards`, `cart`, `layout`, `ui`, `home`).
-- `src/hooks/` holds orchestration/state hooks (`useAuth`, `useChat`, `useCart`, etc.).
-- `src/lib/` contains shared types, constants, storage helpers, parser pipeline, and Anthropic integration utilities.
-- `src/verticals/` defines the 4 vertical configs (`food`, `style`, `dining`, `foodorder`) and prompt specs.
-- `server/oauth/` contains Vite middleware for Swiggy OAuth (dev flow).
-- `docs/` contains architecture notes, contracts, and vertical docs.
-- Tests are colocated under `__tests__` folders near related modules.
+This file is the canonical AI-agent guide for this repository. It is designed to be executable documentation: all behavior claims are tied to current source code.
 
-## Build, Test, and Dev Commands
-- `npm run dev`: start Vite on `localhost:5173`.
-- `npm run build`: TypeScript project build (`tsc -b`) + Vite production bundle.
-- `npm run preview`: serve the production build locally.
-- `npm run lint`: run ESLint.
-- `npm run test`: run Vitest once.
-- `npm run test:watch`: run Vitest in watch mode.
-- `npm run test:coverage`: run tests with coverage output.
+## Repository At A Glance
+- Product: Swiggy MCP demo app.
+- Runtime: browser-only React SPA with Anthropic SDK.
+- MCP usage: Swiggy MCP tools are discovered and executed through Anthropic servers.
+- Vertical model: four product experiences (`food`, `style`, `dining`, `foodorder`) sharing one chat infrastructure.
 
-## Coding Style & Naming Conventions
-- TypeScript-first, functional React components only.
-- Match existing style: 2-space indentation, semicolons, double quotes.
-- Use PascalCase for components (`RestaurantCard.tsx`), camelCase for hooks/utilities (`useChatApi.ts`), and kebab-like domain names only where already established.
-- Keep modules focused by concern (UI, parsing, auth, vertical config).
-- Prefer explicit types at boundaries (`src/lib/types.ts`, parser return shapes).
+## High-Confidence Start Points
+1. `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/App.tsx` for shell + routing.
+2. `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/hooks/useAuth.ts` for onboarding and auth lifecycle.
+3. `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/hooks/useChat.ts` and `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/hooks/useChatApi.ts` for chat orchestration.
+4. `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/integrations/anthropic` for request/stream/sanitization/retry behavior.
+5. `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/lib/parsers` for tool-result conversion rules.
 
-## Testing Guidelines
-- Framework: Vitest + Testing Library (`jsdom` environment).
-- Keep tests near code in `__tests__/`.
-- Test file naming: `<module>.test.ts` or `<feature>.test.tsx`.
-- For behavior changes, add or update focused tests first, then run at least:
-  - `npm run lint`
-  - `npm run test`
+## Commands
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
+npm run test
+npm run test:watch
+npm run test:coverage
+npm run docs:sync
+npm run docs:verify
+```
 
-## Commit & Pull Request Guidelines
-- Follow Conventional Commit style seen in history:
-  - `feat: ...`
-  - `fix: ...`
-  - `refactor: ...`
-  - `style: ...`
-- Keep commits scoped to one change set (UI polish, parser fix, OAuth robustness, etc.).
-- PRs should include:
-  - concise problem/solution summary,
-  - impacted areas (paths/verticals),
-  - test evidence (commands run),
-  - screenshots/GIFs for UI changes.
+## Core Runtime Facts (Synced)
+<!-- CORE_RUNTIME_FACTS:START -->
 
-## Security & Configuration Notes
-- No `.env` is required for normal local use.
-- API key and Swiggy token are intentionally browser-side and stored in `localStorage`; do not log secrets.
-- OAuth middleware is for local dev flow; validate error handling paths when touching `server/oauth/*`.
+## Core Runtime Facts
+
+### Runtime Topology
+- Browser-only React SPA with Anthropic SDK in browser mode (`dangerouslyAllowBrowser: true`).
+- MCP tools are executed server-side by Anthropic using `mcp_servers` + `mcp_toolset`.
+- Dev-only OAuth middleware is provided by Vite plugin in `server/oauth`.
+
+### Request Pipeline
+1. `useChat` appends user message and builds optional session summary.
+2. `useChatApi` builds params via `buildMessageStreamParams`.
+3. `runMessageStream` handles streaming, timeout, tool-level aborts, and content sanitization.
+4. Assistant blocks are parsed into cards by `parseToolResult` + `ItemCardGrid`.
+
+### Current Limits And Constants
+- `MAX_CONTEXT_MESSAGES = 8` (`src/integrations/anthropic/request-builder.ts`).
+- Context management trigger: `input_tokens = 12000`.
+- Context management keep tool uses: `3`.
+- `KEEP_RECENT_MESSAGES_FULL = 2` (`src/integrations/anthropic/message-sanitizer.ts`).
+- `MAX_PRODUCTS_SHOWN = 3`, `MAX_MENU_PRODUCTS_SHOWN = 5`, `MAX_RESTAURANTS_SHOWN = 5`.
+- `MCP_TOOL_ERROR_LIMIT = 2`, `MCP_AUTH_ERROR_LIMIT = 1`.
+- `STREAM_REQUEST_TIMEOUT_MS = 90000`.
+
+### Session Summary
+- Built from recent user messages in `buildSessionStateSummary`.
+- Encodes compact signals like slots, intent, confirmation state, selected restaurant, and location lock.
+- Included as a system text block without cache control.
+
+### Storage Boundaries
+- Local storage keys: API key, Swiggy token + timestamp, selected address, per-vertical chat history.
+- Per-vertical chat persistence key format: `mcp-demo:chat:{verticalId}`.
+
+### Verticals And MCP Mapping
+- `food` -> `swiggy-instamart` (`https://mcp.swiggy.com/im`).
+- `style` -> `swiggy-instamart` (`https://mcp.swiggy.com/im`).
+- `dining` -> `swiggy-dineout` (`https://mcp.swiggy.com/dineout`).
+- `foodorder` -> `swiggy-food` (`https://mcp.swiggy.com/food`).
+
+### Current Test Footprint
+- `45` test files under `src/**/__tests__` and `server/**/__tests__`.
+- Latest baseline: lint and test suites pass on this branch.
+
+<!-- CORE_RUNTIME_FACTS:END -->
+
+## Architecture Summary
+- UI layers live in `src/components/*`, state orchestration in hooks, and runtime integration logic in `src/integrations/anthropic`.
+- The request builder assembles prompt blocks, optional address and session-state context, plus MCP config.
+- Stream runner enforces timeout and tool-error abort limits and returns sanitized assistant content.
+- Parser orchestrator converts MCP result payloads into typed card models (`products`, `restaurants`, `cart`, etc.).
+
+## Prompt System Summary
+- Prompt profiles are defined in `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/verticals/prompt-spec/profiles.ts`.
+- Shared policies are appended in `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/verticals/shared-prompt.ts`.
+- Vertical behavior divergence is prompt-driven first, with selective parser/UI branching in `foodorder` and `dining` flows.
+
+## Data And Security Boundaries
+- API key and Swiggy token are localStorage-backed by design in this demo.
+- OAuth middleware in `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/server/oauth` is a dev-only flow.
+- Do not log secrets or raw auth tokens.
+
+## Contracts To Preserve
+- Parser fallback contract: never throw; always return a valid `ParsedToolResult` variant.
+- Action-message contract: card interactions map to deterministic chat actions.
+- Prompt contract: explicit confirmation required before irreversible operations (order/booking).
+
+## Documentation Navigation
+- Start at `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/README.md`.
+- Architecture narrative: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/ARCHITECTURE.md`.
+- Runtime facts source: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/RUNTIME_FACTS.md`.
+- Documentation coverage map: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/COVERAGE_MATRIX.md`.
+
+## Maintenance Rules For Agents
+1. Run `npm run docs:sync` after touching `docs/RUNTIME_FACTS.md`.
+2. Run `npm run docs:verify` before finishing any docs change.
+3. Keep numeric claims sourced from code constants or executable tests.
+4. When behavior changes, update docs and related contract files in the same change set.
