@@ -8,13 +8,13 @@ export const diningVertical: VerticalConfig = {
   name: "TableScout",
   tabName: "Dine",
   description:
-    "A dining concierge that finds restaurants matching your vibe, checks real-time availability on Dineout, and books your table.",
+    "Your AI dining concierge — finds restaurants matching your vibe and cuisine, checks real-time table availability on Dineout, and books your spot.",
   color: "dining",
   icon: "UtensilsCrossed",
   systemPrompt: buildSystemPrompt(diningPromptProfile),
   promptProfileId: diningPromptProfile.id,
   welcomeMessage:
-    "Planning a meal out? Tell me where you're headed, the vibe you want, your group size, and when. I'll find the right restaurants, check live table availability on Dineout, and book a slot — only after you confirm.",
+    "Tell me the vibe, cuisine, group size, and when — I'll find restaurants and book a table on Dineout.",
   examplePrompts: [
     "I'm visiting Gurugram this weekend — find great lunch and dinner spots across two days",
     "Romantic Italian restaurant in Koramangala, Friday 8 PM, table for two — check what's available",

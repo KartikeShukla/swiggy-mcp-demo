@@ -62,7 +62,7 @@ export function VerticalCard({ vertical }: { vertical: VerticalConfig }) {
               </h3>
               <ChevronRight className="h-4 w-4 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
             </div>
-            <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-2">
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-3">
               {vertical.description}
             </p>
           </div>

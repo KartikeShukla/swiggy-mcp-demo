@@ -265,10 +265,7 @@ function ChatViewInner({
               className="h-full w-full object-cover"
             />
           </div>
-          <h2 className="mb-2 text-lg font-semibold text-foreground">
-            {vertical.name}
-          </h2>
-          <p className="mb-6 max-w-md text-center text-sm text-muted-foreground leading-relaxed">
+          <p className="mb-6 max-w-md text-center text-xs text-muted-foreground leading-relaxed">
             {vertical.welcomeMessage}
           </p>
           <div className="flex flex-wrap justify-center gap-1.5 w-full">
