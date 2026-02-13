@@ -11,11 +11,14 @@ import { buildMessageStreamParams } from "@/integrations/anthropic/request-build
 import { runMessageStream } from "@/integrations/anthropic/stream-runner";
 import {
   isRetryableAnthropicError,
+  isRateLimitError,
   waitForRetryAttempt,
   extractRetryAfterMs,
+  extractRateLimitHeaders,
 } from "@/integrations/anthropic/retry-policy";
 
 const CHAT_REQUEST_MAX_RETRIES = 2;
+const RATE_LIMIT_MAX_RETRIES = 2;
 
 /** Encapsulates the Anthropic API call with MCP server configuration. */
 export function useChatApi(
@@ -49,7 +52,15 @@ export function useChatApi(
           return await runMessageStream(client, params, onAuthError, onAddressError);
         } catch (err) {
           lastError = err;
-          if (attempt >= CHAT_REQUEST_MAX_RETRIES || !isRetryableAnthropicError(err)) {
+
+          const rateLimited = isRateLimitError(err);
+          if (rateLimited) {
+            const headers = extractRateLimitHeaders(err);
+            if (headers) console.warn("[Rate Limit Hit]", headers);
+          }
+
+          const maxRetries = rateLimited ? RATE_LIMIT_MAX_RETRIES : CHAT_REQUEST_MAX_RETRIES;
+          if (attempt >= maxRetries || !isRetryableAnthropicError(err)) {
             throw err;
           }
           await waitForRetryAttempt(attempt + 1, extractRetryAfterMs(err));

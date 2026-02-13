@@ -1,7 +1,7 @@
 import {
   sanitizeAssistantBlocks,
   sanitizeMessagesForApi,
-  truncateOldToolResults,
+  compactOldMessages,
 } from "@/integrations/anthropic/message-sanitizer";
 import type { ChatMessage, ContentBlock } from "@/lib/types";
 
@@ -99,7 +99,7 @@ describe("message-sanitizer", () => {
     });
   });
 
-  describe("truncateOldToolResults", () => {
+  describe("compactOldMessages", () => {
     function user(content: string): ChatMessage {
       return { role: "user", content, timestamp: Date.now() };
     }
@@ -110,18 +110,17 @@ describe("message-sanitizer", () => {
 
     it("returns messages unchanged when length <= keepRecent", () => {
       const msgs = [user("hi"), assistant("hello")];
-      const result = truncateOldToolResults(msgs, 4);
+      const result = compactOldMessages(msgs, 4);
       expect(result).toBe(msgs);
     });
 
-    it("truncates large JSON array tool results in older messages", () => {
-      const largeArray = JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ id: i, name: `Item ${i}` })));
+    it("strips tool blocks from older assistant messages, keeping text", () => {
       const msgs: ChatMessage[] = [
         user("search"),
         assistant([
           { type: "text" as const, text: "Found items" },
           { type: "mcp_tool_use" as const, id: "u-1", name: "search" },
-          { type: "mcp_tool_result" as const, tool_use_id: "u-1", content: largeArray },
+          { type: "mcp_tool_result" as const, tool_use_id: "u-1", content: "big data" },
         ]),
         user("next"),
         assistant("ok"),
@@ -129,119 +128,94 @@ describe("message-sanitizer", () => {
         assistant("sure"),
         user("even more"),
         assistant("yep"),
-        user("continue"),
-        assistant("done"),
       ];
 
-      const result = truncateOldToolResults(msgs, 8);
+      const result = compactOldMessages(msgs, 4);
 
-      // Older assistant message (index 1) should be truncated
+      // Older assistant message (index 1) should only have text blocks
       const oldAssistant = result[1];
       expect(Array.isArray(oldAssistant.content)).toBe(true);
       const blocks = oldAssistant.content as ContentBlock[];
-      const toolResult = blocks.find((b) => b.type === "mcp_tool_result");
-      expect(toolResult).toBeDefined();
-      expect((toolResult as { content: string }).content).toBe("[Previous result: 100 items]");
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toEqual({ type: "text", text: "Found items" });
     });
 
-    it("truncates large JSON object tool results with key summary", () => {
-      const largeObj = JSON.stringify({ products: [], total: 100, filters: {}, metadata: {} });
-      const padded = largeObj + " ".repeat(2000);
+    it("injects placeholder when all blocks are tool blocks", () => {
       const msgs: ChatMessage[] = [
         user("q1"),
         assistant([
           { type: "mcp_tool_use" as const, id: "u-1", name: "search" },
-          { type: "mcp_tool_result" as const, tool_use_id: "u-1", content: padded },
+          { type: "mcp_tool_result" as const, tool_use_id: "u-1", content: "data" },
         ]),
         user("q2"),
         assistant("response2"),
         user("q3"),
         assistant("response3"),
-        user("q4"),
-        assistant("response4"),
-        user("q5"),
-        assistant("response5"),
       ];
 
-      const result = truncateOldToolResults(msgs, 8);
+      const result = compactOldMessages(msgs, 4);
       const oldBlocks = result[1].content as ContentBlock[];
-      const toolResult = oldBlocks.find((b) => b.type === "mcp_tool_result");
-      expect((toolResult as { content: string }).content).toContain("[Previous result: object with keys:");
-      expect((toolResult as { content: string }).content).toContain("products");
+      expect(oldBlocks).toHaveLength(1);
+      expect(oldBlocks[0]).toEqual({ type: "text", text: "[Earlier tool interaction]" });
     });
 
-    it("preserves tool results in recent messages (within keepRecent)", () => {
-      const largeContent = JSON.stringify(Array.from({ length: 50 }, (_, i) => i));
+    it("preserves tool blocks in recent messages (within keepRecent)", () => {
       const msgs: ChatMessage[] = [
         user("old"),
         assistant("old reply"),
         user("recent"),
         assistant([
           { type: "mcp_tool_use" as const, id: "u-2", name: "search" },
-          { type: "mcp_tool_result" as const, tool_use_id: "u-2", content: largeContent },
+          { type: "mcp_tool_result" as const, tool_use_id: "u-2", content: "data" },
         ]),
       ];
 
-      const result = truncateOldToolResults(msgs, 4);
-      // All 4 messages are within keepRecent — no truncation
+      const result = compactOldMessages(msgs, 4);
       expect(result).toBe(msgs);
     });
 
-    it("preserves tool_use_id on truncated results", () => {
-      const largeContent = JSON.stringify(Array.from({ length: 600 }, (_, i) => i));
-      const msgs: ChatMessage[] = [
-        user("q"),
-        assistant([
-          { type: "mcp_tool_use" as const, id: "u-99", name: "fetch" },
-          { type: "mcp_tool_result" as const, tool_use_id: "u-99", content: largeContent },
-        ]),
-        user("a"),
-        assistant("b"),
-        user("c"),
-        assistant("d"),
-        user("e"),
-        assistant("f"),
-        user("g"),
-        assistant("h"),
-      ];
-
-      const result = truncateOldToolResults(msgs, 8);
-      const blocks = result[1].content as ContentBlock[];
-      const toolResult = blocks.find((b) => b.type === "mcp_tool_result") as { tool_use_id: string };
-      expect(toolResult.tool_use_id).toBe("u-99");
-    });
-
     it("does not mutate original messages", () => {
-      const largeContent = JSON.stringify(Array.from({ length: 600 }, (_, i) => i));
       const original: ChatMessage[] = [
         user("q"),
         assistant([
           { type: "mcp_tool_use" as const, id: "u-1", name: "s" },
-          { type: "mcp_tool_result" as const, tool_use_id: "u-1", content: largeContent },
+          { type: "mcp_tool_result" as const, tool_use_id: "u-1", content: "data" },
         ]),
         user("a"),
         assistant("b"),
         user("c"),
         assistant("d"),
-        user("e"),
-        assistant("f"),
-        user("g"),
-        assistant("h"),
       ];
 
-      const originalContent = (original[1].content as ContentBlock[])[1];
-      truncateOldToolResults(original, 8);
+      const originalBlocks = original[1].content as ContentBlock[];
+      const originalBlock = originalBlocks[0];
+      compactOldMessages(original, 4);
       // Original should be unchanged
-      expect((originalContent as { content: string }).content).toBe(largeContent);
+      expect(originalBlocks[0]).toBe(originalBlock);
+      expect(originalBlocks).toHaveLength(2);
     });
 
-    it("leaves small tool results unchanged", () => {
-      const smallContent = JSON.stringify({ ok: true });
+    it("leaves text-only assistant messages unchanged in old section", () => {
       const msgs: ChatMessage[] = [
         user("q"),
+        assistant([{ type: "text" as const, text: "just text" }]),
+        user("a"),
+        assistant("b"),
+        user("c"),
+        assistant("d"),
+      ];
+
+      const result = compactOldMessages(msgs, 4);
+      // Text-only assistant should be returned as-is (same reference)
+      expect(result[1]).toBe(msgs[1]);
+    });
+
+    it("preserves user messages in old section unchanged", () => {
+      const msgs: ChatMessage[] = [
+        user("old user msg"),
         assistant([
           { type: "mcp_tool_use" as const, id: "u-1", name: "s" },
-          { type: "mcp_tool_result" as const, tool_use_id: "u-1", content: smallContent },
+          { type: "mcp_tool_result" as const, tool_use_id: "u-1", content: "data" },
         ]),
         user("a"),
         assistant("b"),
@@ -249,10 +223,9 @@ describe("message-sanitizer", () => {
         assistant("d"),
       ];
 
-      const result = truncateOldToolResults(msgs, 4);
-      const blocks = result[1].content as ContentBlock[];
-      const toolResult = blocks.find((b) => b.type === "mcp_tool_result") as { content: string };
-      expect(toolResult.content).toBe(smallContent);
+      const result = compactOldMessages(msgs, 4);
+      expect(result[0]).toBe(msgs[0]);
+      expect(result[0].content).toBe("old user msg");
     });
   });
 });

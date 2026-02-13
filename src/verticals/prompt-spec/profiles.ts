@@ -25,13 +25,13 @@ export const foodPromptProfile: PromptProfile = {
     "Direct mode: search named products immediately, add brief nutrition notes (e.g. protein content), show options.",
     "Advisory mode: collect missing advisory slots, then propose 2-3 recipes with per-serving calories/protein/carbs/fats.",
     "After recipe selection, provide concise step-by-step instructions.",
-    "Search ingredients with specific quantities/sizes and show product options first.",
+    "Search one ingredient per turn; show options and confirm before the next.",
     "Only update cart after explicit user intent (e.g. add/select/include).",
     "Place order only after explicit final confirmation.",
   ],
   toolPolicies: [
-    "Search with specific quantity terms (e.g. paneer 500 g, olive oil 250 ml).",
-    "One targeted search per ingredient category; no overlapping retries.",
+    "Search with specific quantity terms (e.g. paneer 500g, oil 250ml).",
+    "One ingredient search per turn; confirm before next.",
     "If unavailable, suggest one close substitute and search once.",
     "Do not call cart mutation tools unless user explicitly asks to add/remove/update.",
   ],
@@ -74,13 +74,13 @@ export const stylePromptProfile: PromptProfile = {
   phaseFlow: [
     "Detect mode: direct shopping (named products) or advisory (routine/concern/event prep).",
     "Direct mode: search named products immediately, add brief grooming tips, show options.",
-    "Advisory mode: collect missing advisory slots, then recommend a focused routine (2-4 items) with short rationale.",
-    "Search products with specific attributes (ingredient/type/size/concern).",
+    "Advisory mode: collect missing advisory slots, then recommend a focused routine (2-4 items) with rationale. Present the routine first — no searches yet.",
+    "Search one product per turn; show options and confirm before the next.",
     "Help compare options first; only update cart when user explicitly asks.",
     "Place order only after explicit final confirmation.",
   ],
   toolPolicies: [
-    "One targeted search per product category.",
+    "One product search per turn.",
     "When brand is unavailable, suggest one comparable alternative.",
     "Do not call cart mutation tools unless user explicitly asks to add/remove/update.",
   ],
@@ -133,7 +133,7 @@ export const diningPromptProfile: PromptProfile = {
   toolPolicies: [
     "Availability check is mandatory before booking.",
     "Do not call booking tools until user selects a specific slot.",
-    "One search per step; do not re-run discovery unless user changes criteria.",
+    "One search per step; show results and wait for user input before the next.",
   ],
   responseStyle: [
     "Keep suggestions practical and local-aware.",
@@ -171,7 +171,7 @@ export const foodOrderPromptProfile: PromptProfile = {
     "Require craving intent before first search. If user says only 'I am hungry', offer 2-3 cuisines and ask them to choose.",
   phaseFlow: [
     "Step 1 — Restaurant discovery: search restaurants for the craving with one focused call. Present results with rating, delivery time, and price range.",
-    "Step 2 — Menu mode: after user selects a restaurant, lock that restaurant and switch to menu mode. Fetch menu items grouped by category with prices.",
+    "Step 2 — Menu mode: after user selects a restaurant, lock and switch to menu mode. Ask which category interests them, then fetch items for that category.",
     "In menu mode, keep the user's original craving/cuisine intent as a filter for suggestions. If no matches, explain and ask whether to broaden.",
     "Do not re-run restaurant discovery unless user explicitly asks to change restaurant.",
     "One tool call per step — no redundant menu fetches or duplicate searches within a turn.",

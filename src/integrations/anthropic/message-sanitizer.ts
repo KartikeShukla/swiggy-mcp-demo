@@ -93,48 +93,9 @@ export function sanitizeAssistantBlocks(blocks: ContentBlock[]): BlockSanitizeRe
   return { blocks: sanitized, droppedBlocksCount };
 }
 
-const TOOL_RESULT_TRUNCATE_THRESHOLD = 2000;
-const KEEP_RECENT_MESSAGES_FULL = 8;
+const KEEP_RECENT_MESSAGES_FULL = 4;
 
-function summarizeContent(raw: unknown): string {
-  if (Array.isArray(raw)) {
-    return `[Previous result: ${raw.length} items]`;
-  }
-  if (raw !== null && typeof raw === "object") {
-    const keys = Object.keys(raw as Record<string, unknown>);
-    return `[Previous result: object with keys: ${keys.join(", ")}]`;
-  }
-  return "[Previous result: truncated]";
-}
-
-function tryParseJson(text: string): unknown | null {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-function truncateToolResultContent(
-  content: McpToolResultBlock["content"],
-): McpToolResultBlock["content"] {
-  if (typeof content === "string") {
-    if (content.length <= TOOL_RESULT_TRUNCATE_THRESHOLD) return content;
-    const parsed = tryParseJson(content);
-    if (parsed !== null) return summarizeContent(parsed);
-    return content.slice(0, TOOL_RESULT_TRUNCATE_THRESHOLD);
-  }
-
-  if (Array.isArray(content)) {
-    const serialized = JSON.stringify(content);
-    if (serialized.length <= TOOL_RESULT_TRUNCATE_THRESHOLD) return content;
-    return summarizeContent(content);
-  }
-
-  return content;
-}
-
-export function truncateOldToolResults(
+export function compactOldMessages(
   messages: ChatMessage[],
   keepRecent = KEEP_RECENT_MESSAGES_FULL,
 ): ChatMessage[] {
@@ -151,25 +112,20 @@ export function truncateOldToolResults(
       continue;
     }
 
-    let changed = false;
-    const newBlocks: ContentBlock[] = [];
+    const textBlocks = msg.content.filter(
+      (block): block is ContentBlock & { type: "text" } => block.type === "text",
+    );
 
-    for (const block of msg.content) {
-      if (!isToolResult(block)) {
-        newBlocks.push(block);
-        continue;
-      }
-
-      const truncated = truncateToolResultContent(block.content);
-      if (truncated !== block.content) {
-        changed = true;
-        newBlocks.push({ ...block, content: truncated });
-      } else {
-        newBlocks.push(block);
-      }
+    if (textBlocks.length === msg.content.length) {
+      result.push(msg);
+      continue;
     }
 
-    result.push(changed ? { ...msg, content: newBlocks } : msg);
+    const compacted: ContentBlock[] = textBlocks.length > 0
+      ? textBlocks
+      : [{ type: "text" as const, text: "[Earlier tool interaction]" }];
+
+    result.push({ ...msg, content: compacted });
   }
 
   return result;

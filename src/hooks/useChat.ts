@@ -113,8 +113,6 @@ export function useChat(
   const cumulativeUsageRef = useRef({ input_tokens: 0, output_tokens: 0 });
   const messagesRef = useRef(messages);
   const inFlightRef = useRef(false);
-  const requestTimestampsRef = useRef<number[]>([]);
-
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
@@ -169,25 +167,6 @@ export function useChat(
         return false;
       }
       if (loading || inFlightRef.current || cooldownEndsAt) return false;
-
-      // Per-minute request throttle
-      const MAX_REQUESTS_PER_MINUTE = 8;
-      const now = Date.now();
-      const recentTimestamps = requestTimestampsRef.current.filter(
-        (ts) => now - ts < 60_000,
-      );
-      requestTimestampsRef.current = recentTimestamps;
-
-      if (recentTimestamps.length >= MAX_REQUESTS_PER_MINUTE) {
-        const oldest = recentTimestamps[0];
-        const waitMs = 60_000 - (now - oldest);
-        setCooldownEndsAt(now + waitMs);
-        setCooldownNow(now);
-        setError("Cooling down — too many requests. Please wait a moment.");
-        return false;
-      }
-
-      requestTimestampsRef.current.push(now);
 
       const userMessage: ChatMessage = {
         role: "user",

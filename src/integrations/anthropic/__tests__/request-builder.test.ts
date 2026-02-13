@@ -147,7 +147,7 @@ describe("buildMessageStreamParams()", () => {
     expect(apiMessages[23]?.content).toBe("message-29");
   });
 
-  it("preserves all content blocks including tool blocks in older messages", () => {
+  it("compacts tool blocks from older messages, keeps text", () => {
     const toolHeavyAssistant = {
       role: "assistant" as const,
       timestamp: 2,
@@ -158,6 +158,38 @@ describe("buildMessageStreamParams()", () => {
       ],
     };
 
+    // 6 messages: first 2 are outside keepRecent=4, so toolHeavyAssistant gets compacted
+    const messages = [
+      { role: "user" as const, content: "hello", timestamp: 1 },
+      toolHeavyAssistant,
+      { role: "user" as const, content: "q2", timestamp: 3 },
+      { role: "assistant" as const, content: "a2", timestamp: 4 },
+      { role: "user" as const, content: "latest", timestamp: 5 },
+      { role: "assistant" as const, content: "latest response", timestamp: 6 },
+    ];
+
+    const params = buildMessageStreamParams(messages, foodVertical, null);
+    const apiMessages = params.messages as Array<{ role: string; content: unknown }>;
+    const compactedAssistant = apiMessages.find((m) => Array.isArray(m.content));
+    const blocks = compactedAssistant?.content as Array<{ type: string }>;
+
+    // Tool blocks stripped, only text kept
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe("text");
+  });
+
+  it("preserves tool blocks in recent messages within keepRecent window", () => {
+    const toolHeavyAssistant = {
+      role: "assistant" as const,
+      timestamp: 2,
+      content: [
+        { type: "text" as const, text: "Summary text" },
+        { type: "mcp_tool_use" as const, id: "u-1", name: "search_menu", input: { q: "pizza" } },
+        { type: "mcp_tool_result" as const, tool_use_id: "u-1", content: "{\"items\":[1,2,3]}" },
+      ],
+    };
+
+    // Only 4 messages — all within keepRecent=4
     const messages = [
       { role: "user" as const, content: "hello", timestamp: 1 },
       toolHeavyAssistant,

@@ -7,9 +7,9 @@ import type { PromptProfile } from "./prompt-spec/types";
 
 export const SEARCH_EFFICIENCY_RULE = [
   "Search Efficiency",
-  "- One focused tool call per intent step.",
+  "- One tool call per turn. Show results, then wait for user input.",
   "- Avoid duplicate searches unless user asks to compare.",
-  "- Max 3 tool calls per user turn unless explicitly requested.",
+  "- Never batch multiple searches in one response.",
 ].join("\n");
 
 export const RESULT_FILTERING_RULE = [
