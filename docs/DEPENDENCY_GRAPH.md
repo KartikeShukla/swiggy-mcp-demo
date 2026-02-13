@@ -102,13 +102,13 @@ graph TD
         requestBuilder["request-builder.ts<br/>buildMessageStreamParams()"]
         streamRunner["stream-runner.ts<br/>runMessageStream()"]
         errorClassifier["error-classifier.ts<br/>classifyApiError()"]
-        retryPolicy["retry-policy.ts<br/>isRetryableAnthropicError()<br/>waitForRetryAttempt()"]
+        retryPolicy["retry-policy.ts<br/>isRetryableAnthropicError()<br/>waitForRetryAttempt()<br/>extractRateLimitHeaders()"]
     end
 
     subgraph "Persistence Layer"
         useChatPersistence["useChatPersistence()"]
         storageTs["storage.ts<br/>getChatHistory()<br/>setChatHistory()"]
-        messageSanitizer["message-sanitizer.ts<br/>sanitizeMessagesForApi()"]
+        messageSanitizer["message-sanitizer.ts<br/>sanitizeMessagesForApi()<br/>compactOldMessages()"]
     end
 
     subgraph "Summary Layer"

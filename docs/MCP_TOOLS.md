@@ -51,7 +51,7 @@ From `request-builder.ts`, the full API params structure:
 ```typescript
 {
   model: "claude-haiku-4-5-20251001",
-  max_tokens: 1024,
+  max_tokens: 800,
   system: [
     { type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } },
     { type: "text", text: addressContext, cache_control: { type: "ephemeral" } },  // if address present

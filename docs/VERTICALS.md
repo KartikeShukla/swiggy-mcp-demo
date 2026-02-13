@@ -316,7 +316,7 @@ All verticals share these rules (appended after the profile-specific prompt):
 
 | Rule | Content |
 |------|---------|
-| **Search Efficiency** | One focused tool call per intent step. Avoid duplicate searches. Max 3 tool calls per user turn. |
+| **Search Efficiency** | One tool call per turn. Show results, then wait for user input. Avoid duplicate searches. Never batch multiple searches in one response. |
 | **Card-First Rendering** | UI cards show rich details. After tool calls, respond in 1-2 short sentences. Don't repeat catalog fields. |
 | **Tool Error Handling** | Auth errors: stop and ask to reconnect. 5xx/timeout: don't loop, ask to retry. Validation: retry once with simpler params. |
 | **Location Lock** | If default address is in system context, treat as active. Don't call address tools unless user asks to change. |

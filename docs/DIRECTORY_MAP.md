@@ -92,11 +92,11 @@ Annotated directory tree for the Swiggy MCP Demo. Every file and folder is liste
 |------|---------|
 | `request-builder.ts` | `buildMessageStreamParams()` — system blocks (prompt + address + datetime + session summary), MCP server config, beta flags, context management |
 | `stream-runner.ts` | `runMessageStream()` — streaming with 90s timeout, contentBlock error monitoring, abort on limits |
-| `message-sanitizer.ts` | `sanitizeAssistantBlocks()` / `sanitizeMessagesForApi()` — matches tool_use/result pairs by ID, drops orphans |
+| `message-sanitizer.ts` | `sanitizeAssistantBlocks()` / `sanitizeMessagesForApi()` / `compactOldMessages()` — matches tool_use/result pairs by ID, drops orphans, strips tool blocks from old messages (keeps text) |
 | `session-summary.ts` | `buildSessionStateSummary()` — compact state string from last 16 user messages (slots, intent, restaurant, location, datetime) |
 | `error-classifier.ts` | `classifyApiError()` — HTTP status codes → user-friendly messages |
 | `mcp-tool-errors.ts` | `classifyMcpError()` — categorizes MCP tool errors (auth/server/validation/address); `ABORT_MESSAGES` |
-| `retry-policy.ts` | `isRetryableAnthropicError()` + `waitForRetryAttempt()` — exponential backoff (500ms base, 2x, 20% jitter, 5s cap) |
+| `retry-policy.ts` | `isRetryableAnthropicError()` + `waitForRetryAttempt()` + `extractRateLimitHeaders()` — exponential backoff (500ms base, 2x, 20% jitter, 5s cap), rate limit header extraction |
 
 ### `src/components/` — React Components
 

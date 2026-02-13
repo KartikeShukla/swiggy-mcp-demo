@@ -236,8 +236,9 @@ Errors from MCP tool execution, monitored via `contentBlock` stream events:
 ### Retry Policy (`retry-policy.ts`)
 
 - **Retryable statuses**: 429, 500, 502, 503, 504, 529
-- **Max retries**: 2
+- **Max retries**: 2 (separate `RATE_LIMIT_MAX_RETRIES=2` budget for 429 errors with header logging)
 - **Backoff**: exponential — 500ms base, 2x multiplier, 20% jitter, 5s cap
+- **Rate limit headers**: `extractRateLimitHeaders()` logs `anthropic-ratelimit-*` headers on 429 errors
 - **Stream timeout**: 90s (`STREAM_REQUEST_TIMEOUT_MS`) — stream aborts and returns partial content
 
 ---

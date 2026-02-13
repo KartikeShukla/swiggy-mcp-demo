@@ -153,7 +153,7 @@ The system blocks use `cache_control: { type: "ephemeral" }` on the prompt and a
 | `TOKEN_STALENESS_MS` | `3_600_000` (1 hour) | Swiggy tokens expire after ~1 hour |
 | `OAUTH_POPUP_WIDTH` | `500` | OAuth popup window width |
 | `OAUTH_POPUP_HEIGHT` | `600` | OAuth popup window height |
-| `MAX_TOKENS` | `1024` | Max output tokens per API call |
+| `MAX_TOKENS` | `800` | Max output tokens per API call |
 | `MCP_TOOL_ERROR_LIMIT` | `2` | Abort stream after 2 MCP tool errors |
 | `MCP_AUTH_ERROR_LIMIT` | `1` | Abort stream after 1 auth error |
 | `STREAM_REQUEST_TIMEOUT_MS` | `90_000` (90s) | Stream abort timeout |
