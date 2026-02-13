@@ -14,11 +14,11 @@ export const styleVertical: VerticalConfig = {
   systemPrompt: buildSystemPrompt(stylePromptProfile),
   promptProfileId: stylePromptProfile.id,
   welcomeMessage:
-    "Share your grooming goal or concern. I'll recommend a routine with the right products and help you find them on Instamart.",
+    "I can build a personalized skincare or haircare routine, or just help you find and order grooming products on Instamart.",
   examplePrompts: [
-    "Build me a full morning and evening skincare routine for oily, acne-prone skin",
+    "Build me a morning and evening skincare routine for oily, acne-prone skin",
     "I have a wedding in 5 days — put together a grooming prep plan",
-    "My hair's been thinning — recommend a haircare routine and explain why each product helps",
+    "Order a good sunscreen and a vitamin C serum",
   ],
   mcpServer: MCP_SERVERS.instamart,
 };

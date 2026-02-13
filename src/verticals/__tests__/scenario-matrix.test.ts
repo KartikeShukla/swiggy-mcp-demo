@@ -8,19 +8,21 @@ type Scenario = {
 
 const scenarios: Scenario[] = [
   {
-    name: "food requires core nutrition context before search",
+    name: "food supports dual-mode: advisory with nutrition slots and direct product ordering",
     verticalId: "food",
     mustContain: [
-      "goal + diet + servings",
+      "search immediately",
+      "goal + diet + servings first",
       "calories/protein/carbs/fats",
-      "show product options first",
+      "Only update cart after explicit user intent",
       "Never place order without explicit user confirmation",
     ],
   },
   {
-    name: "style branches context for skincare and haircare",
+    name: "style supports dual-mode: advisory routines and direct product shopping",
     verticalId: "style",
     mustContain: [
+      "search immediately",
       "concern + skin_type for skincare",
       "concern + hair_type for haircare",
       "only update cart when user explicitly asks",
@@ -28,21 +30,26 @@ const scenarios: Scenario[] = [
     ],
   },
   {
-    name: "dining enforces availability-before-booking",
+    name: "dining uses active address as location and enforces single-booking",
     verticalId: "dining",
     mustContain: [
+      "active address exists in system context, treat it as fulfilled",
+      "Single-booking constraint",
+      "chronologically first meal",
       "Availability check is mandatory before booking",
-      "never assume requested slot exists",
+      "never assume a requested slot exists",
       "Never submit booking without explicit confirmation",
     ],
   },
   {
-    name: "foodorder handles vague hunger and explicit confirmation",
+    name: "foodorder enforces restaurant-first discovery and menu mode lock",
     verticalId: "foodorder",
     mustContain: [
       "offer 2-3 cuisines",
       "switch to menu mode",
       "original craving/cuisine intent as a filter",
+      "Restaurant selection = restaurant lock",
+      "One tool call per step",
       "Never place order without explicit user confirmation",
     ],
   },

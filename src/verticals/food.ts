@@ -14,11 +14,11 @@ export const foodVertical: VerticalConfig = {
   systemPrompt: buildSystemPrompt(foodPromptProfile),
   promptProfileId: foodPromptProfile.id,
   welcomeMessage:
-    "Tell me your nutrition goals, a diet you follow, or a meal to prep. I'll plan recipes with macros and help you find ingredients on Instamart.",
+    "I can help with nutrition coaching — meal plans, recipes with macros, ingredient sourcing — or just find and order groceries for you on Instamart.",
   examplePrompts: [
     "I'm on a high-protein vegetarian diet, plan my meals for the week",
     "Give me a keto dinner recipe for two with a full macro breakdown",
-    "I want to eat under 2000 calories today — plan all three meals and order the groceries",
+    "Order milk, eggs, and bread",
   ],
   mcpServer: MCP_SERVERS.instamart,
 };

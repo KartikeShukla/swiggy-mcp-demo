@@ -33,20 +33,26 @@ describe("prompt compiler", () => {
     expect(verticals.food.systemPrompt).toContain(
       "Only update cart after explicit user intent",
     );
+    expect(verticals.food.systemPrompt).toContain("search immediately");
     expect(verticals.style.systemPrompt).toContain(
       "concern + skin_type for skincare",
     );
     expect(verticals.style.systemPrompt).toContain(
       "only update cart when user explicitly asks",
     );
+    expect(verticals.style.systemPrompt).toContain("search immediately");
     expect(verticals.dining.systemPrompt).toContain(
       "Availability check is mandatory before booking",
     );
+    expect(verticals.dining.systemPrompt).toContain("Single-booking constraint");
     expect(verticals.foodorder.systemPrompt).toContain(
       "switch to menu mode",
     );
     expect(verticals.foodorder.systemPrompt).toContain(
       "original craving/cuisine intent as a filter",
+    );
+    expect(verticals.foodorder.systemPrompt).toContain(
+      "Restaurant selection = restaurant lock",
     );
   });
 });
