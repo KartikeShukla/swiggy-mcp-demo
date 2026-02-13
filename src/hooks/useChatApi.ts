@@ -12,9 +12,10 @@ import { runMessageStream } from "@/integrations/anthropic/stream-runner";
 import {
   isRetryableAnthropicError,
   waitForRetryAttempt,
+  extractRetryAfterMs,
 } from "@/integrations/anthropic/retry-policy";
 
-const CHAT_REQUEST_MAX_RETRIES = 1;
+const CHAT_REQUEST_MAX_RETRIES = 2;
 
 /** Encapsulates the Anthropic API call with MCP server configuration. */
 export function useChatApi(
@@ -51,7 +52,7 @@ export function useChatApi(
           if (attempt >= CHAT_REQUEST_MAX_RETRIES || !isRetryableAnthropicError(err)) {
             throw err;
           }
-          await waitForRetryAttempt(attempt + 1);
+          await waitForRetryAttempt(attempt + 1, extractRetryAfterMs(err));
         }
       }
 

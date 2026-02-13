@@ -1,4 +1,4 @@
-const RETRYABLE_STATUSES = new Set([500, 502, 503, 504, 529]);
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504, 529]);
 
 function extractStatus(err: unknown): number | undefined {
   if (!err || typeof err !== "object") return undefined;
@@ -34,18 +34,21 @@ export function extractRetryAfterMs(err: unknown): number | null {
 }
 
 export function isRetryableAnthropicError(err: unknown): boolean {
-  if (isRateLimitError(err)) return false;
-
   const status = extractStatus(err);
   if (status && RETRYABLE_STATUSES.has(status)) return true;
 
   const msg = extractMessage(err).toLowerCase();
-  return /overload(?:ed)?|overloaded_error|temporarily unavailable|internal server error|timeout|gateway/.test(
+  return /overload(?:ed)?|overloaded_error|temporarily unavailable|internal server error|timeout|gateway|rate[_\s-]?limit/.test(
     msg,
   );
 }
 
-export async function waitForRetryAttempt(attempt: number): Promise<void> {
+export async function waitForRetryAttempt(attempt: number, retryAfterMs?: number | null): Promise<void> {
+  if (retryAfterMs && retryAfterMs > 0) {
+    const delayMs = Math.min(retryAfterMs, 30_000);
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    return;
+  }
   // attempt starts from 1 for first retry
   const baseMs = 500 * (2 ** (attempt - 1));
   const jitterMs = Math.floor(baseMs * 0.2 * Math.random());

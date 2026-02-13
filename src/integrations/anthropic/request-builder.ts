@@ -6,7 +6,7 @@ import {
 import type { ChatMessage, ParsedAddress, VerticalConfig } from "@/lib/types";
 import { sanitizeMessagesForApi, truncateOldToolResults } from "./message-sanitizer";
 
-const MAX_CONTEXT_MESSAGES = 16;
+const MAX_CONTEXT_MESSAGES = 24;
 
 export function formatCurrentDateTime(): string {
   const now = new Date();
@@ -90,9 +90,9 @@ export function buildMessageStreamParams(
       edits: [
         {
           type: "clear_tool_uses_20250919",
-          trigger: { type: "input_tokens", value: 18000 },
-          keep: { type: "tool_uses", value: 3 },
-          clear_at_least: { type: "input_tokens", value: 4000 },
+          trigger: { type: "input_tokens", value: 25000 },
+          keep: { type: "tool_uses", value: 5 },
+          clear_at_least: { type: "input_tokens", value: 2000 },
         },
       ],
     },

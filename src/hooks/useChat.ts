@@ -110,7 +110,6 @@ export function useChat(
   const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
   const [cooldownEndsAt, setCooldownEndsAt] = useState<number | null>(null);
   const [cooldownNow, setCooldownNow] = useState(Date.now());
-  const [postSendPause, setPostSendPause] = useState(false);
   const cumulativeUsageRef = useRef({ input_tokens: 0, output_tokens: 0 });
   const messagesRef = useRef(messages);
   const inFlightRef = useRef(false);
@@ -126,7 +125,6 @@ export function useChat(
     setTokenUsage(null);
     setLoadingElapsedMs(0);
     setCooldownEndsAt(null);
-    setPostSendPause(false);
     cumulativeUsageRef.current = { input_tokens: 0, output_tokens: 0 };
   }, [vertical.id]);
 
@@ -149,7 +147,7 @@ export function useChat(
     [cooldownEndsAt, cooldownNow],
   );
 
-  const inputDisabled = loading || postSendPause || cooldownRemaining > 0;
+  const inputDisabled = loading || cooldownRemaining > 0;
 
   useEffect(() => {
     if (!loading) {
@@ -253,12 +251,7 @@ export function useChat(
         return false;
       } finally {
         setLoading(false);
-        // Post-send pause: keep input locked for 2.5s after response
-        setPostSendPause(true);
-        setTimeout(() => {
-          setPostSendPause(false);
-          inFlightRef.current = false;
-        }, 2500);
+        inFlightRef.current = false;
       }
     },
     [

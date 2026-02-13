@@ -115,7 +115,7 @@ describe("message-sanitizer", () => {
     });
 
     it("truncates large JSON array tool results in older messages", () => {
-      const largeArray = JSON.stringify(Array.from({ length: 50 }, (_, i) => ({ id: i, name: `Item ${i}` })));
+      const largeArray = JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ id: i, name: `Item ${i}` })));
       const msgs: ChatMessage[] = [
         user("search"),
         assistant([
@@ -127,9 +127,13 @@ describe("message-sanitizer", () => {
         assistant("ok"),
         user("more"),
         assistant("sure"),
+        user("even more"),
+        assistant("yep"),
+        user("continue"),
+        assistant("done"),
       ];
 
-      const result = truncateOldToolResults(msgs, 4);
+      const result = truncateOldToolResults(msgs, 8);
 
       // Older assistant message (index 1) should be truncated
       const oldAssistant = result[1];
@@ -137,12 +141,12 @@ describe("message-sanitizer", () => {
       const blocks = oldAssistant.content as ContentBlock[];
       const toolResult = blocks.find((b) => b.type === "mcp_tool_result");
       expect(toolResult).toBeDefined();
-      expect((toolResult as { content: string }).content).toBe("[Previous result: 50 items]");
+      expect((toolResult as { content: string }).content).toBe("[Previous result: 100 items]");
     });
 
     it("truncates large JSON object tool results with key summary", () => {
       const largeObj = JSON.stringify({ products: [], total: 100, filters: {}, metadata: {} });
-      const padded = largeObj + " ".repeat(500);
+      const padded = largeObj + " ".repeat(2000);
       const msgs: ChatMessage[] = [
         user("q1"),
         assistant([
@@ -153,9 +157,13 @@ describe("message-sanitizer", () => {
         assistant("response2"),
         user("q3"),
         assistant("response3"),
+        user("q4"),
+        assistant("response4"),
+        user("q5"),
+        assistant("response5"),
       ];
 
-      const result = truncateOldToolResults(msgs, 4);
+      const result = truncateOldToolResults(msgs, 8);
       const oldBlocks = result[1].content as ContentBlock[];
       const toolResult = oldBlocks.find((b) => b.type === "mcp_tool_result");
       expect((toolResult as { content: string }).content).toContain("[Previous result: object with keys:");
@@ -180,7 +188,7 @@ describe("message-sanitizer", () => {
     });
 
     it("preserves tool_use_id on truncated results", () => {
-      const largeContent = JSON.stringify(Array.from({ length: 100 }, (_, i) => i));
+      const largeContent = JSON.stringify(Array.from({ length: 600 }, (_, i) => i));
       const msgs: ChatMessage[] = [
         user("q"),
         assistant([
@@ -191,16 +199,20 @@ describe("message-sanitizer", () => {
         assistant("b"),
         user("c"),
         assistant("d"),
+        user("e"),
+        assistant("f"),
+        user("g"),
+        assistant("h"),
       ];
 
-      const result = truncateOldToolResults(msgs, 4);
+      const result = truncateOldToolResults(msgs, 8);
       const blocks = result[1].content as ContentBlock[];
       const toolResult = blocks.find((b) => b.type === "mcp_tool_result") as { tool_use_id: string };
       expect(toolResult.tool_use_id).toBe("u-99");
     });
 
     it("does not mutate original messages", () => {
-      const largeContent = JSON.stringify(Array.from({ length: 100 }, (_, i) => i));
+      const largeContent = JSON.stringify(Array.from({ length: 600 }, (_, i) => i));
       const original: ChatMessage[] = [
         user("q"),
         assistant([
@@ -211,10 +223,14 @@ describe("message-sanitizer", () => {
         assistant("b"),
         user("c"),
         assistant("d"),
+        user("e"),
+        assistant("f"),
+        user("g"),
+        assistant("h"),
       ];
 
       const originalContent = (original[1].content as ContentBlock[])[1];
-      truncateOldToolResults(original, 4);
+      truncateOldToolResults(original, 8);
       // Original should be unchanged
       expect((originalContent as { content: string }).content).toBe(largeContent);
     });

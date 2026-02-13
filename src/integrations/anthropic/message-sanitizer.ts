@@ -93,8 +93,8 @@ export function sanitizeAssistantBlocks(blocks: ContentBlock[]): BlockSanitizeRe
   return { blocks: sanitized, droppedBlocksCount };
 }
 
-const TOOL_RESULT_TRUNCATE_THRESHOLD = 500;
-const KEEP_RECENT_MESSAGES_FULL = 4;
+const TOOL_RESULT_TRUNCATE_THRESHOLD = 2000;
+const KEEP_RECENT_MESSAGES_FULL = 8;
 
 function summarizeContent(raw: unknown): string {
   if (Array.isArray(raw)) {
