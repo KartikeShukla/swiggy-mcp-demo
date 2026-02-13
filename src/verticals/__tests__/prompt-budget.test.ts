@@ -1,8 +1,8 @@
 import { verticals } from "@/verticals";
 
 const MAX_PROMPT_WORDS = {
-  food: 525,
-  style: 510,
+  food: 530,
+  style: 520,
   dining: 500,
   foodorder: 525,
 } as const;

@@ -93,7 +93,7 @@ export function sanitizeAssistantBlocks(blocks: ContentBlock[]): BlockSanitizeRe
   return { blocks: sanitized, droppedBlocksCount };
 }
 
-const KEEP_RECENT_MESSAGES_FULL = 4;
+const KEEP_RECENT_MESSAGES_FULL = 2;
 
 export function compactOldMessages(
   messages: ChatMessage[],

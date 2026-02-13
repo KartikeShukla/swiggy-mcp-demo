@@ -43,6 +43,13 @@ function findLatestCartState(
       const toolInput = matchedUse?.input;
 
       const parsed = parseToolResult(toolName, block.content, verticalId, toolInput);
+      console.log("[useCart] Checking tool result:", {
+        toolName,
+        parsedType: parsed.type,
+        hasCart: parsed.type === "cart",
+        messageIndex: i,
+        blockIndex: j,
+      });
       if (parsed.type === "cart") {
         return parsed.cart;
       }

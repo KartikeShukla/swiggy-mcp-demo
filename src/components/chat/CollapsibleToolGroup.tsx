@@ -57,6 +57,11 @@ export function CollapsibleToolGroup({
     if (block.type === "mcp_tool_result") {
       const precomputed = precomputedResults?.get(index);
       if (precomputed) {
+        console.log("[CollapsibleToolGroup] Parsed card:", {
+          index,
+          type: precomputed.parsed.type,
+          toolName: precomputed.toolName,
+        });
         cardResults.push({ key: index, parsed: precomputed.parsed, toolName: precomputed.toolName });
       } else {
         const matchedToolUse = toolUseById.get(block.tool_use_id);
@@ -67,6 +72,11 @@ export function CollapsibleToolGroup({
           verticalId,
           matchedToolUse?.input,
         );
+        console.log("[CollapsibleToolGroup] Parsed card:", {
+          index,
+          type: parsed.type,
+          toolName,
+        });
         if (parsed.type !== "raw") {
           cardResults.push({ key: index, parsed, toolName });
         }

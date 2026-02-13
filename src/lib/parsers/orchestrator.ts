@@ -206,6 +206,11 @@ export function parseToolResult(
       // Try original data first (before extractPayload strips the structure)
       // so we preserve lineItems / bill breakdown alongside cart items
       const cart = tryParseCart(data) || tryParseCart(payload);
+      console.log("[parseToolResult] Cart tool matched:", {
+        toolName,
+        hasItems: Boolean(cart),
+        dataKeys: typeof data === "object" && data ? Object.keys(data as Record<string, unknown>) : "not-object",
+      });
       if (cart) return cart;
     }
     if (SLOT_TOOL_RE.test(toolName)) {

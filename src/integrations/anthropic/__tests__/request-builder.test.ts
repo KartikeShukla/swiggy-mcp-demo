@@ -97,8 +97,8 @@ describe("buildMessageStreamParams()", () => {
       edits: [
         {
           type: "clear_tool_uses_20250919",
-          trigger: { type: "input_tokens", value: 25000 },
-          keep: { type: "tool_uses", value: 5 },
+          trigger: { type: "input_tokens", value: 12000 },
+          keep: { type: "tool_uses", value: 3 },
           clear_at_least: { type: "input_tokens", value: 2000 },
         },
       ],
@@ -142,9 +142,9 @@ describe("buildMessageStreamParams()", () => {
     const params = buildMessageStreamParams(manyMessages, foodVertical, null);
     const apiMessages = params.messages as Array<{ content: string }>;
 
-    expect(apiMessages).toHaveLength(24);
-    expect(apiMessages[0]?.content).toBe("message-6");
-    expect(apiMessages[23]?.content).toBe("message-29");
+    expect(apiMessages).toHaveLength(8);
+    expect(apiMessages[0]?.content).toBe("message-22");
+    expect(apiMessages[7]?.content).toBe("message-29");
   });
 
   it("compacts tool blocks from older messages, keeps text", () => {
@@ -189,12 +189,10 @@ describe("buildMessageStreamParams()", () => {
       ],
     };
 
-    // Only 4 messages — all within keepRecent=4
+    // Only 2 messages — all within keepRecent=2
     const messages = [
-      { role: "user" as const, content: "hello", timestamp: 1 },
+      { role: "user" as const, content: "latest", timestamp: 1 },
       toolHeavyAssistant,
-      { role: "user" as const, content: "latest", timestamp: 3 },
-      { role: "assistant" as const, content: "latest response", timestamp: 4 },
     ];
 
     const params = buildMessageStreamParams(messages, foodVertical, null);

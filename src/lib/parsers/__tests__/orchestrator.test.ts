@@ -307,7 +307,7 @@ describe("parseToolResult()", () => {
       expect(result.items[1].groupLabel).toBe("Mains");
     });
 
-    it("returns up to 10 menu items for foodorder menu requests", () => {
+    it("returns up to 5 menu items for foodorder menu requests", () => {
       const content = JSON.stringify(
         Array.from({ length: 12 }, (_, index) => ({
           name: `Menu Item ${index + 1}`,
@@ -317,9 +317,9 @@ describe("parseToolResult()", () => {
       const result = parseToolResult("get_menu", content, "foodorder");
       expect(result.type).toBe("products");
       if (result.type !== "products") return;
-      expect(result.items).toHaveLength(10);
+      expect(result.items).toHaveLength(5);
       expect(result.items[0].name).toBe("Menu Item 1");
-      expect(result.items[9].name).toBe("Menu Item 10");
+      expect(result.items[4].name).toBe("Menu Item 5");
     });
   });
 

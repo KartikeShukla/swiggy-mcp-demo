@@ -30,7 +30,7 @@ export const foodPromptProfile: PromptProfile = {
     "Place order only after explicit final confirmation.",
   ],
   toolPolicies: [
-    "Search with specific quantity terms (e.g. paneer 500g, oil 250ml).",
+    "Search with specific name + quantity (e.g. 'paneer 500g'). Use the most specific term possible.",
     "One ingredient search per turn; confirm before next.",
     "If unavailable, suggest one close substitute and search once.",
     "Do not call cart mutation tools unless user explicitly asks to add/remove/update.",
@@ -80,7 +80,7 @@ export const stylePromptProfile: PromptProfile = {
     "Place order only after explicit final confirmation.",
   ],
   toolPolicies: [
-    "One product search per turn.",
+    "One product search per turn. Use specific product type (e.g. 'face wash for oily skin').",
     "When brand is unavailable, suggest one comparable alternative.",
     "Do not call cart mutation tools unless user explicitly asks to add/remove/update.",
   ],
