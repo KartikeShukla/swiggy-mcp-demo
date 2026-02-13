@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChatAction, ChatMessage } from "@/lib/types";
 import { MessageBubble } from "./MessageBubble";
 import { LoadingIndicator } from "./LoadingIndicator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { SharedProductSelection } from "../cards/ProductGrid";
+import { buildToolRenderContext } from "@/lib/relevance/context";
 
 export function MessageList({
   messages,
@@ -11,6 +12,7 @@ export function MessageList({
   loadingLabel,
   loadingElapsedMs,
   verticalId,
+  lockedRestaurant,
   onAction,
   sharedSelection,
 }: {
@@ -19,6 +21,7 @@ export function MessageList({
   loadingLabel?: string | null;
   loadingElapsedMs?: number;
   verticalId?: string;
+  lockedRestaurant?: string | null;
   onAction?: (action: ChatAction) => void;
   sharedSelection?: SharedProductSelection;
 }) {
@@ -48,6 +51,18 @@ export function MessageList({
     return () => observer.disconnect();
   }, []);
 
+  const latestUserQueryByIndex = useMemo(() => {
+    const result: string[] = [];
+    let latest = "";
+    for (const message of messages) {
+      if (message.role === "user" && typeof message.content === "string") {
+        latest = message.content;
+      }
+      result.push(latest);
+    }
+    return result;
+  }, [messages]);
+
   return (
     <div ref={containerRef} className="flex-1 min-h-0">
       <ScrollArea type="always" className="h-full" role="log" aria-live="polite">
@@ -69,6 +84,15 @@ export function MessageList({
                 <MessageBubble
                   message={msg}
                   verticalId={verticalId}
+                  renderContext={
+                    msg.role === "assistant" && verticalId
+                      ? buildToolRenderContext(
+                          verticalId,
+                          latestUserQueryByIndex[i],
+                          lockedRestaurant,
+                        )
+                      : undefined
+                  }
                   onAction={onAction}
                   sharedSelection={sharedSelection}
                 />

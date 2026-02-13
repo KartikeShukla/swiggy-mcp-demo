@@ -340,6 +340,24 @@ describe("message-sanitizer", () => {
       expect(originalBlock.content).toHaveLength(5000);
     });
 
+    it("can preserve truncation for the latest tool-result message", () => {
+      const longContent = "a".repeat(5000);
+      const msgs: ChatMessage[] = [
+        user("search"),
+        assistant([
+          { type: "mcp_tool_use", id: "u-1", name: "search" },
+          { type: "mcp_tool_result", tool_use_id: "u-1", content: longContent },
+        ]),
+      ];
+
+      const result = truncateToolResultsInMessages(msgs, {
+        preserveRecentToolResultMessages: 1,
+      });
+      const blocks = result[1].content as ContentBlock[];
+      const resultBlock = blocks[1] as { type: string; content: string };
+      expect(resultBlock.content).toHaveLength(5000);
+    });
+
     it("smart-truncates valid JSON tool results, preferring query-relevant items", () => {
       const products = [
         ...Array.from({ length: 20 }, (_, i) => ({

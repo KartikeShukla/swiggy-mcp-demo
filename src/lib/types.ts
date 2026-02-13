@@ -75,6 +75,7 @@ export interface ParsedProduct {
   quantity?: string;
   available?: boolean;
   description?: string;
+  restaurantName?: string;
 }
 
 export interface ParsedRestaurant {
@@ -83,6 +84,7 @@ export interface ParsedRestaurant {
   cuisine?: string;
   rating?: number;
   priceForTwo?: string;
+  deliveryTime?: string;
   image?: string;
   address?: string;
   offers?: string[];
@@ -149,6 +151,36 @@ export type ParserIntentHint =
   | "cart"
   | "confirm";
 
+export interface StrictConstraintSnapshot {
+  cuisines?: string[];
+  dishes?: string[];
+  diet?: "veg" | "non_veg" | "vegan";
+  spicy?: boolean;
+  budgetMax?: number;
+  maxDeliveryMins?: number;
+}
+
+export interface ToolRenderContext {
+  verticalId: string;
+  latestUserQuery?: string;
+  lockedRestaurant?: string | null;
+  mode?: ParserIntentHint;
+  strictConstraints?: StrictConstraintSnapshot;
+  allowConstraintBroadening?: boolean;
+  debug?: boolean;
+}
+
+export interface RelevanceDebugTrace {
+  strategy: string;
+  query?: string;
+  mode?: ParserIntentHint;
+  strictApplied?: string[];
+  strictSatisfied?: boolean;
+  beforeCount?: number;
+  afterCount?: number;
+  note?: string;
+}
+
 export interface ConversationStateSnapshot {
   slots: string[];
   selectedAddress?: string;
@@ -158,13 +190,26 @@ export interface ConversationStateSnapshot {
 }
 
 export type ParsedToolResult =
-  | { type: "products"; items: ParsedProduct[] }
-  | { type: "restaurants"; items: ParsedRestaurant[] }
-  | { type: "time_slots"; slots: ParsedTimeSlot[]; restaurantName?: string }
-  | { type: "addresses"; addresses: ParsedAddress[] }
-  | { type: "cart"; cart: CartState }
-  | { type: "order_placed"; orderId?: string; status?: string }
-  | { type: "booking_confirmed"; details: Record<string, unknown> }
-  | { type: "status"; status: ParsedStatus }
-  | { type: "info"; title: string; entries: ParsedInfoEntry[] }
-  | { type: "raw"; content: unknown }
+  | {
+      type: "products";
+      items: ParsedProduct[];
+      debug?: RelevanceDebugTrace;
+    }
+  | {
+      type: "restaurants";
+      items: ParsedRestaurant[];
+      debug?: RelevanceDebugTrace;
+    }
+  | {
+      type: "time_slots";
+      slots: ParsedTimeSlot[];
+      restaurantName?: string;
+      debug?: RelevanceDebugTrace;
+    }
+  | { type: "addresses"; addresses: ParsedAddress[]; debug?: RelevanceDebugTrace }
+  | { type: "cart"; cart: CartState; debug?: RelevanceDebugTrace }
+  | { type: "order_placed"; orderId?: string; status?: string; debug?: RelevanceDebugTrace }
+  | { type: "booking_confirmed"; details: Record<string, unknown>; debug?: RelevanceDebugTrace }
+  | { type: "status"; status: ParsedStatus; debug?: RelevanceDebugTrace }
+  | { type: "info"; title: string; entries: ParsedInfoEntry[]; debug?: RelevanceDebugTrace }
+  | { type: "raw"; content: unknown; debug?: RelevanceDebugTrace }

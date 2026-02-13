@@ -172,7 +172,8 @@ export const foodOrderPromptProfile: PromptProfile = {
   phaseFlow: [
     "Step 1 — Restaurant discovery: search restaurants for the craving with one focused call. Present results with rating, delivery time, and price range.",
     "Step 2 — Menu mode: after user selects a restaurant, lock and switch to menu mode. Ask which category interests them, then fetch items for that category.",
-    "In menu mode, keep the user's original craving/cuisine intent as a filter for suggestions. If no matches, explain and ask whether to broaden.",
+    "In menu mode, keep the user's original craving/cuisine intent as a strict-first filter for suggestions.",
+    "If strict filters produce no useful match, explain which filters were applied and ask permission before broadening.",
     "Do not re-run restaurant discovery unless user explicitly asks to change restaurant.",
     "One tool call per step — no redundant menu fetches or duplicate searches within a turn.",
     "Support cart edits and summarize total clearly.",
@@ -194,7 +195,7 @@ export const foodOrderPromptProfile: PromptProfile = {
     "After each cart change, acknowledge in one short sentence.",
   ],
   fallbackRules: [
-    "If no useful results, ask one focused refinement (dish, budget, or delivery time).",
+    "If no strict match, ask whether to broaden one filter (dish/cuisine/budget/delivery) before changing recommendations.",
     "If user wants alternatives, change only one filter at a time.",
   ],
   includeCodRule: true,

@@ -188,6 +188,11 @@ export function useChat(
         const sessionStateSummary = isVerticalId(vertical.id)
           ? buildSessionStateSummary(allMessages, vertical.id, selectedAddress)
           : null;
+        logger.debug("[Chat Turn Context]", {
+          verticalId: vertical.id,
+          messageCount: allMessages.length,
+          summary: sessionStateSummary,
+        });
         const response = await sendToApi(allMessages, sessionStateSummary);
 
         // stream-runner.ts already sanitizes and ensures non-empty content;

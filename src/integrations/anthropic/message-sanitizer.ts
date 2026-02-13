@@ -134,11 +134,34 @@ export function compactOldMessages(
 
 export function truncateToolResultsInMessages(
   messages: ChatMessage[],
+  options?: {
+    preserveRecentToolResultMessages?: number;
+  },
 ): ChatMessage[] {
+  const preserveRecentToolResultMessages = Math.max(
+    0,
+    options?.preserveRecentToolResultMessages ?? 0,
+  );
   let changed = false;
   const result: ChatMessage[] = [];
+  const assistantIndexesWithToolResults: number[] = [];
 
-  for (const msg of messages) {
+  for (let index = 0; index < messages.length; index++) {
+    const msg = messages[index];
+    if (msg.role !== "assistant" || typeof msg.content === "string") continue;
+    if (msg.content.some((block) => block.type === "mcp_tool_result")) {
+      assistantIndexesWithToolResults.push(index);
+    }
+  }
+
+  const preservedMessageIndexes = new Set(
+    assistantIndexesWithToolResults.slice(
+      Math.max(0, assistantIndexesWithToolResults.length - preserveRecentToolResultMessages),
+    ),
+  );
+
+  for (let messageIndex = 0; messageIndex < messages.length; messageIndex++) {
+    const msg = messages[messageIndex];
     if (msg.role !== "assistant" || typeof msg.content === "string") {
       result.push(msg);
       continue;
@@ -157,6 +180,11 @@ export function truncateToolResultsInMessages(
 
     for (const block of msg.content) {
       if (block.type !== "mcp_tool_result") {
+        truncatedBlocks.push(block);
+        continue;
+      }
+
+      if (preservedMessageIndexes.has(messageIndex)) {
         truncatedBlocks.push(block);
         continue;
       }

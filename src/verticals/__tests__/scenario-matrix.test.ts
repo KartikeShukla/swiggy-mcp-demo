@@ -47,7 +47,7 @@ const scenarios: Scenario[] = [
     mustContain: [
       "offer 2-3 cuisines",
       "switch to menu mode",
-      "original craving/cuisine intent as a filter",
+      "original craving/cuisine intent as a strict-first filter",
       "Restaurant selection = restaurant lock",
       "One tool call per step",
       "Never place order without explicit user confirmation",

@@ -9,8 +9,10 @@ import {
   sanitizeUntrustedPromptText,
 } from "@/lib/prompt-safety";
 import { sanitizeMessagesForApi, compactOldMessages, truncateToolResultsInMessages } from "./message-sanitizer";
+import { logger } from "@/lib/logger";
 
 const MAX_CONTEXT_MESSAGES = 8;
+const KEEP_RECENT_MESSAGES_FULL = 2;
 
 export function formatCurrentDateTime(): string {
   const now = new Date();
@@ -39,9 +41,19 @@ export function buildMessageStreamParams(
     ? sanitizeUntrustedPromptText(sessionStateSummary, 500)
     : null;
   const { sanitizedMessages } = sanitizeMessagesForApi(messages);
-  const compactedMessages = compactOldMessages(sanitizedMessages);
+  const compactedMessages = compactOldMessages(
+    sanitizedMessages,
+    KEEP_RECENT_MESSAGES_FULL,
+  );
   const boundedMessages = compactedMessages.slice(-MAX_CONTEXT_MESSAGES);
   const truncatedMessages = truncateToolResultsInMessages(boundedMessages);
+  logger.debug("[Request Builder Context]", {
+    sourceMessages: messages.length,
+    sanitizedMessages: sanitizedMessages.length,
+    compactedMessages: compactedMessages.length,
+    boundedMessages: boundedMessages.length,
+    maxContext: MAX_CONTEXT_MESSAGES,
+  });
 
   const apiMessages = truncatedMessages.map((msg) => ({
     role: msg.role as "user" | "assistant",

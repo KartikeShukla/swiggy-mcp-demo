@@ -181,11 +181,16 @@ function ChatViewInner({
       const menuOpenMatch = message.match(/^Open menu for restaurant:\s*(.+)$/i);
       if (menuOpenMatch?.[1]) {
         setLockedRestaurant(sanitizeUntrustedPromptText(menuOpenMatch[1], 80));
+      } else if (
+        vertical.id === "foodorder" &&
+        /\b(change|switch|different|another|new)\b.*\brestaurant\b|\bfind\b.*\brestaurants?\b|\bshow\b.*\brestaurants?\b/i.test(message)
+      ) {
+        setLockedRestaurant(null);
       }
       applyFoodOrderOptimisticAction(message);
       void sendMessage(message);
     },
-    [applyFoodOrderOptimisticAction, onSelectAddressFromChat, sendMessage],
+    [applyFoodOrderOptimisticAction, onSelectAddressFromChat, sendMessage, vertical.id],
   );
 
   const handleUnifiedAddToCart = useCallback(async () => {
@@ -255,6 +260,7 @@ function ChatViewInner({
             loadingLabel={loadingLabel}
             loadingElapsedMs={loadingElapsedMs}
             verticalId={vertical.id}
+            lockedRestaurant={lockedRestaurant}
             onAction={handleAction}
             sharedSelection={sharedSelection}
           />

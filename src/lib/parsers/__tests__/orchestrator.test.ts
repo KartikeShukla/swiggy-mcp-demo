@@ -321,6 +321,7 @@ describe("parseToolResult()", () => {
       expect(result.items[0].name).toBe("Menu Item 1");
       expect(result.items[4].name).toBe("Menu Item 5");
     });
+
   });
 
   describe("shape detection fallback", () => {

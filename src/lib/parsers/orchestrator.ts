@@ -1,4 +1,4 @@
-import type { ParsedToolResult } from "@/lib/types";
+import type { ParsedToolResult, RelevanceDebugTrace, ToolRenderContext } from "@/lib/types";
 import { MAX_MENU_PRODUCTS_SHOWN } from "@/lib/constants";
 import { logger } from "@/lib/logger";
 import { unwrapContent, extractPayload } from "./unwrap";
@@ -12,6 +12,8 @@ import { tryParseStatus } from "./status";
 import { tryParseInfo } from "./info";
 import { detectByShape } from "./shape-detect";
 import { asArrayOrWrap } from "./primitives";
+import { rerankFoodorderMenuItems, rerankFoodorderRestaurants } from "@/lib/relevance/foodorder";
+import { rerankProductsByQuery, rerankRestaurantsByQuery } from "@/lib/relevance/generic";
 
 const PRODUCT_SIGNAL_KEYS = new Set([
   "price",
@@ -77,6 +79,189 @@ const CART_TOOL_RE = /cart|basket|add_item|remove_item|update_item|modify_item|a
 const SLOT_TOOL_RE = /slot|avail|schedule|timeslot/i;
 const ADDRESS_TOOL_RE = /address|location|deliver/i;
 const CONFIRM_TOOL_RE = /order|place|book|reserve|confirm|checkout|submit/i;
+const FOODORDER_MENU_CANDIDATES = 15;
+const FOODORDER_RESTAURANT_CANDIDATES = 15;
+
+function attachDebug<T extends ParsedToolResult>(result: T, debug?: RelevanceDebugTrace): T {
+  if (!debug) return result;
+  return { ...result, debug } as T;
+}
+
+function buildStrictMatchInfo(
+  title: string,
+  note: string,
+  renderContext?: ToolRenderContext,
+  debug?: RelevanceDebugTrace,
+): ParsedToolResult {
+  const filters = renderContext?.strictConstraints
+    ? [
+        renderContext.strictConstraints.cuisines?.length
+          ? `cuisine: ${renderContext.strictConstraints.cuisines.join(", ")}`
+          : "",
+        renderContext.strictConstraints.dishes?.length
+          ? `dish: ${renderContext.strictConstraints.dishes.join(", ")}`
+          : "",
+        renderContext.strictConstraints.diet ? `diet: ${renderContext.strictConstraints.diet}` : "",
+        renderContext.strictConstraints.spicy ? "spice: spicy" : "",
+      ]
+        .filter(Boolean)
+        .join(" | ")
+    : "";
+
+  return {
+    type: "info",
+    title,
+    entries: [
+      {
+        key: "Current filters",
+        value: filters || "Strict preference matching is active.",
+      },
+      {
+        key: "Next step",
+        value: note,
+      },
+    ],
+    debug,
+  };
+}
+
+function postProcessParsedResult(
+  parsed: ParsedToolResult,
+  toolName: string,
+  verticalId: string,
+  renderContext: ToolRenderContext | undefined,
+  enableRelevancePostProcessing: boolean,
+): ParsedToolResult {
+  if (!enableRelevancePostProcessing || parsed.type === "raw") return parsed;
+  const query = renderContext?.latestUserQuery ?? "";
+
+  if (verticalId === "foodorder") {
+    const mode = renderContext?.mode ?? (MENU_INTENT_TOOL_RE.test(toolName) ? "menu" : "discover");
+
+    if (parsed.type === "restaurants") {
+      const ranked = rerankFoodorderRestaurants(parsed.items, renderContext);
+      logger.debug("[Parser Relevance]", {
+        verticalId,
+        mode,
+        type: "restaurants",
+        toolName,
+        debug: ranked.debug,
+      });
+      if (ranked.requireBroadenPrompt) {
+        return buildStrictMatchInfo(
+          "No strict restaurant matches yet",
+          "Say 'broaden results' to relax one filter, or refine with a specific area/budget.",
+          renderContext,
+          ranked.debug,
+        );
+      }
+      return {
+        type: "restaurants",
+        items: ranked.items,
+        debug: ranked.debug,
+      };
+    }
+
+    if (parsed.type === "products" && mode === "menu") {
+      const ranked = rerankFoodorderMenuItems(parsed.items, renderContext);
+      logger.debug("[Parser Relevance]", {
+        verticalId,
+        mode,
+        type: "products",
+        toolName,
+        debug: ranked.debug,
+      });
+      if (ranked.requireBroadenPrompt) {
+        return buildStrictMatchInfo(
+          "No strict menu matches yet",
+          "Say 'broaden menu' to relax one filter, or name another dish/cuisine.",
+          renderContext,
+          ranked.debug,
+        );
+      }
+      return {
+        type: "products",
+        items: ranked.items,
+        debug: ranked.debug,
+      };
+    }
+
+    if (parsed.type === "products" && query) {
+      const rerankedItems = rerankProductsByQuery(parsed.items, query);
+      logger.debug("[Parser Relevance]", {
+        verticalId,
+        mode,
+        type: "products",
+        toolName,
+        before: parsed.items.length,
+        after: rerankedItems.length,
+      });
+      return attachDebug(
+        {
+          type: "products",
+          items: rerankedItems,
+        },
+        {
+          strategy: "foodorder:discover-products",
+          query,
+          mode,
+          beforeCount: parsed.items.length,
+          afterCount: rerankedItems.length,
+        },
+      );
+    }
+  }
+
+  if ((verticalId === "food" || verticalId === "style") && parsed.type === "products" && query) {
+    const rerankedItems = rerankProductsByQuery(parsed.items, query);
+    logger.debug("[Parser Relevance]", {
+      verticalId,
+      type: "products",
+      toolName,
+      before: parsed.items.length,
+      after: rerankedItems.length,
+    });
+    return attachDebug(
+      {
+        type: "products",
+        items: rerankedItems,
+      },
+      {
+        strategy: `${verticalId}:products`,
+        query,
+        mode: renderContext?.mode,
+        beforeCount: parsed.items.length,
+        afterCount: rerankedItems.length,
+      },
+    );
+  }
+
+  if (verticalId === "dining" && parsed.type === "restaurants" && query) {
+    const rerankedItems = rerankRestaurantsByQuery(parsed.items, query);
+    logger.debug("[Parser Relevance]", {
+      verticalId,
+      type: "restaurants",
+      toolName,
+      before: parsed.items.length,
+      after: rerankedItems.length,
+    });
+    return attachDebug(
+      {
+        type: "restaurants",
+        items: rerankedItems,
+      },
+      {
+        strategy: "dining:restaurants",
+        query,
+        mode: renderContext?.mode,
+        beforeCount: parsed.items.length,
+        afterCount: rerankedItems.length,
+      },
+    );
+  }
+
+  return parsed;
+}
 
 function inferPayloadSignals(payload: unknown): {
   hasProductSignals: boolean;
@@ -153,13 +338,28 @@ export function parseToolResult(
   content: unknown,
   verticalId: string,
   toolInput?: Record<string, unknown>,
+  renderContext?: ToolRenderContext,
 ): ParsedToolResult {
   try {
+    const enableRelevancePostProcessing = false;
     const data = unwrapContent(content);
     const payload = extractPayload(data);
     const productParseContext = {
       toolInput,
-      maxItems: verticalId === "foodorder" ? MAX_MENU_PRODUCTS_SHOWN : undefined,
+      maxItems:
+        verticalId === "foodorder"
+          ? (
+              enableRelevancePostProcessing && renderContext
+                ? FOODORDER_MENU_CANDIDATES
+                : MAX_MENU_PRODUCTS_SHOWN
+            )
+          : undefined,
+    };
+    const restaurantParseContext = {
+      maxItems:
+        verticalId === "foodorder" && enableRelevancePostProcessing && renderContext
+          ? FOODORDER_RESTAURANT_CANDIDATES
+          : undefined,
     };
 
     // Match by tool name patterns
@@ -179,28 +379,76 @@ export function parseToolResult(
 
         if (shouldPreferProducts) {
           const products = tryParseProducts(payload, productParseContext);
-          if (products) return products;
+          if (products) {
+            return postProcessParsedResult(
+              products,
+              toolName,
+              verticalId,
+              renderContext,
+              enableRelevancePostProcessing,
+            );
+          }
         }
 
         if (signals.hasStrongRestaurantSignals || (signals.hasWeakRestaurantSignals && isRestaurantDiscoveryTool)) {
-          const restaurants = tryParseRestaurants(payload);
-          if (restaurants) return restaurants;
+          const restaurants = tryParseRestaurants(payload, restaurantParseContext);
+          if (restaurants) {
+            return postProcessParsedResult(
+              restaurants,
+              toolName,
+              verticalId,
+              renderContext,
+              enableRelevancePostProcessing,
+            );
+          }
         }
 
         const products = tryParseProducts(payload, productParseContext);
-        if (products) return products;
-        const restaurants = tryParseRestaurants(payload);
-        if (restaurants) return restaurants;
+        if (products) {
+          return postProcessParsedResult(
+            products,
+            toolName,
+            verticalId,
+            renderContext,
+            enableRelevancePostProcessing,
+          );
+        }
+        const restaurants = tryParseRestaurants(payload, restaurantParseContext);
+        if (restaurants) {
+          return postProcessParsedResult(
+            restaurants,
+            toolName,
+            verticalId,
+            renderContext,
+            enableRelevancePostProcessing,
+          );
+        }
       }
 
       if (verticalId === "dining") {
-        const restaurants = tryParseRestaurants(payload);
-        if (restaurants) return restaurants;
+        const restaurants = tryParseRestaurants(payload, restaurantParseContext);
+        if (restaurants) {
+          return postProcessParsedResult(
+            restaurants,
+            toolName,
+            verticalId,
+            renderContext,
+            enableRelevancePostProcessing,
+          );
+        }
       }
 
       // Always try products (including dining — dining can have menu/dish searches)
       const products = tryParseProducts(payload, productParseContext);
-      if (products) return products;
+      if (products) {
+        return postProcessParsedResult(
+          products,
+          toolName,
+          verticalId,
+          renderContext,
+          enableRelevancePostProcessing,
+        );
+      }
     }
     if (CART_TOOL_RE.test(toolName)) {
       // Try original data first (before extractPayload strips the structure)
@@ -234,13 +482,29 @@ export function parseToolResult(
       const dataObj = data as Record<string, unknown>;
       if (dataObj.success != null || dataObj.message != null) {
         const embeddedCart = tryParseCart(data);
-        if (embeddedCart) return embeddedCart;
+        if (embeddedCart) {
+          return postProcessParsedResult(
+            embeddedCart,
+            toolName,
+            verticalId,
+            renderContext,
+            enableRelevancePostProcessing,
+          );
+        }
       }
     }
 
     // Fall back to shape detection
     const shaped = detectByShape(payload, verticalId, toolName);
-    if (shaped) return shaped;
+    if (shaped) {
+      return postProcessParsedResult(
+        shaped,
+        toolName,
+        verticalId,
+        renderContext,
+        enableRelevancePostProcessing,
+      );
+    }
 
     // Try status on pre-extracted data (has success/message at top level)
     const statusFromData = tryParseStatus(data);
@@ -252,7 +516,15 @@ export function parseToolResult(
 
     // Catch-all: any non-empty object becomes an info card
     const info = tryParseInfo(data);
-    if (info) return info;
+    if (info) {
+      return postProcessParsedResult(
+        info,
+        toolName,
+        verticalId,
+        renderContext,
+        enableRelevancePostProcessing,
+      );
+    }
 
     const result: ParsedToolResult = { type: "raw", content };
     logger.debug(`parseToolResult: tool="${toolName}" vertical="${verticalId}" → ${result.type}`);

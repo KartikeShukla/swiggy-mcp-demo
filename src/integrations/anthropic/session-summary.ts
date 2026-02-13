@@ -1,5 +1,6 @@
 import type { ParsedAddress, ChatMessage } from "@/lib/types";
 import type { VerticalId } from "@/verticals/prompt-spec/types";
+import { extractFoodorderConstraints } from "@/lib/relevance/foodorder";
 
 // Module-scope regex constants (avoid per-call RegExp allocation)
 const RESTAURANT_SELECT_PATTERNS = [
@@ -177,6 +178,19 @@ export function buildSessionStateSummary(
   }
   if (locationSignal) {
     parts.push(`location=${locationSignal}`);
+  }
+
+  if (verticalId === "foodorder") {
+    parts.push(`mode=${intent}`);
+    const constraints = extractFoodorderConstraints(allUserText);
+    const filterSignals: string[] = [];
+    if (constraints.cuisines?.length) filterSignals.push(`cuisine:${constraints.cuisines.join("|")}`);
+    if (constraints.dishes?.length) filterSignals.push(`dish:${constraints.dishes.join("|")}`);
+    if (constraints.diet) filterSignals.push(`diet:${constraints.diet}`);
+    if (constraints.spicy) filterSignals.push("spicy:true");
+    if (constraints.budgetMax != null) filterSignals.push(`budget:${constraints.budgetMax}`);
+    if (constraints.maxDeliveryMins != null) filterSignals.push(`speed:${constraints.maxDeliveryMins}`);
+    parts.push(`filters=${filterSignals.length > 0 ? filterSignals.join(",") : "-"}`);
   }
 
   return parts.join(";");
