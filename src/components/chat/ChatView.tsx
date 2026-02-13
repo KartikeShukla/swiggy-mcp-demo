@@ -268,16 +268,16 @@ function ChatViewInner({
           <p className="mb-6 max-w-md text-center text-xs text-muted-foreground leading-relaxed">
             {vertical.welcomeMessage}
           </p>
-          <div className="flex flex-wrap justify-center gap-1.5 w-full">
+          <div className="flex flex-col gap-1.5 w-full">
             {vertical.examplePrompts.map((prompt) => (
               <Button
                 key={prompt}
                 variant="outline"
-                className="rounded-full text-xs max-w-full"
+                className="rounded-xl text-xs h-auto py-2 px-3.5 w-full whitespace-normal text-left justify-start leading-relaxed"
                 onClick={() => handleAction(prompt)}
                 disabled={loading || !apiKey}
               >
-                <span className="truncate">{prompt}</span>
+                {prompt}
               </Button>
             ))}
           </div>

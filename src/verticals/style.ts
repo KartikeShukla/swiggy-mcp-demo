@@ -8,13 +8,13 @@ export const styleVertical: VerticalConfig = {
   name: "StyleKit",
   tabName: "Style",
   description:
-    "Your AI grooming advisor — builds structured skincare and haircare routines for morning, evening, and weekly care, then orders every product from Instamart.",
+    "An AI grooming advisor that builds structured skincare and haircare routines for morning, evening, and weekly care, and helps you shop the right products on Instamart.",
   color: "style",
   icon: "Sparkles",
   systemPrompt: buildSystemPrompt(stylePromptProfile),
   promptProfileId: stylePromptProfile.id,
   welcomeMessage:
-    "Share your grooming goal or concern — I'll build a routine with the right products and order them from Instamart.",
+    "Share your grooming goal or concern. I'll recommend a routine with the right products and help you find them on Instamart.",
   examplePrompts: [
     "Build me a full morning and evening skincare routine for oily, acne-prone skin",
     "I have a wedding in 5 days — put together a grooming prep plan",

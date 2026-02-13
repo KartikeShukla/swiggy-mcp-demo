@@ -8,13 +8,13 @@ export const foodOrderVertical: VerticalConfig = {
   name: "FeedMe",
   tabName: "Order",
   description:
-    "Go from a craving to a delivered meal — finds restaurants nearby, dives into their menu, builds your cart, and places the order for delivery.",
+    "Go from a craving to a delivered meal. Discovers restaurants nearby, explores their menus, and helps you build your cart and place an order.",
   color: "foodorder",
   icon: "Bike",
   systemPrompt: buildSystemPrompt(foodOrderPromptProfile),
   promptProfileId: foodOrderPromptProfile.id,
   welcomeMessage:
-    "Name a dish, cuisine, or vibe — I'll find restaurants, show you the menu, and get your order delivered.",
+    "Name a dish, cuisine, or mood. I'll find restaurants nearby and show you menus so you can pick what you want.",
   examplePrompts: [
     "I'm craving butter chicken — find the best-rated places nearby",
     "I want to order pizza for 4 people, keep it under ₹1500",

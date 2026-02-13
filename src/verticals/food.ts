@@ -8,13 +8,13 @@ export const foodVertical: VerticalConfig = {
   name: "NutriCart",
   tabName: "Nutrition",
   description:
-    "Your AI nutrition coach — plans meals with full macro breakdowns, walks you through step-by-step recipes, and orders every ingredient straight from Instamart.",
+    "An AI nutrition coach that plans meals with full macro breakdowns, walks you through recipes step by step, and helps you find every ingredient on Instamart.",
   color: "food",
   icon: "Salad",
   systemPrompt: buildSystemPrompt(foodPromptProfile),
   promptProfileId: foodPromptProfile.id,
   welcomeMessage:
-    "Tell me your nutrition goals, a diet you follow, or a meal to prep — I'll plan it and order ingredients from Instamart.",
+    "Tell me your nutrition goals, a diet you follow, or a meal to prep. I'll plan recipes with macros and help you find ingredients on Instamart.",
   examplePrompts: [
     "I'm on a high-protein vegetarian diet, plan my meals for the week",
     "Give me a keto dinner recipe for two with a full macro breakdown",
