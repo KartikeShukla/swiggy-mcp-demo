@@ -2,6 +2,7 @@ import {
   sanitizeAssistantBlocks,
   sanitizeMessagesForApi,
   compactOldMessages,
+  truncateToolResultsInMessages,
 } from "@/integrations/anthropic/message-sanitizer";
 import type { ChatMessage, ContentBlock } from "@/lib/types";
 
@@ -226,6 +227,193 @@ describe("message-sanitizer", () => {
       const result = compactOldMessages(msgs, 4);
       expect(result[0]).toBe(msgs[0]);
       expect(result[0].content).toBe("old user msg");
+    });
+  });
+
+  describe("truncateToolResultsInMessages", () => {
+    function user(content: string): ChatMessage {
+      return { role: "user", content, timestamp: Date.now() };
+    }
+
+    function assistant(content: string | ContentBlock[]): ChatMessage {
+      return { role: "assistant", content, timestamp: Date.now() };
+    }
+
+    it("returns same reference when nothing needs truncation", () => {
+      const msgs = [user("hi"), assistant("hello")];
+      const result = truncateToolResultsInMessages(msgs);
+      expect(result).toBe(msgs);
+    });
+
+    it("truncates string content exceeding 3000 chars", () => {
+      const longContent = "x".repeat(5000);
+      const msgs: ChatMessage[] = [
+        user("search"),
+        assistant([
+          { type: "mcp_tool_use", id: "u-1", name: "search" },
+          { type: "mcp_tool_result", tool_use_id: "u-1", content: longContent },
+        ]),
+      ];
+
+      const result = truncateToolResultsInMessages(msgs);
+      const blocks = result[1].content as ContentBlock[];
+      const resultBlock = blocks[1] as { type: string; content: string };
+      expect(resultBlock.content).toHaveLength(3000);
+    });
+
+    it("truncates array content text entries exceeding 3000 chars", () => {
+      const longText = "y".repeat(4000);
+      const msgs: ChatMessage[] = [
+        user("q"),
+        assistant([
+          { type: "mcp_tool_use", id: "u-1", name: "search" },
+          {
+            type: "mcp_tool_result",
+            tool_use_id: "u-1",
+            content: [{ type: "text", text: longText }],
+          },
+        ]),
+      ];
+
+      const result = truncateToolResultsInMessages(msgs);
+      const blocks = result[1].content as ContentBlock[];
+      const resultBlock = blocks[1] as { type: string; content: Array<{ text: string }> };
+      expect(resultBlock.content[0].text).toHaveLength(3000);
+    });
+
+    it("does not truncate content at exactly 3000 chars", () => {
+      const exactContent = "z".repeat(3000);
+      const msgs: ChatMessage[] = [
+        user("q"),
+        assistant([
+          { type: "mcp_tool_use", id: "u-1", name: "search" },
+          { type: "mcp_tool_result", tool_use_id: "u-1", content: exactContent },
+        ]),
+      ];
+
+      const result = truncateToolResultsInMessages(msgs);
+      expect(result).toBe(msgs);
+    });
+
+    it("preserves non-tool-result blocks unchanged", () => {
+      const msgs: ChatMessage[] = [
+        user("q"),
+        assistant([
+          { type: "text", text: "x".repeat(5000) },
+          { type: "mcp_tool_use", id: "u-1", name: "search" },
+          { type: "mcp_tool_result", tool_use_id: "u-1", content: "short" },
+        ]),
+      ];
+
+      const result = truncateToolResultsInMessages(msgs);
+      expect(result).toBe(msgs);
+      const blocks = result[1].content as ContentBlock[];
+      expect((blocks[0] as { text: string }).text).toHaveLength(5000);
+    });
+
+    it("skips non-assistant messages", () => {
+      const msgs: ChatMessage[] = [
+        user("x".repeat(5000)),
+        assistant("text reply"),
+      ];
+
+      const result = truncateToolResultsInMessages(msgs);
+      expect(result).toBe(msgs);
+    });
+
+    it("does not mutate original messages", () => {
+      const longContent = "a".repeat(5000);
+      const originalBlock = {
+        type: "mcp_tool_result" as const,
+        tool_use_id: "u-1",
+        content: longContent,
+      };
+      const msgs: ChatMessage[] = [
+        user("q"),
+        assistant([
+          { type: "mcp_tool_use", id: "u-1", name: "search" },
+          originalBlock,
+        ]),
+      ];
+
+      truncateToolResultsInMessages(msgs);
+      expect(originalBlock.content).toHaveLength(5000);
+    });
+
+    it("smart-truncates valid JSON tool results, preferring query-relevant items", () => {
+      const products = [
+        ...Array.from({ length: 20 }, (_, i) => ({
+          name: `Filler Product ${i}`,
+          category: "Other",
+          description: `Some generic description for filler product ${i}`,
+        })),
+        { name: "Masala Dosa", category: "South Indian", description: "Crispy dosa" },
+        { name: "Idli Sambar", category: "South Indian", description: "Steamed idli" },
+      ];
+      const jsonContent = JSON.stringify({ data: { items: products } });
+
+      const msgs: ChatMessage[] = [
+        user("search"),
+        assistant([
+          {
+            type: "mcp_tool_use",
+            id: "u-1",
+            name: "search_products",
+            input: { query: "south indian" },
+          },
+          { type: "mcp_tool_result", tool_use_id: "u-1", content: jsonContent },
+        ]),
+      ];
+
+      const result = truncateToolResultsInMessages(msgs);
+      const blocks = result[1].content as ContentBlock[];
+      const resultBlock = blocks[1] as { type: string; content: string };
+      const parsed = JSON.parse(resultBlock.content);
+
+      // Should preserve wrapper structure
+      expect(parsed.data.items).toBeDefined();
+      // South Indian items should be present
+      const names = parsed.data.items.map((p: { name: string }) => p.name);
+      expect(names).toContain("Masala Dosa");
+      expect(names).toContain("Idli Sambar");
+    });
+
+    it("produces valid JSON output when truncating a large product array", () => {
+      const products = Array.from({ length: 50 }, (_, i) => ({
+        name: `Product ${i}`,
+        price: 100 + i,
+        description: `A product description that adds length for item ${i}`,
+      }));
+      const jsonContent = JSON.stringify(products);
+
+      const msgs: ChatMessage[] = [
+        user("search"),
+        assistant([
+          {
+            type: "mcp_tool_use",
+            id: "u-1",
+            name: "search_products",
+            input: { query: "product" },
+          },
+          { type: "mcp_tool_result", tool_use_id: "u-1", content: jsonContent },
+        ]),
+      ];
+
+      const result = truncateToolResultsInMessages(msgs);
+      const blocks = result[1].content as ContentBlock[];
+      const resultBlock = blocks[1] as { type: string; content: string };
+
+      expect(resultBlock.content.length).toBeLessThanOrEqual(3000);
+      // Must be valid JSON
+      const parsed = JSON.parse(resultBlock.content);
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed.length).toBeGreaterThan(0);
+      // Each item should be complete
+      for (const item of parsed) {
+        expect(item).toHaveProperty("name");
+        expect(item).toHaveProperty("price");
+        expect(item).toHaveProperty("description");
+      }
     });
   });
 });

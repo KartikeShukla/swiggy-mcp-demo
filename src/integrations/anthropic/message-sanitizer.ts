@@ -4,6 +4,7 @@ import type {
   McpToolResultBlock,
   McpToolUseBlock,
 } from "@/lib/types";
+import { smartTruncateJsonContent, extractQueryFromToolInput, MAX_TOOL_RESULT_CHARS } from "./tool-result-truncation";
 
 export interface BlockSanitizeResult {
   blocks: ContentBlock[];
@@ -129,6 +130,85 @@ export function compactOldMessages(
   }
 
   return result;
+}
+
+export function truncateToolResultsInMessages(
+  messages: ChatMessage[],
+): ChatMessage[] {
+  let changed = false;
+  const result: ChatMessage[] = [];
+
+  for (const msg of messages) {
+    if (msg.role !== "assistant" || typeof msg.content === "string") {
+      result.push(msg);
+      continue;
+    }
+
+    // Build map of tool_use_id → input from mcp_tool_use blocks in this message
+    const toolInputMap = new Map<string, Record<string, unknown> | undefined>();
+    for (const block of msg.content) {
+      if (isToolUse(block)) {
+        toolInputMap.set(block.id, block.input);
+      }
+    }
+
+    let msgChanged = false;
+    const truncatedBlocks: ContentBlock[] = [];
+
+    for (const block of msg.content) {
+      if (block.type !== "mcp_tool_result") {
+        truncatedBlocks.push(block);
+        continue;
+      }
+
+      const queryTerms = extractQueryFromToolInput(toolInputMap.get(block.tool_use_id));
+      const { content } = block;
+
+      if (typeof content === "string") {
+        if (content.length > MAX_TOOL_RESULT_CHARS) {
+          truncatedBlocks.push({ ...block, content: smartTruncateJsonContent(content, queryTerms) });
+          msgChanged = true;
+        } else {
+          truncatedBlocks.push(block);
+        }
+        continue;
+      }
+
+      if (Array.isArray(content)) {
+        let arrayChanged = false;
+        const mapped = (content as Array<Record<string, unknown>>).map((tb) => {
+          if (
+            typeof tb === "object" &&
+            tb.type === "text" &&
+            typeof tb.text === "string" &&
+            tb.text.length > MAX_TOOL_RESULT_CHARS
+          ) {
+            arrayChanged = true;
+            return { ...tb, text: smartTruncateJsonContent(tb.text as string, queryTerms) };
+          }
+          return tb;
+        });
+        if (arrayChanged) {
+          truncatedBlocks.push({ ...block, content: mapped });
+          msgChanged = true;
+        } else {
+          truncatedBlocks.push(block);
+        }
+        continue;
+      }
+
+      truncatedBlocks.push(block);
+    }
+
+    if (msgChanged) {
+      result.push({ ...msg, content: truncatedBlocks });
+      changed = true;
+    } else {
+      result.push(msg);
+    }
+  }
+
+  return changed ? result : messages;
 }
 
 export function sanitizeMessagesForApi(messages: ChatMessage[]): MessageSanitizeResult {
