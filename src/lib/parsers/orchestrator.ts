@@ -12,8 +12,9 @@ import { tryParseStatus } from "./status";
 import { tryParseInfo } from "./info";
 import { detectByShape } from "./shape-detect";
 import { asArrayOrWrap } from "./primitives";
+import { rerankDiningRestaurants } from "@/lib/relevance/dining";
 import { rerankFoodorderMenuItems, rerankFoodorderRestaurants } from "@/lib/relevance/foodorder";
-import { rerankProductsByQuery, rerankRestaurantsByQuery } from "@/lib/relevance/generic";
+import { rerankProductsByQuery } from "@/lib/relevance/generic";
 
 const PRODUCT_SIGNAL_KEYS = new Set([
   "price",
@@ -79,6 +80,7 @@ const CART_TOOL_RE = /cart|basket|add_item|remove_item|update_item|modify_item|a
 const SLOT_TOOL_RE = /slot|avail|schedule|timeslot/i;
 const ADDRESS_TOOL_RE = /address|location|deliver/i;
 const CONFIRM_TOOL_RE = /order|place|book|reserve|confirm|checkout|submit/i;
+const DINING_RESTAURANT_CANDIDATES = 15;
 const FOODORDER_MENU_CANDIDATES = 15;
 const FOODORDER_RESTAURANT_CANDIDATES = 15;
 
@@ -93,16 +95,26 @@ function buildStrictMatchInfo(
   renderContext?: ToolRenderContext,
   debug?: RelevanceDebugTrace,
 ): ParsedToolResult {
+  const strict = renderContext?.strictConstraints;
   const filters = renderContext?.strictConstraints
     ? [
-        renderContext.strictConstraints.cuisines?.length
-          ? `cuisine: ${renderContext.strictConstraints.cuisines.join(", ")}`
+        strict?.cuisines?.length
+          ? `cuisine: ${strict.cuisines.join(", ")}`
           : "",
-        renderContext.strictConstraints.dishes?.length
-          ? `dish: ${renderContext.strictConstraints.dishes.join(", ")}`
+        strict?.vibes?.length
+          ? `vibe: ${strict.vibes.join(", ")}`
           : "",
-        renderContext.strictConstraints.diet ? `diet: ${renderContext.strictConstraints.diet}` : "",
-        renderContext.strictConstraints.spicy ? "spice: spicy" : "",
+        strict?.areas?.length
+          ? `area: ${strict.areas.join(", ")}`
+          : "",
+        strict?.dishes?.length
+          ? `dish: ${strict.dishes.join(", ")}`
+          : "",
+        strict?.diet ? `diet: ${strict.diet}` : "",
+        strict?.spicy ? "spice: spicy" : "",
+        strict?.budgetMax != null ? `budget: ${strict.budgetMax}` : "",
+        strict?.partySize != null ? `party size: ${strict.partySize}` : "",
+        strict?.timeHints?.length ? `time: ${strict.timeHints.join(", ")}` : "",
       ]
         .filter(Boolean)
         .join(" | ")
@@ -236,28 +248,27 @@ function postProcessParsedResult(
     );
   }
 
-  if (verticalId === "dining" && parsed.type === "restaurants" && query) {
-    const rerankedItems = rerankRestaurantsByQuery(parsed.items, query);
+  if (verticalId === "dining" && parsed.type === "restaurants") {
+    const ranked = rerankDiningRestaurants(parsed.items, renderContext);
     logger.debug("[Parser Relevance]", {
       verticalId,
       type: "restaurants",
       toolName,
-      before: parsed.items.length,
-      after: rerankedItems.length,
+      debug: ranked.debug,
     });
-    return attachDebug(
-      {
-        type: "restaurants",
-        items: rerankedItems,
-      },
-      {
-        strategy: "dining:restaurants",
-        query,
-        mode: renderContext?.mode,
-        beforeCount: parsed.items.length,
-        afterCount: rerankedItems.length,
-      },
-    );
+    if (ranked.requireBroadenPrompt) {
+      return buildStrictMatchInfo(
+        "No strict dining matches yet",
+        "Relax one filter: cuisine/vibe, area, budget, or time window. For dish-specific intent, I can broaden to nearby cuisine matches.",
+        renderContext,
+        ranked.debug,
+      );
+    }
+    return {
+      type: "restaurants",
+      items: ranked.items,
+      debug: ranked.debug,
+    };
   }
 
   return parsed;
@@ -341,7 +352,7 @@ export function parseToolResult(
   renderContext?: ToolRenderContext,
 ): ParsedToolResult {
   try {
-    const enableRelevancePostProcessing = false;
+    const enableRelevancePostProcessing = verticalId === "dining";
     const data = unwrapContent(content);
     const payload = extractPayload(data);
     const productParseContext = {
@@ -357,7 +368,9 @@ export function parseToolResult(
     };
     const restaurantParseContext = {
       maxItems:
-        verticalId === "foodorder" && enableRelevancePostProcessing && renderContext
+        verticalId === "dining" && enableRelevancePostProcessing
+          ? DINING_RESTAURANT_CANDIDATES
+          : verticalId === "foodorder" && enableRelevancePostProcessing && renderContext
           ? FOODORDER_RESTAURANT_CANDIDATES
           : undefined,
     };

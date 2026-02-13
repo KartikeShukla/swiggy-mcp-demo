@@ -153,10 +153,14 @@ export type ParserIntentHint =
 
 export interface StrictConstraintSnapshot {
   cuisines?: string[];
+  vibes?: string[];
+  areas?: string[];
   dishes?: string[];
   diet?: "veg" | "non_veg" | "vegan";
   spicy?: boolean;
   budgetMax?: number;
+  partySize?: number;
+  timeHints?: string[];
   maxDeliveryMins?: number;
 }
 

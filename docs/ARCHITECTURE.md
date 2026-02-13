@@ -37,6 +37,7 @@ graph LR
 5. `runMessageStream` streams assistant blocks and monitors MCP tool errors.
 6. Assistant blocks are sanitized (`sanitizeAssistantBlocks`) and persisted.
 7. UI groups blocks and parses tool results into cards.
+8. Dining restaurant payloads are strict-filtered/reranked before final card render.
 
 ## Data Flow Layers
 1. Auth layer: `useAuth` + storage helpers.
@@ -50,6 +51,7 @@ graph LR
 - Shared prompt rules appended by `src/verticals/shared-prompt.ts`.
 - Optional session summary and datetime blocks are additional runtime context.
 - Address lock block is included when selected address is known.
+- Dining and foodorder summaries include compact filter memory for relevance continuity.
 
 ## Error Handling Model
 ### API-level errors

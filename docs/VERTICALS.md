@@ -31,6 +31,7 @@ All vertical prompts are built by:
 
 ### `dining`
 - Focused on discovery -> availability -> booking progression.
+- Uses strict-first dining relevance and explicit one-filter broadening.
 - Booking should be preceded by explicit slot confirmation.
 
 ### `foodorder`

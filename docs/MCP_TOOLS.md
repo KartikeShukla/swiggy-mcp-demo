@@ -45,7 +45,7 @@ How MCP tools are configured, executed, and rendered in this project.
 
 ## Vertical Tool Behavior
 - `food`/`style`: Instamart products + cart flows.
-- `dining`: restaurant discovery + availability + booking flows.
+- `dining`: restaurant discovery + availability + booking flows, with strict-first restaurant reranking and explicit broaden gating.
 - `foodorder`: restaurant discovery + menu + cart/order; includes restaurant-vs-menu disambiguation heuristics.
 
 ## Related Docs

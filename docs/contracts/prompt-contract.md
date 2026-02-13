@@ -12,7 +12,8 @@ System prompts are composed from:
 2. Confirmation policy remains explicit before place/book operations.
 3. Shared error-handling and card-first response rules remain present.
 4. Dining flow keeps availability-before-booking behavior.
-5. Foodorder keeps discovery-to-menu progression semantics.
+5. Dining strict-first matching must request user approval before broadening filters.
+6. Foodorder keeps discovery-to-menu progression semantics.
 
 ## Mapping Contract
 - `food` and `style` use Instamart MCP.
