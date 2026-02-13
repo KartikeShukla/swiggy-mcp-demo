@@ -5,21 +5,20 @@ import { stylePromptProfile } from "./prompt-spec/profiles";
 
 export const styleVertical: VerticalConfig = {
   id: "style",
-  name: "StyleBox",
+  name: "StyleKit",
   tabName: "Style",
-  tagline: "Personal grooming advisor with product delivery",
   description:
-    "Get expert skincare, haircare, and grooming advice — then order recommended products from Instamart instantly.",
+    "A personal grooming advisor that builds structured routines — morning, evening, weekly — and orders every product from Instamart.",
   color: "style",
   icon: "Sparkles",
   systemPrompt: buildSystemPrompt(stylePromptProfile),
   promptProfileId: stylePromptProfile.id,
   welcomeMessage:
-    "Hey! I'm StyleBox, your personal grooming advisor. Tell me what you need — skincare routine, haircare, grooming for an event, or anything style-related — and I'll find products on Instamart.",
+    "What's your grooming goal — building a skincare routine, prepping for an event, or fixing a specific concern? I'll put together a structured routine with the right products and the reasoning behind each pick, then help you order everything from Instamart.",
   examplePrompts: [
-    "Build me a morning skincare routine for oily skin",
-    "I need grooming products for a wedding next week",
-    "Recommend a complete beard care kit under 500 rupees",
+    "Build me a full morning and evening skincare routine for oily, acne-prone skin",
+    "I have a wedding in 5 days — put together a grooming prep plan",
+    "My hair's been thinning — recommend a haircare routine and explain why each product helps",
   ],
   mcpServer: MCP_SERVERS.instamart,
 };

@@ -1,6 +1,50 @@
 import type { ParsedToolResult } from "@/lib/types";
 import { MAX_STATUS_DETAILS } from "@/lib/constants";
 
+function extractNestedErrorMessage(message: string): string | null {
+  const trimmed = message.trim();
+  if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return null;
+  try {
+    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    if (parsed && typeof parsed === "object") {
+      const errorObj = parsed.error;
+      if (
+        errorObj &&
+        typeof errorObj === "object" &&
+        typeof (errorObj as Record<string, unknown>).message === "string"
+      ) {
+        return ((errorObj as Record<string, unknown>).message as string).trim();
+      }
+      if (typeof parsed.message === "string") {
+        return (parsed.message as string).trim();
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function normalizeStatusMessage(message: string, success: boolean): string {
+  const nested = extractNestedErrorMessage(message);
+  const source = nested || message;
+  const text = source.trim();
+  if (!text) {
+    return success ? "Operation completed successfully" : "Operation failed";
+  }
+
+  if (!success) {
+    if (/(overload(?:ed)?|overloaded_error|rate[_\s-]?limit|exceed(?:ed|s)?)/i.test(text)) {
+      return "Service is temporarily overloaded. Please retry in a moment.";
+    }
+    if (/(internal server error|service unavailable|timeout|gateway|api_error)/i.test(text)) {
+      return "Service is temporarily unavailable. Please retry in a moment.";
+    }
+  }
+
+  return text.length > 180 ? `${text.slice(0, 180)}...` : text;
+}
+
 export function tryParseStatus(payload: unknown): ParsedToolResult | null {
   if (typeof payload !== "object" || payload === null || Array.isArray(payload)) return null;
   const obj = payload as Record<string, unknown>;
@@ -20,9 +64,10 @@ export function tryParseStatus(payload: unknown): ParsedToolResult | null {
       ? obj.status === true || obj.status === "success" || obj.status === "ok"
       : true;
 
-  const message = (typeof obj.message === "string" && obj.message) ||
+  const rawMessage = (typeof obj.message === "string" && obj.message) ||
     (typeof obj.status === "string" && obj.status) ||
     (success ? "Operation completed successfully" : "Operation failed");
+  const message = normalizeStatusMessage(rawMessage, success);
 
   // Collect remaining fields as details
   const details: Record<string, unknown> = {};

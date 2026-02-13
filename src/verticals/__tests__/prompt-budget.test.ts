@@ -4,7 +4,7 @@ const MAX_PROMPT_WORDS = {
   food: 470,
   style: 470,
   dining: 460,
-  foodorder: 480,
+  foodorder: 490,
 } as const;
 
 function countWords(text: string): number {

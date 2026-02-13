@@ -7,19 +7,18 @@ export const foodVertical: VerticalConfig = {
   id: "food",
   name: "NutriCart",
   tabName: "Nutrition",
-  tagline: "AI nutrition assistant with instant grocery delivery",
   description:
-    "Get personalized meal plans, recipes with macros, and order ingredients from Instamart — all in one conversation.",
+    "A nutrition coach that plans your meals with macros, walks you through recipes, and orders every ingredient from Instamart.",
   color: "food",
   icon: "Salad",
   systemPrompt: buildSystemPrompt(foodPromptProfile),
   promptProfileId: foodPromptProfile.id,
   welcomeMessage:
-    "Hi! I'm NutriCart. Tell me your nutrition goals — meal prep, a specific diet, or just eating healthier — and I'll plan meals and order ingredients from Instamart.",
+    "Tell me your nutrition goals — a diet you're following, a calorie target, or a meal you want to prep. I'll design recipes with full macro breakdowns, walk you through the steps, and then find and order every ingredient from Instamart.",
   examplePrompts: [
-    "Plan a high-protein vegetarian meal prep for the week",
-    "I need ingredients for a keto dinner for two",
-    "Help me build a 2000-calorie balanced meal plan",
+    "I'm on a high-protein vegetarian diet, plan my meals for the week",
+    "Give me a keto dinner recipe for two with a full macro breakdown",
+    "I want to eat under 2000 calories today — plan all three meals and order the groceries",
   ],
   mcpServer: MCP_SERVERS.instamart,
 };

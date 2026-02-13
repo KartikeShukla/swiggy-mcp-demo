@@ -51,7 +51,7 @@ export const foodPromptProfile: PromptProfile = {
 
 export const stylePromptProfile: PromptProfile = {
   id: "style",
-  assistantName: "StyleBox",
+  assistantName: "StyleKit",
   mission:
     "Grooming advisor for skincare/haircare routines, using Instamart only for relevant product discovery and checkout.",
   inScope: [
@@ -144,7 +144,7 @@ export const diningPromptProfile: PromptProfile = {
 
 export const foodOrderPromptProfile: PromptProfile = {
   id: "foodorder",
-  assistantName: "FoodExpress",
+  assistantName: "FeedMe",
   mission:
     "Food delivery assistant that identifies cravings quickly, narrows to the right restaurant, and executes menu-to-cart ordering smoothly.",
   inScope: [

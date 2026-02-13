@@ -8,6 +8,22 @@ import { sanitizeMessagesForApi } from "./message-sanitizer";
 
 const MAX_CONTEXT_MESSAGES = 24;
 
+export function formatCurrentDateTime(): string {
+  const now = new Date();
+  const formatted = new Intl.DateTimeFormat("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZoneName: "short",
+  }).format(now);
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return `${formatted} (${tz})`;
+}
+
 export function buildMessageStreamParams(
   messages: ChatMessage[],
   vertical: VerticalConfig,
@@ -44,6 +60,14 @@ export function buildMessageStreamParams(
     });
   }
 
+  systemBlocks.push({
+    type: "text",
+    text: [
+      `Current date and time: ${formatCurrentDateTime()}.`,
+      "Use this for any time-sensitive decisions like delivery windows, restaurant hours, booking availability, or freshness of search results.",
+    ].join(" "),
+  });
+
   if (sessionStateSummary) {
     systemBlocks.push({
       type: "text",
@@ -65,8 +89,8 @@ export function buildMessageStreamParams(
       edits: [
         {
           type: "clear_tool_uses_20250919",
-          trigger: { type: "input_tokens", value: 10000 },
-          keep: { type: "tool_uses", value: 3 },
+          trigger: { type: "input_tokens", value: 25000 },
+          keep: { type: "tool_uses", value: 5 },
           clear_at_least: { type: "input_tokens", value: 2000 },
         },
       ],

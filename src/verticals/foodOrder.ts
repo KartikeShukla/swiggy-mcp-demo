@@ -5,21 +5,20 @@ import { foodOrderPromptProfile } from "./prompt-spec/profiles";
 
 export const foodOrderVertical: VerticalConfig = {
   id: "foodorder",
-  name: "FoodExpress",
+  name: "FeedMe",
   tabName: "Order",
-  tagline: "AI food ordering assistant with restaurant delivery",
   description:
-    "Discover restaurants, browse menus, build your order, and get food delivered — all through a natural conversation.",
+    "Go from a craving to a delivered meal. It finds restaurants, dives into their menu, builds your cart, and places the order.",
   color: "foodorder",
   icon: "Bike",
   systemPrompt: buildSystemPrompt(foodOrderPromptProfile),
   promptProfileId: foodOrderPromptProfile.id,
   welcomeMessage:
-    "Hey! I'm FoodExpress. Tell me what you're craving — a specific dish, cuisine, or restaurant — and I'll help you order food delivered to your door.",
+    "What are you in the mood for? Name a dish, a cuisine, or even just a vibe. I'll find restaurants that match, then once you pick one, I'll pull up the menu so you can build your order and get it delivered.",
   examplePrompts: [
-    "I'm craving butter chicken, find nearby restaurants",
-    "Show me top-rated biryani places in my area",
-    "What are some good pizza options under 500 rupees?",
+    "I'm craving butter chicken — find the best-rated places nearby",
+    "I want to order pizza for 4 people, keep it under ₹1500",
+    "Surprise me — something South Indian and spicy, whatever's highly rated around me",
   ],
   mcpServer: MCP_SERVERS.food,
 };
