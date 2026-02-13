@@ -12,12 +12,16 @@ export function ChatInput({
   disabled: boolean;
 }) {
   const [text, setText] = useState("");
+  const [isMultiline, setIsMultiline] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, TEXTAREA_MAX_HEIGHT)}px`;
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = `${Math.min(scrollHeight, TEXTAREA_MAX_HEIGHT)}px`;
+      // Single-line height is ~44px (11px min-h + padding). Treat >48px as multiline.
+      setIsMultiline(scrollHeight > 48);
     }
   }, [text]);
 
@@ -40,8 +44,9 @@ export function ChatInput({
       <div className="mx-auto">
         <div
           className={cn(
-            "flex items-center gap-2 rounded-full border-[1.5px] border-border dark:border-stone-600 bg-background/95 pl-4 pr-2 py-2 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)]",
+            "flex gap-2 border-[1.5px] border-border dark:border-stone-600 bg-background/95 pl-4 pr-2 py-2 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)] transition-[border-radius] duration-150",
             "focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/60",
+            isMultiline ? "items-end rounded-3xl" : "items-center rounded-full",
           )}
         >
           <textarea
@@ -53,7 +58,7 @@ export function ChatInput({
             aria-label="Ask anything"
             rows={1}
             disabled={disabled}
-            className="min-h-11 self-center flex-1 resize-none border-0 bg-transparent py-[11px] text-sm leading-[22px] text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
+            className="min-h-11 flex-1 resize-none border-0 bg-transparent py-[11px] text-sm leading-[22px] text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
           />
           <Button
             onClick={handleSubmit}
