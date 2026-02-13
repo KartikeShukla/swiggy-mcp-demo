@@ -4,6 +4,7 @@ import { verticals } from "@/verticals";
 import type { VerticalConfig, ParsedAddress, ChatAction, ParsedProduct, CartState } from "@/lib/types";
 import { useChat } from "@/hooks/useChat";
 import { useCart } from "@/hooks/useCart";
+import { sanitizeUntrustedPromptText } from "@/lib/prompt-safety";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
@@ -179,7 +180,7 @@ function ChatViewInner({
       if (!message) return;
       const menuOpenMatch = message.match(/^Open menu for restaurant:\s*(.+)$/i);
       if (menuOpenMatch?.[1]) {
-        setLockedRestaurant(menuOpenMatch[1].trim());
+        setLockedRestaurant(sanitizeUntrustedPromptText(menuOpenMatch[1], 80));
       }
       applyFoodOrderOptimisticAction(message);
       void sendMessage(message);
@@ -190,19 +191,19 @@ function ChatViewInner({
   const handleUnifiedAddToCart = useCallback(async () => {
     if (!pendingSelectedItems.length) return;
     const parts = pendingSelectedItems.map(
-      (entry) => `${entry.quantity}x ${entry.product.name}`,
+      (entry) => `${entry.quantity}x ${sanitizeUntrustedPromptText(entry.product.name, 80)}`,
     );
     const addToCartMessage = vertical.id === "foodorder"
       ? [
           "Cart update request (menu mode):",
           lockedRestaurant
-            ? `Selected restaurant: ${lockedRestaurant}.`
+            ? `Selected restaurant: ${sanitizeUntrustedPromptText(lockedRestaurant, 80)}.`
             : "Selected restaurant: currently opened menu context.",
           `Add to cart: ${parts.join(", ")}.`,
           `Structured items: ${JSON.stringify(
             pendingSelectedItems.map((entry) => ({
               item_id: entry.product.id,
-              name: entry.product.name,
+              name: sanitizeUntrustedPromptText(entry.product.name, 80),
               quantity: entry.quantity,
             })),
           )}.`,
@@ -317,7 +318,7 @@ function ChatViewInner({
           showCloseButton={false}
           overlayClassName="backdrop-blur-[3px]"
           onCloseAutoFocus={(event) => event.preventDefault()}
-          className="p-0 min-h-0 h-auto max-h-[calc(100%-var(--safe-top,0px)-1.5rem)] pb-[calc(var(--safe-bottom,0px)+0.5rem)]"
+          className="min-h-0 p-0 flex flex-col"
         >
           {effectiveCart && (
             <CartPanel

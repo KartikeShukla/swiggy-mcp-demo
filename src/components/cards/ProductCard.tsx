@@ -1,5 +1,6 @@
 import { Package, Plus, Minus } from "lucide-react";
 import type { ParsedProduct } from "@/lib/types";
+import { getSafeImageSrc } from "@/lib/url-safety";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -16,6 +17,7 @@ export function ProductCard({
 }) {
   const unavailable = product.available === false;
   const hasDiscount = product.mrp && product.price && product.mrp > product.price;
+  const imageSrc = getSafeImageSrc(product.image);
 
   return (
     <Card
@@ -25,9 +27,9 @@ export function ProductCard({
     >
       {/* Image */}
       <div className="flex h-24 items-center justify-center rounded-t-2xl bg-muted overflow-hidden">
-        {product.image ? (
+        {imageSrc ? (
           <img
-            src={product.image}
+            src={imageSrc}
             alt={product.name}
             className="h-full w-full rounded-t-2xl object-cover"
           />

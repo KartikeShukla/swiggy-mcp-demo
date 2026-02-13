@@ -1,10 +1,10 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, X } from "lucide-react";
 import type { CartState } from "@/lib/types";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
-  SheetDescription,
   SheetTitle,
   SheetFooter,
 } from "@/components/ui/sheet";
@@ -22,15 +22,28 @@ export function OrderConfirmation({
 }) {
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="max-h-[82dvh] p-0">
-        <SheetHeader>
-          <SheetTitle className="text-base">Are you sure you want to place this COD order?</SheetTitle>
-          <SheetDescription>
+      <SheetContent
+        side="bottom"
+        showCloseButton={false}
+        overlayClassName="backdrop-blur-[3px]"
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        className="min-h-0 p-0"
+      >
+        <SheetHeader className="px-4 pb-3 pt-5">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+            <span aria-hidden className="h-8 w-8" />
+            <SheetTitle className="text-base text-center">Are you sure you want to place this COD order?</SheetTitle>
+            <SheetClose className="ring-offset-background focus-visible:ring-ring justify-self-end inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/90 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none">
+              <X className="size-4" />
+              <span className="sr-only">Close</span>
+            </SheetClose>
+          </div>
+          <p className="pt-1 text-center text-sm text-muted-foreground">
             Review your order summary before placing this non-cancellable order.
-          </SheetDescription>
+          </p>
         </SheetHeader>
 
-        <div className="px-4">
+        <div className="space-y-3 px-4">
           {/* Order summary */}
           <div className="space-y-2 rounded-xl border border-border/80 bg-card p-3">
             {cart.items.map((item) => (
@@ -49,7 +62,7 @@ export function OrderConfirmation({
           </div>
 
           {/* Warning */}
-          <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 p-3 dark:bg-amber-950/30">
+          <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 dark:bg-amber-950/30">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
             <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
               If you continue, that will place a <strong>non-cancellable</strong> order through your Swiggy account.

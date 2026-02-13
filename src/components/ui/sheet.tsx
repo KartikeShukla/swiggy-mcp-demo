@@ -84,7 +84,7 @@ function SheetContent({
           resolvedSide === "top" &&
             "inset-x-0 top-0 h-auto border-b data-[state=open]:translate-y-0 data-[state=closed]:-translate-y-full",
           resolvedSide === "bottom" &&
-            "inset-x-0 bottom-0 min-h-[50dvh] max-h-[88dvh] overflow-hidden rounded-t-[1.75rem] border border-border/70 border-b-0 bg-background pb-[calc(var(--safe-bottom)+0.75rem)] shadow-[0_-16px_40px_rgba(0,0,0,0.18)] data-[state=open]:translate-y-0 data-[state=closed]:translate-y-full",
+            "inset-x-0 bottom-0 max-h-[calc(100%-var(--safe-top,50px))] overflow-hidden rounded-t-[1.75rem] border border-border/70 border-b-0 bg-background pb-[calc(var(--safe-bottom)+0.75rem)] shadow-[0_-16px_40px_rgba(0,0,0,0.18)] data-[state=open]:translate-y-0 data-[state=closed]:translate-y-full",
           className,
         )}
         {...props}

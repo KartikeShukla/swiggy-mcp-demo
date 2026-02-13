@@ -1,39 +1,10 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import type { ChatMessage, ContentBlock, VerticalConfig, TokenUsage, ParsedAddress } from "@/lib/types";
+import type { ChatMessage, VerticalConfig, TokenUsage, ParsedAddress } from "@/lib/types";
 import { useChatApi } from "./useChatApi";
 import { useChatPersistence } from "./useChatPersistence";
 import { buildSessionStateSummary } from "@/integrations/anthropic/session-summary";
+import { logger } from "@/lib/logger";
 import type { VerticalId } from "@/verticals/prompt-spec/types";
-
-const MAX_TOOL_RESULT_CHARS = 3000;
-
-function truncateToolResultsForStorage(blocks: ContentBlock[]): ContentBlock[] {
-  return blocks.map((block) => {
-    if (block.type !== "mcp_tool_result") return block;
-    const { content } = block;
-    if (typeof content === "string") {
-      if (content.length <= MAX_TOOL_RESULT_CHARS) return block;
-      return { ...block, content: content.slice(0, MAX_TOOL_RESULT_CHARS) };
-    }
-    if (Array.isArray(content)) {
-      let changed = false;
-      const mapped = (content as Array<Record<string, unknown>>).map((tb) => {
-        if (
-          typeof tb === "object" &&
-          tb.type === "text" &&
-          typeof tb.text === "string" &&
-          tb.text.length > MAX_TOOL_RESULT_CHARS
-        ) {
-          changed = true;
-          return { ...tb, text: tb.text.slice(0, MAX_TOOL_RESULT_CHARS) };
-        }
-        return tb;
-      });
-      return changed ? { ...block, content: mapped } : block;
-    }
-    return block;
-  });
-}
 
 const SUPPORTED_VERTICAL_IDS: VerticalId[] = [
   "food",
@@ -236,10 +207,9 @@ export function useChat(
             /timed out/i.test(block.text),
         );
 
-        const truncatedContent = truncateToolResultsForStorage(normalizedContent);
         const assistantMessage: ChatMessage = {
           role: "assistant",
-          content: truncatedContent,
+          content: normalizedContent,
           timestamp: Date.now(),
         };
 
@@ -249,7 +219,7 @@ export function useChat(
         setTokenUsage(response.usage);
         cumulativeUsageRef.current.input_tokens += response.usage.input_tokens;
         cumulativeUsageRef.current.output_tokens += response.usage.output_tokens;
-        console.log("[Cumulative Token Usage]", { ...cumulativeUsageRef.current });
+        logger.debug("[Cumulative Token Usage]", { ...cumulativeUsageRef.current });
         return !timedOut;
       } catch (err) {
         const classified = classifyError(err);

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { ChatMessage, CartState, ContentBlock, McpToolUseBlock } from "@/lib/types";
 import { findPrecedingToolName } from "@/lib/content-blocks";
+import { logger } from "@/lib/logger";
 import { parseToolResult } from "@/lib/parsers";
 
 export function useCart(messages: ChatMessage[], verticalId: string) {
@@ -43,7 +44,7 @@ function findLatestCartState(
       const toolInput = matchedUse?.input;
 
       const parsed = parseToolResult(toolName, block.content, verticalId, toolInput);
-      console.log("[useCart] Checking tool result:", {
+      logger.debug("[useCart] Checking tool result", {
         toolName,
         parsedType: parsed.type,
         hasCart: parsed.type === "cart",

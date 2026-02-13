@@ -1,20 +1,21 @@
 # Vertical: style (StyleKit)
 
 ## Goal
+Provide grooming-focused recommendations and Instamart shopping flow.
 
-Grooming/skincare/haircare recommendations + Instamart product/cart flow.
+## Primary Runtime Path
+1. Detect direct-shopping vs advisory routine mode.
+2. Advisory mode: infer concern + skin/hair context.
+3. Recommend concise routine or product stack.
+4. Search and render product cards.
+5. Confirm before final order placement.
 
-## Primary Paths
+## Key Signals
+- Concern words (acne, dandruff, beard, wedding prep).
+- Skin and hair type cues.
+- Budget and product preference hints.
 
-1. gather concern and type context
-2. suggest routine/product set
-3. fetch product cards
-4. compare and build cart
-5. explicit checkout confirmation
-
-## Key Edge Cases
-
-1. skincare vs haircare context branch
-2. vague user goals
-3. brand unavailable fallback
-4. budget vs premium recommendation branch
+## Edge Cases
+- Partial context where skin/hair type is missing.
+- Brand unavailability requiring near-equivalent alternatives.
+- Repeated cart edits across multiple product groups.

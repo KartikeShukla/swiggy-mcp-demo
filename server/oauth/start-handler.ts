@@ -2,6 +2,11 @@ import type { IncomingMessage, ServerResponse } from "http";
 import type { PendingAuth } from "./types";
 import { createPkce } from "./pkce";
 import { discoverSwiggyOAuth } from "./discovery";
+import {
+  escapeHtml,
+  sanitizeHostHeader,
+  writeSecureHtmlResponse,
+} from "./security";
 
 function firstHeaderValue(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0];
@@ -30,24 +35,18 @@ export async function handleAuthStart(
 
     const { codeVerifier, codeChallenge, state } = await createPkce();
     const protocol = resolveRequestProtocol(req);
-    const host = req.headers.host;
+    const host = req.headers.host ? sanitizeHostHeader(req.headers.host) : null;
     if (!host) {
-      throw new Error("Missing Host header");
+      throw new Error("Invalid Host header");
     }
 
     const redirectUri = `${protocol}://${host}/api/auth/callback`;
     pendingAuths.set(state, {
       codeVerifier,
       redirectUri,
+      tokenEndpoint,
       createdAt: Date.now(),
     });
-
-    const isSecure = protocol === "https";
-    const secureSuffix = isSecure ? "; Secure" : "";
-    res.setHeader(
-      "Set-Cookie",
-      `mcp_token_endpoint=${encodeURIComponent(tokenEndpoint)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600${secureSuffix}`,
-    );
 
     const authUrl = new URL(authorizationEndpoint);
     authUrl.searchParams.set("response_type", "code");
@@ -67,11 +66,11 @@ export async function handleAuthStart(
     res.writeHead(302, { Location: authUrl.toString() });
     res.end();
   } catch (err) {
-    res.writeHead(500, { "Content-Type": "text/html" });
-    res.end(`
+    const message = escapeHtml(err instanceof Error ? err.message : "Unknown error");
+    writeSecureHtmlResponse(res, 500, `
       <html><body>
         <h3>OAuth discovery failed</h3>
-        <p>${err instanceof Error ? err.message : "Unknown error"}.</p>
+        <p>${message}.</p>
         <p>Please check your network or VPN and retry.</p>
         <p>Use the "Paste token" option instead.</p>
         <script>setTimeout(() => window.close(), 5000);</script>

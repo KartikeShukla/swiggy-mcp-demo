@@ -141,4 +141,13 @@ describe("renderMarkdownLite", () => {
     expect(container.querySelector("ul")).not.toBeNull();
     expect(container).toHaveTextContent("Some text");
   });
+
+  it("renders raw HTML-like content as inert text", () => {
+    const nodes = renderMarkdownLite("<script>alert('xss')</script>");
+    render(createElement("div", { "data-testid": "inert-html" }, ...nodes));
+    const container = screen.getByTestId("inert-html");
+
+    expect(container).toHaveTextContent("<script>alert('xss')</script>");
+    expect(container.querySelector("script")).toBeNull();
+  });
 });

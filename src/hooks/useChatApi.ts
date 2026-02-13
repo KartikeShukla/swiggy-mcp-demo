@@ -9,6 +9,7 @@ import type {
 import { classifyApiError } from "@/integrations/anthropic/error-classifier";
 import { buildMessageStreamParams } from "@/integrations/anthropic/request-builder";
 import { runMessageStream } from "@/integrations/anthropic/stream-runner";
+import { logger } from "@/lib/logger";
 import {
   isRetryableAnthropicError,
   isRateLimitError,
@@ -56,7 +57,7 @@ export function useChatApi(
           const rateLimited = isRateLimitError(err);
           if (rateLimited) {
             const headers = extractRateLimitHeaders(err);
-            if (headers) console.warn("[Rate Limit Hit]", headers);
+            if (headers) logger.debug("[Rate Limit Hit]", headers);
           }
 
           const maxRetries = rateLimited ? RATE_LIMIT_MAX_RETRIES : CHAT_REQUEST_MAX_RETRIES;

@@ -1,38 +1,27 @@
 # Runtime Sequences
 
-## OAuth Sequence
-
-1. UI opens `/api/auth/start`.
-2. Middleware fetches OAuth discovery from Swiggy.
-3. Middleware creates PKCE + state, stores pending auth.
-4. Browser is redirected to provider authorization endpoint.
-5. Provider redirects to `/api/auth/callback`.
-6. Middleware exchanges auth code for access token.
-7. Popup posts token to opener via `postMessage`.
-8. `useAuth` persists token and onboarding advances.
+## OAuth Sequence (Dev)
+1. Open `/api/auth/start`.
+2. Discover endpoints + generate PKCE.
+3. Redirect to provider auth endpoint.
+4. Return to `/api/auth/callback` with code.
+5. Exchange code for token.
+6. `postMessage` token to opener.
+7. Persist token in `useAuth`.
 
 ## Chat + MCP Sequence
-
-1. User submits message in `ChatInput`.
-2. `useChat` appends user message and toggles loading.
-3. `useChatApi` composes request:
-- model, compiled system prompt, optional state/address blocks, messages
-- `mcp_servers` + `tools` when Swiggy token exists
-- beta flags and context management edits
-4. Anthropic stream emits content blocks.
-5. Retry loop guard aborts stream on repeated MCP tool failures.
-6. `useChat` appends assistant content blocks.
-7. Message UI groups blocks and parses tool results into card types.
-8. Card actions trigger new user-like follow-up messages.
+1. User sends message.
+2. `useChat` updates history and loading state.
+3. `useChatApi` builds params and starts stream.
+4. Stream emits text/tool blocks.
+5. Tool errors are monitored and may abort stream.
+6. Assistant content is sanitized and appended.
+7. UI parses tool results into typed cards.
 
 ## Parser Rendering Sequence
-
-1. `unwrapContent` normalizes MCP tool result payload.
-2. `extractPayload` peels nested response wrappers.
-3. `parseToolResult` routes by tool-name heuristics.
-4. Fallback order:
-- shape detect
-- status parser
-- info parser
-- raw passthrough
-5. `ItemCardGrid` renders typed cards by `ParsedToolResult`.
+1. Normalize raw tool result payload.
+2. Extract nested payload.
+3. Route by tool name where possible.
+4. Apply shape detection fallback.
+5. Fallback to status/info/raw.
+6. Render through `ItemCardGrid`.
