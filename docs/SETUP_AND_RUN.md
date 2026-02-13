@@ -31,6 +31,12 @@ npm run docs:verify
 2. Connect Swiggy via OAuth popup.
 3. Pick address (or use fallback path).
 
+## Security Baseline (Demo)
+- Credentials are stored in browser localStorage by design for demo simplicity.
+- Use low-privilege/test credentials and avoid shared browser sessions.
+- Keep OAuth flow dev-only; production hosting should use an external secure token path.
+- Clear local data and revoke tokens after testing.
+
 ## Validation Workflow
 Use this order for documentation + behavior changes:
 1. `npm run docs:sync`

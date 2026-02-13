@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import type { CartState, ChatAction } from "@/lib/types";
+import { sanitizeUntrustedPromptText } from "@/lib/prompt-safety";
+import { getSafeImageSrc } from "@/lib/url-safety";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { Button } from "@/components/ui/button";
 import { SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -44,56 +46,64 @@ export function CartPanel({
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2">
         <div className="flex flex-col rounded-2xl border border-border/80 bg-card p-2.5">
           <div className="space-y-2.5">
-            {cart.items.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-3">
-                {item.image ? (
-                  <img src={item.image} alt={item.name} className="h-12 w-12 shrink-0 rounded-md object-cover" />
-                ) : (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted/70">
-                    <ShoppingBag className="h-4 w-4 text-muted-foreground/30" />
+            {cart.items.map((item) => {
+              const safeImageSrc = getSafeImageSrc(item.image);
+              const safeItemName = sanitizeUntrustedPromptText(item.name, 80);
+              return (
+                <div key={item.id} className="flex items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-3">
+                  {safeImageSrc ? (
+                    <img
+                      src={safeImageSrc}
+                      alt={safeItemName}
+                      className="h-12 w-12 shrink-0 rounded-md object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted/70">
+                      <ShoppingBag className="h-4 w-4 text-muted-foreground/30" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate text-[13px] font-medium leading-tight text-card-foreground">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">₹{item.price} each</p>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="truncate text-[13px] font-medium leading-tight text-card-foreground">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">₹{item.price} each</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    className="rounded-full"
-                    aria-label={
-                      item.quantity <= 1
-                        ? `Remove ${item.name} from cart`
-                        : `Decrease ${item.name} quantity to ${item.quantity - 1}`
-                    }
-                    onClick={() => {
-                      if (item.quantity <= 1) {
-                        onAction(`Remove ${item.name} from my cart`);
-                      } else {
-                        onAction(`Change ${item.name} quantity to ${item.quantity - 1}`);
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      className="rounded-full"
+                      aria-label={
+                        item.quantity <= 1
+                          ? `Remove ${safeItemName} from cart`
+                          : `Decrease ${safeItemName} quantity to ${item.quantity - 1}`
                       }
-                    }}
-                  >
-                    {item.quantity <= 1 ? (
-                      <Trash2 className="h-3.5 w-3.5 text-destructive/70" />
-                    ) : (
-                      <Minus className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                  <span className="w-6 text-center text-xs font-bold tabular-nums">{item.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    className="rounded-full"
-                    aria-label={`Increase ${item.name} quantity to ${item.quantity + 1}`}
-                    onClick={() => onAction(`Change ${item.name} quantity to ${item.quantity + 1}`)}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
+                      onClick={() => {
+                        if (item.quantity <= 1) {
+                          onAction(`Remove ${safeItemName} from my cart`);
+                        } else {
+                          onAction(`Change ${safeItemName} quantity to ${item.quantity - 1}`);
+                        }
+                      }}
+                    >
+                      {item.quantity <= 1 ? (
+                        <Trash2 className="h-3.5 w-3.5 text-destructive/70" />
+                      ) : (
+                        <Minus className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                    <span className="w-6 text-center text-xs font-bold tabular-nums">{item.quantity}</span>
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      className="rounded-full"
+                      aria-label={`Increase ${safeItemName} quantity to ${item.quantity + 1}`}
+                      onClick={() => onAction(`Change ${safeItemName} quantity to ${item.quantity + 1}`)}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

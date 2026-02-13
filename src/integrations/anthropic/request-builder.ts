@@ -4,6 +4,10 @@ import {
   MODEL_ID,
 } from "@/lib/constants";
 import type { ChatMessage, ParsedAddress, VerticalConfig } from "@/lib/types";
+import {
+  quotePromptValue,
+  sanitizeUntrustedPromptText,
+} from "@/lib/prompt-safety";
 import { sanitizeMessagesForApi, compactOldMessages, truncateToolResultsInMessages } from "./message-sanitizer";
 
 const MAX_CONTEXT_MESSAGES = 8;
@@ -31,6 +35,9 @@ export function buildMessageStreamParams(
   selectedAddress?: ParsedAddress | null,
   sessionStateSummary?: string | null,
 ): Record<string, unknown> {
+  const safeSessionStateSummary = sessionStateSummary
+    ? sanitizeUntrustedPromptText(sessionStateSummary, 500)
+    : null;
   const { sanitizedMessages } = sanitizeMessagesForApi(messages);
   const compactedMessages = compactOldMessages(sanitizedMessages);
   const boundedMessages = compactedMessages.slice(-MAX_CONTEXT_MESSAGES);
@@ -53,8 +60,8 @@ export function buildMessageStreamParams(
     systemBlocks.push({
       type: "text",
       text: [
-        `Active delivery address ID: "${selectedAddress.id}".`,
-        `Active default delivery address: "${selectedAddress.label}" — ${selectedAddress.address}.`,
+        `Active delivery address ID: ${quotePromptValue(selectedAddress.id, 80)}.`,
+        `Active default delivery address: ${quotePromptValue(selectedAddress.label, 80)} — ${quotePromptValue(selectedAddress.address, 200)}.`,
         "Treat this as the user's current location for search, availability, and checkout.",
         "Do not call address/location tools unless the user explicitly asks to change location or a tool requires address correction.",
       ].join(" "),
@@ -70,10 +77,10 @@ export function buildMessageStreamParams(
     ].join(" "),
   });
 
-  if (sessionStateSummary) {
+  if (safeSessionStateSummary) {
     systemBlocks.push({
       type: "text",
-      text: `Conversation state snapshot: ${sessionStateSummary}.`,
+      text: `Conversation state snapshot: ${safeSessionStateSummary}.`,
     });
   }
 

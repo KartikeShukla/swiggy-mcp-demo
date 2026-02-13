@@ -1,3 +1,5 @@
+import { validateOAuthEndpointUrl } from "./security";
+
 export interface OAuthDiscoveryResult {
   authorizationEndpoint: string;
   tokenEndpoint: string;
@@ -18,9 +20,21 @@ function asStringArray(value: unknown): string[] | undefined {
 }
 
 function shapeDiscoveryDocument(doc: Record<string, unknown>): OAuthDiscoveryResult | null {
-  const authorizationEndpoint = asNonEmptyString(doc.authorization_endpoint);
-  const tokenEndpoint = asNonEmptyString(doc.token_endpoint);
-  if (!authorizationEndpoint || !tokenEndpoint) return null;
+  const rawAuthorizationEndpoint = asNonEmptyString(doc.authorization_endpoint);
+  const rawTokenEndpoint = asNonEmptyString(doc.token_endpoint);
+  if (!rawAuthorizationEndpoint || !rawTokenEndpoint) return null;
+
+  let authorizationEndpoint: string;
+  let tokenEndpoint: string;
+  try {
+    authorizationEndpoint = validateOAuthEndpointUrl(
+      rawAuthorizationEndpoint,
+      "authorization endpoint",
+    );
+    tokenEndpoint = validateOAuthEndpointUrl(rawTokenEndpoint, "token endpoint");
+  } catch {
+    return null;
+  }
 
   return {
     authorizationEndpoint,
@@ -128,9 +142,17 @@ export async function discoverSwiggyOAuth(): Promise<OAuthDiscoveryResult> {
     asNonEmptyString(process.env.SWIGGY_OAUTH_SCOPES)?.split(/[,\s]+/).filter(Boolean),
   );
   if (envAuthorizationEndpoint && envTokenEndpoint) {
+    const authorizationEndpoint = validateOAuthEndpointUrl(
+      envAuthorizationEndpoint,
+      "authorization endpoint",
+    );
+    const tokenEndpoint = validateOAuthEndpointUrl(
+      envTokenEndpoint,
+      "token endpoint",
+    );
     return {
-      authorizationEndpoint: envAuthorizationEndpoint,
-      tokenEndpoint: envTokenEndpoint,
+      authorizationEndpoint,
+      tokenEndpoint,
       clientId: envClientId,
       scopes: envScopes,
     };

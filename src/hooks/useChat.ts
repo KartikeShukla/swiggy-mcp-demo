@@ -3,6 +3,7 @@ import type { ChatMessage, VerticalConfig, TokenUsage, ParsedAddress } from "@/l
 import { useChatApi } from "./useChatApi";
 import { useChatPersistence } from "./useChatPersistence";
 import { buildSessionStateSummary } from "@/integrations/anthropic/session-summary";
+import { logger } from "@/lib/logger";
 import type { VerticalId } from "@/verticals/prompt-spec/types";
 
 const SUPPORTED_VERTICAL_IDS: VerticalId[] = [
@@ -218,7 +219,7 @@ export function useChat(
         setTokenUsage(response.usage);
         cumulativeUsageRef.current.input_tokens += response.usage.input_tokens;
         cumulativeUsageRef.current.output_tokens += response.usage.output_tokens;
-        console.log("[Cumulative Token Usage]", { ...cumulativeUsageRef.current });
+        logger.debug("[Cumulative Token Usage]", { ...cumulativeUsageRef.current });
         return !timedOut;
       } catch (err) {
         const classified = classifyError(err);

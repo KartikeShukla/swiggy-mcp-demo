@@ -1,6 +1,10 @@
 import type { IncomingMessage, ServerResponse } from "http";
-import { parseCookies } from "./cookies";
 import type { PendingAuth } from "./types";
+import {
+  escapeHtml,
+  validateOAuthEndpointUrl,
+  writeSecureHtmlResponse,
+} from "./security";
 
 function parseJsonObject(text: string, source: string): Record<string, unknown> {
   if (!text.trim()) {
@@ -28,16 +32,19 @@ export async function handleAuthCallback(
   url: URL,
   pendingAuths: Map<string, PendingAuth>,
 ): Promise<void> {
+  void req;
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const errorParam = url.searchParams.get("error");
 
   if (errorParam) {
-    res.writeHead(200, { "Content-Type": "text/html" });
-    res.end(`
+    const reason = escapeHtml(
+      url.searchParams.get("error_description") || errorParam,
+    );
+    writeSecureHtmlResponse(res, 200, `
       <html><body>
         <h3>Authorization failed</h3>
-        <p>${url.searchParams.get("error_description") || errorParam}</p>
+        <p>${reason}</p>
         <script>setTimeout(() => window.close(), 3000);</script>
       </body></html>
     `);
@@ -45,8 +52,7 @@ export async function handleAuthCallback(
   }
 
   if (!code || !state || !pendingAuths.has(state)) {
-    res.writeHead(400, { "Content-Type": "text/html" });
-    res.end(`
+    writeSecureHtmlResponse(res, 400, `
       <html><body>
         <h3>Invalid callback</h3>
         <p>Missing code or invalid state parameter.</p>
@@ -56,18 +62,14 @@ export async function handleAuthCallback(
     return;
   }
 
-  const { codeVerifier, redirectUri } = pendingAuths.get(state)!;
+  const { codeVerifier, redirectUri, tokenEndpoint } = pendingAuths.get(state)!;
   pendingAuths.delete(state);
 
-  const cookies = parseCookies(req.headers.cookie);
-  const tokenEndpoint = decodeURIComponent(cookies.mcp_token_endpoint || "");
-
   if (!tokenEndpoint) {
-    res.writeHead(400, { "Content-Type": "text/html" });
-    res.end(`
+    writeSecureHtmlResponse(res, 400, `
       <html><body>
         <h3>Missing token endpoint</h3>
-        <p>Cookie expired. Please try again.</p>
+        <p>OAuth session expired. Please try again.</p>
         <script>setTimeout(() => window.close(), 3000);</script>
       </body></html>
     `);
@@ -75,7 +77,12 @@ export async function handleAuthCallback(
   }
 
   try {
-    const tokenRes = await fetch(tokenEndpoint, {
+    const safeTokenEndpoint = validateOAuthEndpointUrl(
+      tokenEndpoint,
+      "token endpoint",
+    );
+
+    const tokenRes = await fetch(safeTokenEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -100,16 +107,17 @@ export async function handleAuthCallback(
 
     if (tokenData.access_token) {
       const accessToken = tokenData.access_token as string;
-      res.writeHead(200, { "Content-Type": "text/html" });
-      res.end(`
+      writeSecureHtmlResponse(res, 200, `
         <html><body>
           <h3>Connected to Swiggy!</h3>
           <p>You can close this window.</p>
           <script>
-            window.opener.postMessage({
-              type: "swiggy-oauth-token",
-              token: ${JSON.stringify(accessToken)}
-            }, window.location.origin);
+            if (window.opener && !window.opener.closed) {
+              window.opener.postMessage({
+                type: "swiggy-oauth-token",
+                token: ${JSON.stringify(accessToken)}
+              }, window.location.origin);
+            }
             setTimeout(() => window.close(), 1500);
           </script>
         </body></html>
@@ -123,11 +131,11 @@ export async function handleAuthCallback(
         "Token exchange failed",
     );
   } catch (err) {
-    res.writeHead(500, { "Content-Type": "text/html" });
-    res.end(`
+    const message = escapeHtml(err instanceof Error ? err.message : "Unknown error");
+    writeSecureHtmlResponse(res, 500, `
       <html><body>
         <h3>Token exchange failed</h3>
-        <p>${err instanceof Error ? err.message : "Unknown error"}</p>
+        <p>${message}</p>
         <p>Use the "Paste token" option instead.</p>
         <script>setTimeout(() => window.close(), 5000);</script>
       </body></html>

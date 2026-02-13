@@ -1,5 +1,7 @@
 import { UtensilsCrossed, Star, Tag, MapPin } from "lucide-react";
 import type { ChatAction, ParsedRestaurant } from "@/lib/types";
+import { sanitizeUntrustedPromptText } from "@/lib/prompt-safety";
+import { getSafeImageSrc } from "@/lib/url-safety";
 import { MAX_OFFERS_SHOWN } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,14 +18,17 @@ export function RestaurantCard({
   actionLabel?: string;
   actionMessage?: (name: string) => string;
 }) {
+  const safeRestaurantName = sanitizeUntrustedPromptText(restaurant.name, 80);
+  const imageSrc = getSafeImageSrc(restaurant.image);
+
   return (
     <Card className="h-full w-full rounded-2xl py-0 gap-0">
       {/* Image */}
       <div className="relative flex h-24 items-center justify-center rounded-t-2xl bg-muted overflow-hidden">
-        {restaurant.image ? (
+        {imageSrc ? (
           <img
-            src={restaurant.image}
-            alt={restaurant.name}
+            src={imageSrc}
+            alt={safeRestaurantName}
             className="h-full w-full rounded-t-2xl object-cover"
           />
         ) : (
@@ -77,11 +82,11 @@ export function RestaurantCard({
           onClick={() =>
             onAction(
               actionMessage
-                ? actionMessage(restaurant.name)
-                : `Check availability at ${restaurant.name}`
+                ? actionMessage(safeRestaurantName)
+                : `Check availability at ${safeRestaurantName}`
             )
           }
-          aria-label={`${actionLabel} ${restaurant.name}`}
+          aria-label={`${actionLabel} ${safeRestaurantName}`}
           variant="outline"
           size="sm"
           className="mt-auto w-full border-orange-500/30 text-xs font-medium text-orange-500 transition-colors hover:!border-orange-500 hover:!bg-orange-500 hover:!text-white"

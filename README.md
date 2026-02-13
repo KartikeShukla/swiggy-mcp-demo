@@ -13,6 +13,12 @@ Swiggy MCP demo is a browser-only React SPA that connects Claude to Swiggy MCP s
 - Anthropic executes MCP tools server-side against Swiggy MCP endpoints.
 - Browser persists credentials and per-vertical chat histories in localStorage.
 
+## Security Notes (Demo)
+- This app is intentionally browser-first and stores API/session tokens in localStorage.
+- Use personal test credentials only; avoid shared browser profiles/machines.
+- Do not deploy this as a shared public service without a backend token broker.
+- After demos, clear chats and revoke/disconnect tokens.
+
 ## Quick Start
 ```bash
 npm install

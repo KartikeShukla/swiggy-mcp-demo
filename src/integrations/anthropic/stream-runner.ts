@@ -105,7 +105,7 @@ export async function runMessageStream(
         .cache_read_input_tokens,
     };
 
-    console.log("[Token Usage]", usage);
+    logger.debug("[Token Usage]", usage);
 
     return {
       content: safeContent,
@@ -162,7 +162,7 @@ export async function runMessageStream(
         )?.cache_read_input_tokens,
       };
 
-      console.log(`[Token Usage] (aborted — ${abortCategory})`, usage);
+      logger.debug(`[Token Usage] (aborted — ${abortCategory})`, usage);
 
       return {
         content: ensureNonEmptyContent(

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { ShoppingCart } from "lucide-react";
 import type { ChatAction, ParsedProduct } from "@/lib/types";
+import { sanitizeUntrustedPromptText } from "@/lib/prompt-safety";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "./ProductCard";
@@ -97,7 +98,9 @@ export function ProductGrid({
   );
 
   const handleBulkAdd = () => {
-    const parts = selectedItems.map((p) => `${getQuantity(p.id)}x ${p.name}`);
+    const parts = selectedItems.map(
+      (p) => `${getQuantity(p.id)}x ${sanitizeUntrustedPromptText(p.name, 80)}`,
+    );
     onAction(`Add to cart: ${parts.join(", ")}`);
     setQuantities({});
   };

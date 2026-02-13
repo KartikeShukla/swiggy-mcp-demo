@@ -25,7 +25,7 @@ Verified implementation patterns that are easy to regress.
 
 ## OAuth Discovery Pattern
 - OAuth discovery uses robust candidate probing and fallback paths.
-- Token endpoint is passed through callback via cookie in dev flow.
+- Token endpoint is bound to server-side pending auth state and reused in callback.
 
 ## UI Action Loop Pattern
 - Card interactions emit deterministic action messages through `onAction`.
