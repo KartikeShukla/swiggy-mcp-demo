@@ -273,7 +273,7 @@ function ChatViewInner({
               <Button
                 key={prompt}
                 variant="outline"
-                className="rounded-xl text-xs h-auto py-2 px-3.5 w-full whitespace-normal text-left justify-start leading-relaxed"
+                className="rounded-xl text-xs h-auto py-2 px-3.5 w-full whitespace-normal text-center leading-relaxed"
                 onClick={() => handleAction(prompt)}
                 disabled={loading || !apiKey}
               >
