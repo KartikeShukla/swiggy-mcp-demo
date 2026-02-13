@@ -93,6 +93,88 @@ export function sanitizeAssistantBlocks(blocks: ContentBlock[]): BlockSanitizeRe
   return { blocks: sanitized, droppedBlocksCount };
 }
 
+const TOOL_RESULT_TRUNCATE_THRESHOLD = 500;
+const KEEP_RECENT_MESSAGES_FULL = 4;
+
+function summarizeContent(raw: unknown): string {
+  if (Array.isArray(raw)) {
+    return `[Previous result: ${raw.length} items]`;
+  }
+  if (raw !== null && typeof raw === "object") {
+    const keys = Object.keys(raw as Record<string, unknown>);
+    return `[Previous result: object with keys: ${keys.join(", ")}]`;
+  }
+  return "[Previous result: truncated]";
+}
+
+function tryParseJson(text: string): unknown | null {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function truncateToolResultContent(
+  content: McpToolResultBlock["content"],
+): McpToolResultBlock["content"] {
+  if (typeof content === "string") {
+    if (content.length <= TOOL_RESULT_TRUNCATE_THRESHOLD) return content;
+    const parsed = tryParseJson(content);
+    if (parsed !== null) return summarizeContent(parsed);
+    return content.slice(0, TOOL_RESULT_TRUNCATE_THRESHOLD);
+  }
+
+  if (Array.isArray(content)) {
+    const serialized = JSON.stringify(content);
+    if (serialized.length <= TOOL_RESULT_TRUNCATE_THRESHOLD) return content;
+    return summarizeContent(content);
+  }
+
+  return content;
+}
+
+export function truncateOldToolResults(
+  messages: ChatMessage[],
+  keepRecent = KEEP_RECENT_MESSAGES_FULL,
+): ChatMessage[] {
+  if (messages.length <= keepRecent) return messages;
+
+  const cutoff = messages.length - keepRecent;
+  const result: ChatMessage[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+
+    if (i >= cutoff || msg.role !== "assistant" || typeof msg.content === "string") {
+      result.push(msg);
+      continue;
+    }
+
+    let changed = false;
+    const newBlocks: ContentBlock[] = [];
+
+    for (const block of msg.content) {
+      if (!isToolResult(block)) {
+        newBlocks.push(block);
+        continue;
+      }
+
+      const truncated = truncateToolResultContent(block.content);
+      if (truncated !== block.content) {
+        changed = true;
+        newBlocks.push({ ...block, content: truncated });
+      } else {
+        newBlocks.push(block);
+      }
+    }
+
+    result.push(changed ? { ...msg, content: newBlocks } : msg);
+  }
+
+  return result;
+}
+
 export function sanitizeMessagesForApi(messages: ChatMessage[]): MessageSanitizeResult {
   const sanitizedMessages: ChatMessage[] = [];
   let droppedBlocksCount = 0;

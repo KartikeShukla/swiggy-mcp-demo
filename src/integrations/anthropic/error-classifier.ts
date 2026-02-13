@@ -1,6 +1,9 @@
-interface ApiError {
+import { extractRetryAfterMs } from "./retry-policy";
+
+export interface ApiError {
   status?: number;
   message: string;
+  retryAfterMs?: number;
 }
 
 export function classifyApiError(err: unknown): ApiError {
@@ -22,9 +25,12 @@ export function classifyApiError(err: unknown): ApiError {
         };
       }
       if (status === 429) {
+        const retryAfterMs = extractRetryAfterMs(err) ?? 15_000;
+        const waitSeconds = Math.ceil(retryAfterMs / 1000);
         return {
           status: 429,
-          message: "Rate limit exceeded. Please wait a moment and try again.",
+          message: `Rate limited — try again in ${waitSeconds}s`,
+          retryAfterMs,
         };
       }
       if (status === 529) {
@@ -48,15 +54,21 @@ export function classifyApiError(err: unknown): ApiError {
       };
     }
     if (msg.includes("429")) {
+      const retryAfterMs = extractRetryAfterMs(err) ?? 15_000;
+      const waitSeconds = Math.ceil(retryAfterMs / 1000);
       return {
         status: 429,
-        message: "Rate limit exceeded. Please wait a moment and try again.",
+        message: `Rate limited — try again in ${waitSeconds}s`,
+        retryAfterMs,
       };
     }
     if (/(rate[_\s-]?limit|exceed(?:ed|s)?)/i.test(msg)) {
+      const retryAfterMs = extractRetryAfterMs(err) ?? 15_000;
+      const waitSeconds = Math.ceil(retryAfterMs / 1000);
       return {
         status: 429,
-        message: "Rate limit exceeded. Please wait a moment and try again.",
+        message: `Rate limited — try again in ${waitSeconds}s`,
+        retryAfterMs,
       };
     }
     if (

@@ -10,11 +10,13 @@ function user(content: string): ChatMessage {
 }
 
 describe("buildSessionStateSummary", () => {
-  it("returns summary with datetime even for simple messages", () => {
+  it("returns summary without datetime for simple messages", () => {
     const summary = buildSessionStateSummary([user("hello")], "food");
     expect(summary).not.toBeNull();
-    expect(summary).toContain("datetime=");
-    expect(summary).toMatch(/datetime=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}[+-]\d{2}:\d{2}/);
+    expect(summary).not.toContain("datetime=");
+    expect(summary).toContain("slots=");
+    expect(summary).toContain("intent=");
+    expect(summary).toContain("confirm=");
   });
 
   it("summarizes food context when key slots are present", () => {
@@ -67,14 +69,13 @@ describe("buildSessionStateSummary", () => {
     expect(summary).toContain("restaurant=Behrouz Biryani");
   });
 
-  it("includes datetime signal in ISO format in all summaries", () => {
+  it("does not include datetime signal (handled by request-builder)", () => {
     const summary = buildSessionStateSummary(
       [user("Need a high-protein vegan dinner for 3 people under 700 rupees")],
       "food",
     );
 
-    expect(summary).toContain("datetime=");
-    expect(summary).toMatch(/datetime=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}[+-]\d{2}:\d{2}/);
+    expect(summary).not.toContain("datetime=");
   });
 
   it("adds location lock when selected address exists", () => {

@@ -54,6 +54,8 @@ function ChatViewInner({
     loadingElapsedMs,
     error,
     sendMessage,
+    cooldownRemaining,
+    inputDisabled,
   } = useChat(
     vertical,
     apiKey,
@@ -234,8 +236,8 @@ function ChatViewInner({
 
   return (
     <div className="flex h-full flex-col relative">
-      {/* Error display — pinned to top, in flow so it doesn't overlap content */}
-      {error && (
+      {/* Error display — pinned to top, suppressed during cooldown (countdown in input is sufficient) */}
+      {error && cooldownRemaining <= 0 && (
         <div className="shrink-0 px-4 py-2">
           <div className="rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive" role="alert">
             {error}
@@ -275,7 +277,7 @@ function ChatViewInner({
                 variant="outline"
                 className="rounded-xl text-xs h-auto py-2 px-3.5 w-full whitespace-normal text-center leading-relaxed"
                 onClick={() => handleAction(prompt)}
-                disabled={loading || !apiKey}
+                disabled={inputDisabled || !apiKey}
               >
                 {prompt}
               </Button>
@@ -290,7 +292,7 @@ function ChatViewInner({
             {isUnifiedSelectionVertical && pendingCount > 0 && (
               <Button
                 onClick={handleUnifiedAddToCart}
-                disabled={loading}
+                disabled={inputDisabled}
                 className="pointer-events-auto h-12 whitespace-nowrap rounded-full border-2 border-orange-400 bg-[#4a3527] px-4 has-[>svg]:px-4 text-sm font-semibold text-white shadow-[0_8px_16px_-12px_rgba(249,115,22,0.11)] hover:bg-[#553d2d]"
               >
                 <ShoppingCart className="h-5 w-5" />
@@ -330,7 +332,8 @@ function ChatViewInner({
       {/* Input — absolutely positioned, overlays messages with gradient */}
       <ChatInput
         onSend={handleAction}
-        disabled={loading || !apiKey}
+        disabled={inputDisabled || !apiKey}
+        cooldownSeconds={cooldownRemaining > 0 ? Math.ceil(cooldownRemaining / 1000) : undefined}
       />
     </div>
   );

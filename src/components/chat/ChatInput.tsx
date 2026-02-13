@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 export function ChatInput({
   onSend,
   disabled,
+  cooldownSeconds,
 }: {
   onSend: (text: string) => void;
   disabled: boolean;
+  cooldownSeconds?: number;
 }) {
   const [text, setText] = useState("");
   const [isMultiline, setIsMultiline] = useState(false);
@@ -54,7 +56,7 @@ export function ChatInput({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask anything..."
+            placeholder={cooldownSeconds && cooldownSeconds > 0 ? `Rate limited — retry in ${cooldownSeconds}s...` : "Ask anything..."}
             aria-label="Ask anything"
             rows={1}
             disabled={disabled}

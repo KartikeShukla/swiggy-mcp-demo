@@ -7,7 +7,7 @@ export const OAUTH_POPUP_WIDTH = 500;
 export const OAUTH_POPUP_HEIGHT = 600;
 
 // Chat
-export const MAX_TOKENS = 1024;
+export const MAX_TOKENS = 512;
 export const MCP_TOOL_ERROR_LIMIT = 2;
 export const MCP_AUTH_ERROR_LIMIT = 1;
 export const STREAM_REQUEST_TIMEOUT_MS = 90_000;

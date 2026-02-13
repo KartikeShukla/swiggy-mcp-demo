@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import type { ChatMessage, VerticalConfig, TokenUsage, ParsedAddress } from "@/lib/types";
 import { useChatApi } from "./useChatApi";
 import { useChatPersistence } from "./useChatPersistence";
@@ -108,9 +108,13 @@ export function useChat(
   const loadingContextRef = useRef<LoadingContext>("generic");
   const [error, setError] = useState<string | null>(null);
   const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
+  const [cooldownEndsAt, setCooldownEndsAt] = useState<number | null>(null);
+  const [cooldownNow, setCooldownNow] = useState(Date.now());
+  const [postSendPause, setPostSendPause] = useState(false);
   const cumulativeUsageRef = useRef({ input_tokens: 0, output_tokens: 0 });
   const messagesRef = useRef(messages);
   const inFlightRef = useRef(false);
+  const requestTimestampsRef = useRef<number[]>([]);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -121,8 +125,31 @@ export function useChat(
     setError(null);
     setTokenUsage(null);
     setLoadingElapsedMs(0);
+    setCooldownEndsAt(null);
+    setPostSendPause(false);
     cumulativeUsageRef.current = { input_tokens: 0, output_tokens: 0 };
   }, [vertical.id]);
+
+  // Tick cooldown timer every second
+  useEffect(() => {
+    if (!cooldownEndsAt) return;
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      setCooldownNow(now);
+      if (now >= cooldownEndsAt) {
+        setCooldownEndsAt(null);
+        setError(null);
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldownEndsAt]);
+
+  const cooldownRemaining = useMemo(
+    () => (cooldownEndsAt ? Math.max(0, cooldownEndsAt - cooldownNow) : 0),
+    [cooldownEndsAt, cooldownNow],
+  );
+
+  const inputDisabled = loading || postSendPause || cooldownRemaining > 0;
 
   useEffect(() => {
     if (!loading) {
@@ -143,7 +170,26 @@ export function useChat(
         setError("API key required");
         return false;
       }
-      if (loading || inFlightRef.current) return false;
+      if (loading || inFlightRef.current || cooldownEndsAt) return false;
+
+      // Per-minute request throttle
+      const MAX_REQUESTS_PER_MINUTE = 8;
+      const now = Date.now();
+      const recentTimestamps = requestTimestampsRef.current.filter(
+        (ts) => now - ts < 60_000,
+      );
+      requestTimestampsRef.current = recentTimestamps;
+
+      if (recentTimestamps.length >= MAX_REQUESTS_PER_MINUTE) {
+        const oldest = recentTimestamps[0];
+        const waitMs = 60_000 - (now - oldest);
+        setCooldownEndsAt(now + waitMs);
+        setCooldownNow(now);
+        setError("Cooling down — too many requests. Please wait a moment.");
+        return false;
+      }
+
+      requestTimestampsRef.current.push(now);
 
       const userMessage: ChatMessage = {
         role: "user",
@@ -200,15 +246,25 @@ export function useChat(
       } catch (err) {
         const classified = classifyError(err);
         setError(classified.message);
+        if (classified.status === 429 && classified.retryAfterMs) {
+          setCooldownEndsAt(Date.now() + classified.retryAfterMs);
+          setCooldownNow(Date.now());
+        }
         return false;
       } finally {
         setLoading(false);
-        inFlightRef.current = false;
+        // Post-send pause: keep input locked for 2.5s after response
+        setPostSendPause(true);
+        setTimeout(() => {
+          setPostSendPause(false);
+          inFlightRef.current = false;
+        }, 2500);
       }
     },
     [
       apiKey,
       loading,
+      cooldownEndsAt,
       sendToApi,
       classifyError,
       setMessages,
@@ -237,5 +293,7 @@ export function useChat(
     sendMessage,
     clearHistory,
     tokenUsage,
+    cooldownRemaining,
+    inputDisabled,
   };
 }

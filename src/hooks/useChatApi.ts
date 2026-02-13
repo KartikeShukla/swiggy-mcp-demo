@@ -14,7 +14,7 @@ import {
   waitForRetryAttempt,
 } from "@/integrations/anthropic/retry-policy";
 
-const CHAT_REQUEST_MAX_RETRIES = 2;
+const CHAT_REQUEST_MAX_RETRIES = 1;
 
 /** Encapsulates the Anthropic API call with MCP server configuration. */
 export function useChatApi(

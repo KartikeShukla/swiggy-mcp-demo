@@ -1,4 +1,4 @@
-const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504, 529]);
+const RETRYABLE_STATUSES = new Set([500, 502, 503, 504, 529]);
 
 function extractStatus(err: unknown): number | undefined {
   if (!err || typeof err !== "object") return undefined;
@@ -16,12 +16,31 @@ function extractMessage(err: unknown): string {
   }
 }
 
+export function isRateLimitError(err: unknown): boolean {
+  const status = extractStatus(err);
+  if (status === 429) return true;
+  const msg = extractMessage(err).toLowerCase();
+  return /rate[_\s-]?limit/.test(msg);
+}
+
+export function extractRetryAfterMs(err: unknown): number | null {
+  if (!err || typeof err !== "object") return null;
+  const headers = (err as { headers?: Record<string, string> }).headers;
+  if (!headers) return null;
+  const value = headers["retry-after"];
+  if (!value) return null;
+  const seconds = Number.parseFloat(value);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : null;
+}
+
 export function isRetryableAnthropicError(err: unknown): boolean {
+  if (isRateLimitError(err)) return false;
+
   const status = extractStatus(err);
   if (status && RETRYABLE_STATUSES.has(status)) return true;
 
   const msg = extractMessage(err).toLowerCase();
-  return /overload(?:ed)?|overloaded_error|rate[_\s-]?limit|temporarily unavailable|internal server error|timeout|gateway/.test(
+  return /overload(?:ed)?|overloaded_error|temporarily unavailable|internal server error|timeout|gateway/.test(
     msg,
   );
 }
