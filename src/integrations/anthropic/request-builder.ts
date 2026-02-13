@@ -4,7 +4,7 @@ import {
   MODEL_ID,
 } from "@/lib/constants";
 import type { ChatMessage, ParsedAddress, VerticalConfig } from "@/lib/types";
-import { sanitizeMessagesForApi, compactOldMessages } from "./message-sanitizer";
+import { sanitizeMessagesForApi, compactOldMessages, truncateToolResultsInMessages } from "./message-sanitizer";
 
 const MAX_CONTEXT_MESSAGES = 8;
 
@@ -34,8 +34,9 @@ export function buildMessageStreamParams(
   const { sanitizedMessages } = sanitizeMessagesForApi(messages);
   const compactedMessages = compactOldMessages(sanitizedMessages);
   const boundedMessages = compactedMessages.slice(-MAX_CONTEXT_MESSAGES);
+  const truncatedMessages = truncateToolResultsInMessages(boundedMessages);
 
-  const apiMessages = boundedMessages.map((msg) => ({
+  const apiMessages = truncatedMessages.map((msg) => ({
     role: msg.role as "user" | "assistant",
     content: msg.content,
   }));

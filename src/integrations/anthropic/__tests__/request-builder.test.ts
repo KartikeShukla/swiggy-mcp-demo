@@ -178,6 +178,30 @@ describe("buildMessageStreamParams()", () => {
     expect(blocks[0].type).toBe("text");
   });
 
+  it("truncates large tool results in API params", () => {
+    const longContent = "x".repeat(5000);
+    const messages = [
+      { role: "user" as const, content: "search", timestamp: 1 },
+      {
+        role: "assistant" as const,
+        timestamp: 2,
+        content: [
+          { type: "text" as const, text: "Here are results" },
+          { type: "mcp_tool_use" as const, id: "u-1", name: "search_products" },
+          { type: "mcp_tool_result" as const, tool_use_id: "u-1", content: longContent },
+        ],
+      },
+    ];
+
+    const params = buildMessageStreamParams(messages, foodVertical, null);
+    const apiMessages = params.messages as Array<{ role: string; content: unknown }>;
+    const assistantMsg = apiMessages.find((m) => Array.isArray(m.content));
+    const blocks = assistantMsg?.content as Array<{ type: string; content?: unknown }>;
+    const toolResult = blocks.find((b) => b.type === "mcp_tool_result");
+
+    expect((toolResult?.content as string).length).toBe(3000);
+  });
+
   it("preserves tool blocks in recent messages within keepRecent window", () => {
     const toolHeavyAssistant = {
       role: "assistant" as const,

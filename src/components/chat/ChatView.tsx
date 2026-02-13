@@ -317,7 +317,7 @@ function ChatViewInner({
           showCloseButton={false}
           overlayClassName="backdrop-blur-[3px]"
           onCloseAutoFocus={(event) => event.preventDefault()}
-          className="p-0 min-h-0 h-auto max-h-[calc(100%-var(--safe-top,0px)-1.5rem)] pb-[calc(var(--safe-bottom,0px)+0.5rem)]"
+          className="min-h-0 p-0 flex flex-col"
         >
           {effectiveCart && (
             <CartPanel

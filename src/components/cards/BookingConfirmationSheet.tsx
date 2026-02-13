@@ -30,7 +30,7 @@ export function BookingConfirmationSheet({
         showCloseButton={false}
         overlayClassName="backdrop-blur-[3px]"
         onCloseAutoFocus={(event) => event.preventDefault()}
-        className="min-h-0 h-auto max-h-[88dvh] p-0"
+        className="min-h-0 p-0"
       >
         <SheetHeader className="px-4 pb-3 pt-5">
           <div className="grid grid-cols-[1fr_auto_1fr] items-center">

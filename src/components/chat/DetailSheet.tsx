@@ -44,9 +44,9 @@ export function DetailSheet({
         showCloseButton={false}
         overlayClassName="backdrop-blur-[3px]"
         onCloseAutoFocus={(event) => event.preventDefault()}
-        className="min-h-0 h-auto max-h-[88dvh] p-0"
+        className="min-h-0 p-0 flex flex-col"
       >
-        <SheetHeader className="px-4 pb-2 pt-5">
+        <SheetHeader className="shrink-0 px-4 pb-2 pt-5">
           <div className="grid grid-cols-[1fr_auto_1fr] items-center">
             <span aria-hidden className="h-8 w-8" />
             <SheetTitle className="text-base text-center">Details</SheetTitle>
@@ -57,7 +57,7 @@ export function DetailSheet({
           </div>
         </SheetHeader>
 
-        <div className="px-4 pb-2 pt-1">
+        <div className="shrink-0 px-4 pb-2 pt-1">
           <div className="inline-flex w-full rounded-xl bg-muted/70 p-1">
             {hasText && (
               <button
