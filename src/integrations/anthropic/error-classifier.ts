@@ -1,4 +1,8 @@
-import { extractRetryAfterMs } from "./retry-policy";
+import {
+  extractRetryAfterMs,
+  extractWrappedMcpHttpStatus,
+  isWrappedMcpConnectionError,
+} from "./retry-policy";
 
 export interface ApiError {
   status?: number;
@@ -9,6 +13,30 @@ export interface ApiError {
 export function classifyApiError(err: unknown): ApiError {
   if (err instanceof Error) {
     const msg = err.message;
+    const wrappedMcpStatus = extractWrappedMcpHttpStatus(err);
+    const wrappedMcpConnectionError = isWrappedMcpConnectionError(err);
+
+    if (wrappedMcpConnectionError) {
+      if (wrappedMcpStatus === 401 || wrappedMcpStatus === 403) {
+        return {
+          status: 403,
+          message: "Your Swiggy session has expired. Please reconnect.",
+        };
+      }
+      if (wrappedMcpStatus === 429) {
+        const retryAfterMs = extractRetryAfterMs(err) ?? 15_000;
+        const waitSeconds = Math.ceil(retryAfterMs / 1000);
+        return {
+          status: 429,
+          message: `Rate limited — try again in ${waitSeconds}s`,
+          retryAfterMs,
+        };
+      }
+      return {
+        status: 529,
+        message: "Swiggy service is temporarily unavailable. Please try again in a moment.",
+      };
+    }
 
     if ("status" in err) {
       const status = (err as { status: number }).status;
