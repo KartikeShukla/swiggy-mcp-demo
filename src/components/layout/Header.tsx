@@ -41,10 +41,14 @@ export function Header({
   right,
   selectedAddress,
   connectionActive = false,
+  apiKey,
+  swiggyToken,
 }: {
   right?: React.ReactNode;
   selectedAddress?: ParsedAddress | null;
   connectionActive?: boolean;
+  apiKey: string | null;
+  swiggyToken: string | null;
 }) {
   const locationText = formatHeaderLocation(selectedAddress);
   const dateTimeText = formatHeaderDateTime();
@@ -83,7 +87,11 @@ export function Header({
 
       {/* Row 2: Vertical Nav Tabs */}
       <div className="flex items-center justify-center px-[9.6px] pt-2.5 pb-3">
-        <VerticalNav />
+        <VerticalNav
+          apiKey={apiKey}
+          swiggyToken={swiggyToken}
+          selectedAddress={selectedAddress}
+        />
       </div>
     </header>
   );

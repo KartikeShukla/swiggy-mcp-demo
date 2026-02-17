@@ -7,6 +7,7 @@ Action messages are deterministic user-intent payloads emitted by card and cart 
 1. Emitted actions must preserve user intent without hidden side effects.
 2. Actions must route through the same chat pipeline (`onAction` -> `sendMessage`).
 3. Templates must remain stable for critical interaction families (menu open, availability check, cart adjust, booking confirm).
+4. Nutrition/Style tab-switch cleanup is UI-level state management and is intentionally outside action-message emission.
 
 ## Example Families
 - Product/cart: `Add to cart: ...`, `Change {item} quantity to {n}`, `Remove {item} from my cart`.

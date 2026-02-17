@@ -25,6 +25,12 @@ Verified implementation patterns that are easy to regress.
 - Supports nested cart response structures and bill breakdown extraction.
 - Foodorder optimistic cart entries use stable keys with restaurant scope to avoid cross-restaurant key collisions.
 
+## Nutrition/Style Switch Guard Pattern
+- Guard applies only to `food` <-> `style` tab switches.
+- Prompt is shown only when current/source tab has clearable local state (chat history and/or non-empty latest cart snapshot).
+- On confirm, source-tab chat history is cleared before navigating.
+- A best-effort background Instamart cart-clear request is fired; failures are logged but never block navigation.
+
 ## OAuth Discovery Pattern
 - OAuth discovery uses robust candidate probing and fallback paths.
 - Token endpoint is bound to server-side pending auth state and reused in callback.

@@ -86,6 +86,7 @@ Handled by `classifyMcpError` + stream abort guards:
 - Chat history is sanitized before API usage and on persistence.
 - Cart state is derived from parsed assistant tool results, not a separate server-backed cart store.
 - Foodorder optimistic cart state uses stable keys (vertical + restaurant scope + item id/name) to reduce cross-restaurant item collisions before authoritative cart results arrive.
+- Navigation adds a Nutrition/Style (`food` <-> `style`) switch guard: when source-tab state exists, confirmation is required before switch, source-tab chat is cleared, and a best-effort background Instamart cart-clear request is attempted.
 
 ## OAuth Flow (Dev Only)
 1. Browser opens `/api/auth/start`.

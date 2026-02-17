@@ -41,6 +41,8 @@ export default function App() {
         />
 
         <Header
+          apiKey={apiKey}
+          swiggyToken={swiggyToken}
           selectedAddress={selectedAddress}
           connectionActive={!!apiKey && !!swiggyToken && !isTokenStale}
           right={
