@@ -1,23 +1,17 @@
 # Swiggy MCP Demo
 
-Swiggy MCP demo is a browser-only React SPA that connects Claude to Swiggy MCP servers through Anthropic's MCP support.
+Browser-first React demo that connects Anthropic chat streaming with Swiggy MCP tools across four tabs: `Nutrition`, `Styling`, `Dine`, and `Food`.
 
-## What This Project Demonstrates
-- Prompt-driven product verticals on shared infra (`food`, `style`, `dining`, `foodorder`).
-- Tool-based chat UX using streamed `mcp_tool_use` and `mcp_tool_result` blocks.
-- Heuristic parser pipeline that converts tool payloads into card UIs.
-- Dev-only OAuth middleware for obtaining Swiggy access tokens.
+## Important Warning
+- This demo was built completely through iterative prompting with CC (Claude Code) and Codex.
+- Reliability is not production-grade and can break in edge cases (intent understanding, cart state, tool flows, rate-limit behavior).
+- Use this project for demos and experimentation, not as a production-ready reference.
 
-## Runtime Model
-- Frontend calls Anthropic Messages API from the browser.
-- Anthropic executes MCP tools server-side against Swiggy MCP endpoints.
-- Browser persists credentials and per-vertical chat histories in localStorage.
-
-## Security Notes (Demo)
-- This app is intentionally browser-first and stores API/session tokens in localStorage.
-- Use personal test credentials only; avoid shared browser profiles/machines.
-- Do not deploy this as a shared public service without a backend token broker.
-- After demos, clear chats and revoke/disconnect tokens.
+## What This Demo Covers
+- Shared chat infrastructure for 4 verticals (`food`, `style`, `dining`, `foodorder`).
+- MCP tool execution via Anthropic (`mcp_tool_use` / `mcp_tool_result` stream flow).
+- Parser + card rendering pipeline for products, restaurants, carts, and confirmations.
+- Basic dev OAuth middleware for Swiggy token flows.
 
 ## Quick Start
 ```bash
@@ -26,7 +20,7 @@ npm run dev
 ```
 Open `http://localhost:5173`.
 
-## Scripts
+## Useful Commands
 ```bash
 npm run dev
 npm run build
@@ -39,14 +33,25 @@ npm run docs:sync
 npm run docs:verify
 ```
 
-## Test Baseline
-- Current suite: `45` test files.
-- Typical verification for behavior changes:
-  - `npm run lint`
-  - `npm run test`
+## Project Map (Start Here)
+- App shell and routing: `src/App.tsx`
+- Auth and onboarding: `src/hooks/useAuth.ts`
+- Chat orchestration: `src/hooks/useChat.ts`, `src/hooks/useChatApi.ts`
+- Anthropic integration: `src/integrations/anthropic/*`
+- Tool-result parsing: `src/lib/parsers/*`
+- Vertical configs and prompts: `src/verticals/*`
+- UI cards/chat/nav: `src/components/*`
 
-## Documentation
-- Main docs index: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/README.md`
-- Architecture: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/ARCHITECTURE.md`
-- Runtime facts: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/RUNTIME_FACTS.md`
-- Coverage matrix: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/COVERAGE_MATRIX.md`
+## Docs Map (Deep Dive)
+- Docs index: `docs/README.md`
+- Setup and run: `docs/SETUP_AND_RUN.md`
+- Architecture: `docs/ARCHITECTURE.md`
+- Runtime facts/constants: `docs/RUNTIME_FACTS.md`
+- Coverage map: `docs/COVERAGE_MATRIX.md`
+- Prompt/parser/action contracts: `docs/contracts/*`
+
+## Security Notes (Demo Only)
+- API keys and Swiggy token data are intentionally stored in browser `localStorage`.
+- Use only personal test credentials.
+- Avoid shared devices/profiles.
+- Revoke/disconnect tokens after demos.
