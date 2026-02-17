@@ -55,3 +55,11 @@ npm run docs:verify
 - Use only personal test credentials.
 - Avoid shared devices/profiles.
 - Revoke/disconnect tokens after demos.
+
+## License
+- This project is source-available under a custom non-commercial license (see `LICENSE`).
+- You can use, modify, and share it for non-commercial purposes.
+- Any commercial use is strictly not allowed without prior written permission.
+
+## Thanks
+Thank you to the Swiggy team for making this MCP available: https://github.com/Swiggy/swiggy-mcp-server-manifest
