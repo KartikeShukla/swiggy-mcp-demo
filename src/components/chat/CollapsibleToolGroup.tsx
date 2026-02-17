@@ -10,6 +10,9 @@ export interface PrecomputedToolResult {
   toolName: string;
 }
 
+const SHOW_RELEVANCE_DEBUG_OVERLAY =
+  import.meta.env.DEV && import.meta.env.VITE_SHOW_RELEVANCE_DEBUG === "true";
+
 function dedupeProducts<T extends { name: string; brand?: string; quantity?: string; price?: number; mrp?: number }>(items: T[]): T[] {
   const seen = new Set<string>();
   const deduped: T[] = [];
@@ -117,7 +120,7 @@ export function CollapsibleToolGroup({
 
   return (
     <div className="space-y-1">
-      {renderContext?.debug && debugTraces.length > 0 && (
+      {SHOW_RELEVANCE_DEBUG_OVERLAY && renderContext?.debug && debugTraces.length > 0 && (
         <div className="rounded-md border border-dashed border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[10px] text-amber-700">
           {debugTraces.map((trace, index) => (
             <div key={`${trace.strategy}-${index}`} className="truncate">

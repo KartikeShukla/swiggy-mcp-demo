@@ -38,7 +38,12 @@ Verified implementation patterns that are easy to regress.
 ## UI Action Loop Pattern
 - Card interactions emit deterministic action payloads through `onAction`.
 - Critical interaction families preserve stable human-readable message templates while also carrying structured identity metadata.
+- Chat transport supports dual-channel user turns: clean visible text for bubbles plus optional API-only enriched metadata text for reliability.
 - Actions are fed back into the same chat pipeline, preserving one conversational loop.
+
+## Relevance Debug Overlay Pattern
+- Relevance debug trace ribbons above card rails are hidden by default.
+- Overlay is rendered only in dev when `VITE_SHOW_RELEVANCE_DEBUG=true`.
 
 ## Guardrail-Sensitive Facts
 - Keep runtime numeric claims synced through `docs/RUNTIME_FACTS.md` and `docs:sync`.

@@ -478,7 +478,7 @@ function ChatViewInner({
       )}
 
       {(effectiveItemCount > 0 || (isUnifiedSelectionVertical && pendingCount > 0)) && (
-        <div className="pointer-events-none absolute bottom-[6.9rem] left-4 right-4 z-50">
+        <div className="pointer-events-none absolute bottom-[6.9rem] left-4 right-[22px] z-50">
           <div className="flex items-center justify-end gap-[13px]">
             {isUnifiedSelectionVertical && pendingCount > 0 && (
               <Button

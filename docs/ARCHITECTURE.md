@@ -27,19 +27,20 @@ graph LR
 
 ## Chat + MCP Lifecycle
 1. User enters text in `ChatInput`.
-2. `useChat.sendMessage` appends user message and chooses loading context via shared runtime intent signals.
-3. `buildSessionStateSummary` derives compact state hints from recent user turns.
-4. `buildMessageStreamParams` builds request payload:
+2. `useChat.sendMessage` appends a user-visible message and chooses loading context via shared runtime intent signals.
+3. `useChat.sendMessage` can send an API-only enriched text (`apiText`) for model/tool reliability while preserving clean user-visible bubbles.
+4. `buildSessionStateSummary` derives compact state hints from recent user turns.
+5. `buildMessageStreamParams` builds request payload:
    - bounded messages (`MAX_CONTEXT_MESSAGES = 8`)
    - older long user turns compacted before bounding (`MAX_OLD_USER_MESSAGE_CHARS = 240`)
    - prompt + optional address + datetime + optional summary blocks
    - MCP configuration (when Swiggy token exists)
    - context-management edit (`input_tokens: 12000`, keep `3` tool uses)
-5. `runMessageStream` streams assistant blocks and monitors MCP tool errors.
-6. Assistant blocks are sanitized (`sanitizeAssistantBlocks`) and persisted.
-7. UI groups blocks and parses tool results into cards.
-8. Parser orchestration applies staged routing (tool-patterns -> shape fallback -> status/info fallback) with relevance post-processing when render context is available.
-9. Dining and foodorder strict-first reranking can return explicit broaden-guidance info cards when constraints are too narrow.
+6. `runMessageStream` streams assistant blocks and monitors MCP tool errors.
+7. Assistant blocks are sanitized (`sanitizeAssistantBlocks`) and persisted.
+8. UI groups blocks and parses tool results into cards.
+9. Parser orchestration applies staged routing (tool-patterns -> shape fallback -> status/info fallback) with relevance post-processing when render context is available.
+10. Dining and foodorder strict-first reranking can return explicit broaden-guidance info cards when constraints are too narrow.
 
 ## Data Flow Layers
 1. Auth layer: `useAuth` + storage helpers.
@@ -85,9 +86,11 @@ Handled by `classifyMcpError` + stream abort guards:
 ## State And Persistence
 - Local storage keys include API key, Swiggy token/timestamp, selected address, and per-vertical chat histories.
 - Chat history is sanitized before API usage and on persistence.
+- User bubbles intentionally render the clean user message text; internal transport metadata is not shown in chat UI.
 - Cart state is derived from parsed assistant tool results, not a separate server-backed cart store.
 - Foodorder optimistic cart state uses stable keys (vertical + restaurant scope + item id/name) to reduce cross-restaurant item collisions before authoritative cart results arrive.
 - UI actions are emitted with stable human-readable messages plus structured identity metadata (IDs/variants/slot refs) to reduce cross-turn disambiguation failures.
+- Action transport can include model-facing metadata in API-only text while preserving stable visible message templates.
 - Navigation adds a Nutrition/Style (`food` <-> `style`) switch guard: when source-tab state exists, confirmation is required before switch, source-tab chat is cleared, and a best-effort background Instamart cart-clear request is attempted.
 
 ## OAuth Flow (Dev Only)
