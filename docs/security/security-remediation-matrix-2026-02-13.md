@@ -1,6 +1,6 @@
 # Security Remediation Matrix (Lean Demo Baseline)
 Date: February 13, 2026  
-Repository: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo`
+Repository: `swiggy-mcp-demo`
 
 Priority scale:
 - `Now`: must-have for demo-safe OSS baseline

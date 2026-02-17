@@ -9,11 +9,11 @@ This file is the canonical AI-agent guide for this repository. It is designed to
 - Vertical model: four product experiences (`food`, `style`, `dining`, `foodorder`) sharing one chat infrastructure.
 
 ## High-Confidence Start Points
-1. `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/App.tsx` for shell + routing.
-2. `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/hooks/useAuth.ts` for onboarding and auth lifecycle.
-3. `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/hooks/useChat.ts` and `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/hooks/useChatApi.ts` for chat orchestration.
-4. `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/integrations/anthropic` for request/stream/sanitization/retry behavior.
-5. `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/lib/parsers` for tool-result conversion rules.
+1. `src/App.tsx` for shell + routing.
+2. `src/hooks/useAuth.ts` for onboarding and auth lifecycle.
+3. `src/hooks/useChat.ts` and `src/hooks/useChatApi.ts` for chat orchestration.
+4. `src/integrations/anthropic` for request/stream/sanitization/retry behavior.
+5. `src/lib/parsers` for tool-result conversion rules.
 
 ## Commands
 ```bash
@@ -95,13 +95,13 @@ All numeric constants are centralized in `src/lib/constants.ts` unless noted oth
 - Relevance system uses shared foundations (`relevance/shared.ts`, `relevance/patterns.ts`) with vertical-specific rerankers.
 
 ## Prompt System Summary
-- Prompt profiles are defined in `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/verticals/prompt-spec/profiles.ts`.
-- Shared policies are appended in `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/verticals/shared-prompt.ts`.
+- Prompt profiles are defined in `src/verticals/prompt-spec/profiles.ts`.
+- Shared policies are appended in `src/verticals/shared-prompt.ts`.
 - Vertical behavior divergence is prompt-driven first, with selective parser/UI branching in `foodorder` and `dining` flows.
 
 ## Data And Security Boundaries
 - API key and Swiggy token are localStorage-backed by design in this demo.
-- OAuth middleware in `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/server/oauth` is a dev-only flow.
+- OAuth middleware in `server/oauth` is a dev-only flow.
 - Do not log secrets or raw auth tokens.
 
 ## Contracts To Preserve
@@ -111,10 +111,10 @@ All numeric constants are centralized in `src/lib/constants.ts` unless noted oth
 - Cart consistency contract: cart state comes from tool results only; foodorder restaurant lock must persist across menu/cart operations.
 
 ## Documentation Navigation
-- Start at `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/README.md`.
-- Architecture narrative: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/ARCHITECTURE.md`.
-- Runtime facts source: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/RUNTIME_FACTS.md`.
-- Documentation coverage map: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/COVERAGE_MATRIX.md`.
+- Start at `docs/README.md`.
+- Architecture narrative: `docs/ARCHITECTURE.md`.
+- Runtime facts source: `docs/RUNTIME_FACTS.md`.
+- Documentation coverage map: `docs/COVERAGE_MATRIX.md`.
 
 ## Maintenance Rules For Agents
 1. Run `npm run docs:sync` after touching `docs/RUNTIME_FACTS.md`.

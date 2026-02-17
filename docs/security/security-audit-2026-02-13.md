@@ -1,6 +1,6 @@
 # Security Audit Report (Lean Demo Baseline)
 Date: February 13, 2026  
-Repository: `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo`
+Repository: `swiggy-mcp-demo`
 
 ## Executive Summary
 This audit targeted **basic demo-safe hardening** for an open-source, browser-first MCP demo.  
