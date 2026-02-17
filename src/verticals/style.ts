@@ -5,8 +5,8 @@ import { stylePromptProfile } from "./prompt-spec/profiles";
 
 export const styleVertical: VerticalConfig = {
   id: "style",
-  name: "StyleKit",
-  tabName: "Style",
+  name: "Styling",
+  tabName: "Styling",
   description:
     "An AI grooming advisor that builds structured skincare and haircare routines for morning, evening, and weekly care, and helps you shop the right products on Instamart.",
   color: "style",

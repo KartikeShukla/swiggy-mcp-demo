@@ -6,7 +6,7 @@ import { foodOrderPromptProfile } from "./prompt-spec/profiles";
 export const foodOrderVertical: VerticalConfig = {
   id: "foodorder",
   name: "FeedMe",
-  tabName: "Order",
+  tabName: "Food",
   description:
     "Go from a craving to a delivered meal. Discovers restaurants nearby, explores their menus, and helps you build your cart and place an order.",
   color: "foodorder",

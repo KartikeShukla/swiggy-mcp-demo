@@ -5,7 +5,7 @@ import { foodPromptProfile } from "./prompt-spec/profiles";
 
 export const foodVertical: VerticalConfig = {
   id: "food",
-  name: "NutriCart",
+  name: "Nutrition",
   tabName: "Nutrition",
   description:
     "An AI nutrition coach that plans meals with full macro breakdowns, walks you through recipes step by step, and helps you find every ingredient on Instamart.",

@@ -58,7 +58,7 @@ describe("VerticalNav Nutrition/Style switch guard", () => {
 
     renderNav("/food");
 
-    await user.click(screen.getByRole("link", { name: "Style" }));
+    await user.click(screen.getByRole("link", { name: "Styling" }));
 
     expect(screen.getByTestId("pathname")).toHaveTextContent("/food");
     expect(
@@ -81,7 +81,7 @@ describe("VerticalNav Nutrition/Style switch guard", () => {
 
     renderNav("/food");
 
-    await user.click(screen.getByRole("link", { name: "Style" }));
+    await user.click(screen.getByRole("link", { name: "Styling" }));
     await user.click(screen.getByRole("button", { name: "Clear and switch" }));
 
     await waitFor(() => {
@@ -102,7 +102,7 @@ describe("VerticalNav Nutrition/Style switch guard", () => {
     const user = userEvent.setup();
     renderNav("/food");
 
-    await user.click(screen.getByRole("link", { name: "Style" }));
+    await user.click(screen.getByRole("link", { name: "Styling" }));
 
     await waitFor(() => {
       expect(screen.getByTestId("pathname")).toHaveTextContent("/style");
