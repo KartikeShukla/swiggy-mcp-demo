@@ -132,15 +132,23 @@ export function tryParseProducts(
     if (!name) continue;
 
     const variations = allVariations(obj.variations);
+    const baseProductId = str(obj.id) || str(obj.productId) || str(obj.product_id) || str(obj.item_id);
 
     if (variations.length <= 1) {
       const variation = variations[0];
       const priceObj = variation?.price as Record<string, unknown> | undefined;
       const brand = str(obj.brand) || str(obj.brand_name) || str(variation?.brandName);
       const grouping = resolveGroupingMeta(obj, name, brand, context?.toolInput);
+      const backendVariantId = str(variation?.spinId) || str(variation?.spin_id) || str(variation?.id);
+      const quantityLabel =
+        str(variation?.quantityDescription) ||
+        str(obj.quantity) ||
+        str(obj.weight) ||
+        str(obj.size) ||
+        str(obj.pack_size);
 
       items.push({
-        id: str(obj.id) || str(obj.productId) || str(obj.product_id) || str(obj.item_id) || str(variation?.spinId) || String(items.length),
+        id: baseProductId || backendVariantId || String(items.length),
         name,
         price: num(priceObj?.offerPrice) ?? num(priceObj?.offer_price) ??
           num(obj.selling_price) ?? num(obj.price) ?? num(obj.cost) ?? num(obj.offer_price) ??
@@ -157,7 +165,10 @@ export function tryParseProducts(
         groupLabel: grouping.groupLabel,
         sourceQuery: grouping.sourceQuery,
         groupOrder: grouping.groupOrder,
-        quantity: str(variation?.quantityDescription) || str(obj.quantity) || str(obj.weight) || str(obj.size) || str(obj.pack_size),
+        quantity: quantityLabel,
+        variantLabel: quantityLabel,
+        backendProductId: baseProductId,
+        backendVariantId,
         available: obj.isAvail != null ? Boolean(obj.isAvail) : obj.inStock != null ? Boolean(obj.inStock) : obj.available != null ? Boolean(obj.available) : obj.in_stock != null ? Boolean(obj.in_stock) : variation?.isInStockAndAvailable != null ? Boolean(variation.isInStockAndAvailable) : true,
         description: str(obj.description) || str(obj.desc) ||
           (obj.isVeg != null ? (obj.isVeg ? "Veg" : "Non-Veg") : undefined),
@@ -167,9 +178,16 @@ export function tryParseProducts(
       for (let vi = 0; vi < variations.length; vi++) {
         const variation = variations[vi];
         const priceObj = variation.price as Record<string, unknown> | undefined;
-        const variantId = str(obj.id) || str(obj.productId) || str(obj.product_id) || str(obj.item_id) || str(variation.spinId) || String(items.length);
+        const variantId = baseProductId || str(variation.spinId) || str(variation.spin_id) || str(variation.id) || String(items.length);
         const brand = str(obj.brand) || str(obj.brand_name) || str(variation.brandName);
         const grouping = resolveGroupingMeta(obj, name, brand, context?.toolInput);
+        const backendVariantId = str(variation.spinId) || str(variation.spin_id) || str(variation.id);
+        const quantityLabel =
+          str(variation.quantityDescription) ||
+          str(obj.quantity) ||
+          str(obj.weight) ||
+          str(obj.size) ||
+          str(obj.pack_size);
 
         items.push({
           id: `${variantId}-var-${vi}`,
@@ -189,7 +207,10 @@ export function tryParseProducts(
           groupLabel: grouping.groupLabel,
           sourceQuery: grouping.sourceQuery,
           groupOrder: grouping.groupOrder,
-          quantity: str(variation.quantityDescription) || str(obj.quantity) || str(obj.weight) || str(obj.size) || str(obj.pack_size),
+          quantity: quantityLabel,
+          variantLabel: quantityLabel,
+          backendProductId: baseProductId,
+          backendVariantId,
           available: obj.isAvail != null ? Boolean(obj.isAvail) : obj.inStock != null ? Boolean(obj.inStock) : obj.available != null ? Boolean(obj.available) : obj.in_stock != null ? Boolean(obj.in_stock) : variation.isInStockAndAvailable != null ? Boolean(variation.isInStockAndAvailable) : true,
           description: str(obj.description) || str(obj.desc) ||
             (obj.isVeg != null ? (obj.isVeg ? "Veg" : "Non-Veg") : undefined),

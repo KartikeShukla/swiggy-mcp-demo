@@ -36,7 +36,8 @@ Verified implementation patterns that are easy to regress.
 - Token endpoint is bound to server-side pending auth state and reused in callback.
 
 ## UI Action Loop Pattern
-- Card interactions emit deterministic action messages through `onAction`.
+- Card interactions emit deterministic action payloads through `onAction`.
+- Critical interaction families preserve stable human-readable message templates while also carrying structured identity metadata.
 - Actions are fed back into the same chat pipeline, preserving one conversational loop.
 
 ## Guardrail-Sensitive Facts

@@ -78,9 +78,21 @@ export function CartPanel({
                       }
                       onClick={() => {
                         if (item.quantity <= 1) {
-                          onAction(`Remove ${safeItemName} from my cart`);
+                          onAction({
+                            kind: "cart_update_item",
+                            message: `Remove ${safeItemName} from my cart`,
+                            itemId: item.id,
+                            itemName: safeItemName,
+                            targetQuantity: 0,
+                          });
                         } else {
-                          onAction(`Change ${safeItemName} quantity to ${item.quantity - 1}`);
+                          onAction({
+                            kind: "cart_update_item",
+                            message: `Change ${safeItemName} quantity to ${item.quantity - 1}`,
+                            itemId: item.id,
+                            itemName: safeItemName,
+                            targetQuantity: item.quantity - 1,
+                          });
                         }
                       }}
                     >
@@ -96,7 +108,15 @@ export function CartPanel({
                       size="icon-sm"
                       className="rounded-full"
                       aria-label={`Increase ${safeItemName} quantity to ${item.quantity + 1}`}
-                      onClick={() => onAction(`Change ${safeItemName} quantity to ${item.quantity + 1}`)}
+                      onClick={() =>
+                        onAction({
+                          kind: "cart_update_item",
+                          message: `Change ${safeItemName} quantity to ${item.quantity + 1}`,
+                          itemId: item.id,
+                          itemName: safeItemName,
+                          targetQuantity: item.quantity + 1,
+                        })
+                      }
                     >
                       <Plus className="h-3.5 w-3.5" />
                     </Button>

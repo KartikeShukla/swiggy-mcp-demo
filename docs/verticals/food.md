@@ -19,3 +19,4 @@ Provide nutrition-aware guidance and grocery ordering through Instamart.
 - Missing nutrition context in advisory mode.
 - Ingredient unavailability requiring substitute suggestion.
 - Session expiry during cart/order steps.
+- Variant ambiguity across same-name products; selected item metadata should be used directly to avoid repeat reconfirmation.

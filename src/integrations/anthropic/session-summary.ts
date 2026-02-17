@@ -43,6 +43,12 @@ const PENDING_CONFIRM_PATTERNS = [
   /checkout/,
   /yes do it/,
 ];
+const SELECTED_CART_META_PATTERNS = [
+  /selected cart items metadata:\s*(\[[\s\S]*?\])/i,
+  /structured items:\s*(\[[\s\S]*?\])/i,
+];
+const SELECTED_RESTAURANT_META_RE = /selected restaurant metadata:\s*(\{[\s\S]*?\})/i;
+const SELECTED_SLOT_META_RE = /selected slot metadata:\s*(\{[\s\S]*?\})/i;
 
 interface SummarySignals {
   slots: string[];
@@ -88,6 +94,83 @@ function detectLatestSelectedRestaurant(userMessages: string[]): string | null {
   for (let i = userMessages.length - 1; i >= 0; i--) {
     const selectedRestaurant = detectSelectedRestaurantFromMessage(userMessages[i]);
     if (selectedRestaurant) return selectedRestaurant;
+  }
+  return null;
+}
+
+function tryParseJsonSnippet<T>(snippet: string): T | null {
+  try {
+    const parsed = JSON.parse(snippet);
+    return parsed as T;
+  } catch {
+    return null;
+  }
+}
+
+function detectLatestCartSelectionSignal(userMessages: string[]): string | null {
+  for (let i = userMessages.length - 1; i >= 0; i--) {
+    const message = userMessages[i].trim();
+    for (const pattern of SELECTED_CART_META_PATTERNS) {
+      const match = message.match(pattern);
+      if (!match?.[1]) continue;
+      const parsed = tryParseJsonSnippet<Array<Record<string, unknown>>>(match[1]);
+      if (!parsed || !Array.isArray(parsed) || parsed.length === 0) continue;
+
+      const compact = parsed.slice(0, 3).map((item) => {
+        const name =
+          typeof item.name === "string"
+            ? item.name
+            : typeof item.item_name === "string"
+              ? item.item_name
+              : "item";
+        const quantity =
+          typeof item.quantity === "number"
+            ? item.quantity
+            : typeof item.target_quantity === "number"
+              ? item.target_quantity
+              : 1;
+        const variant = typeof item.variant === "string" ? item.variant : "";
+        return compactText(`${name}x${quantity}${variant ? `(${variant})` : ""}`, 28);
+      });
+
+      if (compact.length > 0) {
+        return compactText(compact.join("|"), 84);
+      }
+    }
+  }
+  return null;
+}
+
+function detectLatestRestaurantSelectionSignal(userMessages: string[]): string | null {
+  for (let i = userMessages.length - 1; i >= 0; i--) {
+    const match = userMessages[i].trim().match(SELECTED_RESTAURANT_META_RE);
+    if (!match?.[1]) continue;
+    const parsed = tryParseJsonSnippet<Record<string, unknown>>(match[1]);
+    if (!parsed) continue;
+    const name =
+      typeof parsed.restaurant_name === "string"
+        ? parsed.restaurant_name
+        : typeof parsed.restaurantName === "string"
+          ? parsed.restaurantName
+          : "";
+    if (name) return compactText(name, 48);
+  }
+  return null;
+}
+
+function detectLatestSlotSelectionSignal(userMessages: string[]): string | null {
+  for (let i = userMessages.length - 1; i >= 0; i--) {
+    const match = userMessages[i].trim().match(SELECTED_SLOT_META_RE);
+    if (!match?.[1]) continue;
+    const parsed = tryParseJsonSnippet<Record<string, unknown>>(match[1]);
+    if (!parsed) continue;
+    const slotTime =
+      typeof parsed.slot_time === "string"
+        ? parsed.slot_time
+        : typeof parsed.slotTime === "string"
+          ? parsed.slotTime
+          : "";
+    if (slotTime) return compactText(slotTime, 32);
   }
   return null;
 }
@@ -162,6 +245,9 @@ export function buildSessionStateSummary(
   const slots = detectSlots(allUserText, verticalId);
   const pendingConfirmation = hasAny(lastUserLower, PENDING_CONFIRM_PATTERNS);
   const selectedRestaurant = detectLatestSelectedRestaurant(userMessages);
+  const lastCartSelection = detectLatestCartSelectionSignal(userMessages);
+  const lastRestaurantSelection = detectLatestRestaurantSelectionSignal(userMessages);
+  const lastSlotSelection = detectLatestSlotSelectionSignal(userMessages);
   const intent = detectIntent(lastUserLower, verticalId);
   const locationSignal = formatLocationSignal(selectedAddress);
 
@@ -176,6 +262,15 @@ export function buildSessionStateSummary(
   }
   if (locationSignal) {
     parts.push(`location=${locationSignal}`);
+  }
+  if (lastCartSelection) {
+    parts.push(`last_cart_selection=${lastCartSelection}`);
+  }
+  if (lastRestaurantSelection) {
+    parts.push(`last_restaurant_selection=${lastRestaurantSelection}`);
+  }
+  if (lastSlotSelection) {
+    parts.push(`last_slot_selection=${lastSlotSelection}`);
   }
 
   if (verticalId === "foodorder") {

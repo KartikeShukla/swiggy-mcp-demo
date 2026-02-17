@@ -19,3 +19,4 @@ Provide grooming-focused recommendations and Instamart shopping flow.
 - Partial context where skin/hair type is missing.
 - Brand unavailability requiring near-equivalent alternatives.
 - Repeated cart edits across multiple product groups.
+- Variant ambiguity for same-name products; selected metadata should drive direct cart mutation.

@@ -26,14 +26,29 @@ export function TimeSlotPicker({
       setPendingSlot(slot);
       return;
     }
-    onAction(`Select the ${sanitizeUntrustedPromptText(slot.time, 40)} time slot`);
+    const safeSlotTime = sanitizeUntrustedPromptText(slot.time, 40);
+    onAction({
+      kind: "slot_select",
+      message: `Select the ${safeSlotTime} time slot`,
+      slotTime: safeSlotTime,
+      slotId: slot.slotId,
+      slotToken: slot.slotToken,
+      restaurantId: slot.restaurantId,
+    });
   };
 
   const confirmBooking = () => {
     if (!pendingSlot || !safeRestaurantName) return;
-    onAction(
-      `Book a table at ${safeRestaurantName} for ${sanitizeUntrustedPromptText(pendingSlot.time, 40)}`,
-    );
+    const safeSlotTime = sanitizeUntrustedPromptText(pendingSlot.time, 40);
+    onAction({
+      kind: "slot_select",
+      message: `Book a table at ${safeRestaurantName} for ${safeSlotTime}`,
+      slotTime: safeSlotTime,
+      slotId: pendingSlot.slotId,
+      slotToken: pendingSlot.slotToken,
+      restaurantName: safeRestaurantName,
+      restaurantId: pendingSlot.restaurantId,
+    });
     setPendingSlot(null);
   };
 

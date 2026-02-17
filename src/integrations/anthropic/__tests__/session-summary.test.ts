@@ -134,4 +134,19 @@ describe("buildSessionStateSummary", () => {
     expect(summary).toContain("area:koramangala");
     expect(summary).toContain("time:sunday|dinner");
   });
+
+  it("captures structured selection metadata signals for cart, restaurant, and slot", () => {
+    const summary = buildSessionStateSummary(
+      [
+        user("Check availability at Saffron Table. Selected restaurant metadata: {\"restaurant_id\":\"r1\",\"restaurant_name\":\"Saffron Table\",\"mode\":\"availability\"}."),
+        user("Book a table at Saffron Table for 7:30 PM. Selected slot metadata: {\"slot_time\":\"7:30 PM\",\"slot_id\":\"slot-1\"}."),
+        user("Add to cart: 1x Apple. Selected cart items metadata: [{\"name\":\"Apple\",\"quantity\":1,\"variant\":\"500g\"}]"),
+      ],
+      "food",
+    );
+
+    expect(summary).toContain("last_cart_selection=Applex1(500g)");
+    expect(summary).toContain("last_restaurant_selection=Saffron Table");
+    expect(summary).toContain("last_slot_selection=7:30 PM");
+  });
 });

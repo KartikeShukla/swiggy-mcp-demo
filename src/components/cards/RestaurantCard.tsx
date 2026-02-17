@@ -12,11 +12,13 @@ export function RestaurantCard({
   onAction,
   actionLabel = "Check Availability",
   actionMessage,
+  actionMode = "availability",
 }: {
   restaurant: ParsedRestaurant;
   onAction: (action: ChatAction) => void;
   actionLabel?: string;
   actionMessage?: (name: string) => string;
+  actionMode?: "menu" | "availability";
 }) {
   const safeRestaurantName = sanitizeUntrustedPromptText(restaurant.name, 80);
   const imageSrc = getSafeImageSrc(restaurant.image);
@@ -79,13 +81,18 @@ export function RestaurantCard({
         )}
 
         <Button
-          onClick={() =>
-            onAction(
-              actionMessage
-                ? actionMessage(safeRestaurantName)
-                : `Check availability at ${safeRestaurantName}`
-            )
-          }
+          onClick={() => {
+            const message = actionMessage
+              ? actionMessage(safeRestaurantName)
+              : `Check availability at ${safeRestaurantName}`;
+            onAction({
+              kind: "restaurant_select",
+              message,
+              restaurantId: restaurant.backendRestaurantId || restaurant.id,
+              restaurantName: safeRestaurantName,
+              mode: actionMode,
+            });
+          }}
           aria-label={`${actionLabel} ${safeRestaurantName}`}
           variant="outline"
           size="sm"

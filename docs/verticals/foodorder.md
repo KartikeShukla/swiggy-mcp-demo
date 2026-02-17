@@ -19,3 +19,4 @@ Handle craving-based restaurant discovery, menu exploration, cart updates, and f
 - Vague user hunger prompt with no cuisine.
 - Mixed payloads requiring restaurant-vs-menu parser disambiguation.
 - Optimistic cart state prior to latest MCP cart confirmation.
+- Duplicate item names in a restaurant cart; structured cart-update metadata should be preferred over name-only matching.

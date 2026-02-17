@@ -44,9 +44,27 @@ describe("foodorder cart interactions", () => {
     await user.click(screen.getByRole("button", { name: "Decrease Masala Fries quantity to 1" }));
     await user.click(screen.getByRole("button", { name: "Increase Masala Fries quantity to 3" }));
 
-    expect(onAction).toHaveBeenNthCalledWith(1, "Remove Paneer Roll from my cart");
-    expect(onAction).toHaveBeenNthCalledWith(2, "Change Masala Fries quantity to 1");
-    expect(onAction).toHaveBeenNthCalledWith(3, "Change Masala Fries quantity to 3");
+    expect(onAction).toHaveBeenNthCalledWith(1, {
+      kind: "cart_update_item",
+      message: "Remove Paneer Roll from my cart",
+      itemId: "i1",
+      itemName: "Paneer Roll",
+      targetQuantity: 0,
+    });
+    expect(onAction).toHaveBeenNthCalledWith(2, {
+      kind: "cart_update_item",
+      message: "Change Masala Fries quantity to 1",
+      itemId: "i2",
+      itemName: "Masala Fries",
+      targetQuantity: 1,
+    });
+    expect(onAction).toHaveBeenNthCalledWith(3, {
+      kind: "cart_update_item",
+      message: "Change Masala Fries quantity to 3",
+      itemId: "i2",
+      itemName: "Masala Fries",
+      targetQuantity: 3,
+    });
   });
 
   it("emits unchanged final confirmation message on continue", async () => {

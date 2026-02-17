@@ -21,7 +21,21 @@ describe("food product interactions", () => {
     await user.click(screen.getByRole("button", { name: "Add 3 items to cart" }));
 
     expect(onAction).toHaveBeenCalledTimes(1);
-    expect(onAction).toHaveBeenCalledWith("Add to cart: 2x Apple, 1x Banana");
+    expect(onAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "cart_add_selection",
+        message: "Add to cart: 2x Apple, 1x Banana",
+      }),
+    );
+    const emitted = onAction.mock.calls[0][0];
+    expect(emitted.kind).toBe("cart_add_selection");
+    if (emitted.kind !== "cart_add_selection") return;
+    expect(emitted.items).toHaveLength(2);
+    expect(emitted.items[0]).toEqual(expect.objectContaining({
+      uiProductId: "p1",
+      name: "Apple",
+      quantity: 2,
+    }));
     expect(screen.getByRole("button", { name: "Add Apple to cart" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Banana to cart" })).toBeInTheDocument();
   });

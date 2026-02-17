@@ -57,6 +57,7 @@ graph LR
 - Optional session summary and datetime blocks are additional runtime context.
 - Address lock block is included when selected address is known.
 - Dining and foodorder summaries include compact filter memory for relevance continuity.
+- Session summaries can also include compact selection-memory hints (`last_cart_selection`, `last_restaurant_selection`, `last_slot_selection`) derived from recent structured action payloads.
 
 ## Error Handling Model
 ### API-level errors
@@ -86,6 +87,7 @@ Handled by `classifyMcpError` + stream abort guards:
 - Chat history is sanitized before API usage and on persistence.
 - Cart state is derived from parsed assistant tool results, not a separate server-backed cart store.
 - Foodorder optimistic cart state uses stable keys (vertical + restaurant scope + item id/name) to reduce cross-restaurant item collisions before authoritative cart results arrive.
+- UI actions are emitted with stable human-readable messages plus structured identity metadata (IDs/variants/slot refs) to reduce cross-turn disambiguation failures.
 - Navigation adds a Nutrition/Style (`food` <-> `style`) switch guard: when source-tab state exists, confirmation is required before switch, source-tab chat is cleared, and a best-effort background Instamart cart-clear request is attempted.
 
 ## OAuth Flow (Dev Only)

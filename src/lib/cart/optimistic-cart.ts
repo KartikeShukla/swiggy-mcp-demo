@@ -72,3 +72,20 @@ export function findOptimisticCartKeyByName(
   const scoped = pool.find(([, entry]) => matchesRestaurantScope(entry, lockedRestaurant));
   return (scoped ?? pool[0])[0] ?? null;
 }
+
+export function findOptimisticCartKeyById(
+  entries: Record<string, OptimisticCartEntry>,
+  targetId: string,
+  lockedRestaurant?: string | null,
+): string | null {
+  const wanted = normalizeId(targetId);
+  if (!wanted) return null;
+
+  const pool = Object.entries(entries)
+    .filter(([, entry]) => normalizeId(entry.id) === wanted)
+    .sort((a, b) => b[1].updatedAt - a[1].updatedAt);
+
+  if (pool.length === 0) return null;
+  const scoped = pool.find(([, entry]) => matchesRestaurantScope(entry, lockedRestaurant));
+  return (scoped ?? pool[0])[0] ?? null;
+}

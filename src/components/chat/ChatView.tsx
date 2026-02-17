@@ -1,7 +1,14 @@
 import { useCallback, useMemo, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { verticals } from "@/verticals";
-import type { VerticalConfig, ParsedAddress, ChatAction, ParsedProduct, CartState } from "@/lib/types";
+import type {
+  CartAddSelectionItem,
+  VerticalConfig,
+  ParsedAddress,
+  ChatAction,
+  ParsedProduct,
+  CartState,
+} from "@/lib/types";
 import { useChat } from "@/hooks/useChat";
 import { useCart } from "@/hooks/useCart";
 import { sanitizeUntrustedPromptText } from "@/lib/prompt-safety";
@@ -14,9 +21,17 @@ import { ShoppingCart } from "lucide-react";
 import styleGif from "@/assets/verticals/style.gif";
 import diningGif from "@/assets/verticals/dining.gif";
 import foodorderGif from "@/assets/verticals/foodorder.gif";
-import { getActionMessage, isSelectAddressAction } from "@/lib/chat-actions";
+import {
+  getActionMessage,
+  isCartAddSelectionAction,
+  isCartUpdateItemAction,
+  isRestaurantSelectAction,
+  isSelectAddressAction,
+  isSlotSelectAction,
+} from "@/lib/chat-actions";
 import {
   buildOptimisticCartKey,
+  findOptimisticCartKeyById,
   findOptimisticCartKeyByName,
   type OptimisticCartEntry,
 } from "@/lib/cart/optimistic-cart";
@@ -29,6 +44,101 @@ const gifMap: Record<string, string> = {
 };
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+
+function toSafeSelectionMetadata(items: CartAddSelectionItem[]) {
+  return items.map((item) => ({
+    ui_product_id: item.uiProductId,
+    backend_product_id: item.backendProductId,
+    backend_variant_id: item.backendVariantId,
+    name: sanitizeUntrustedPromptText(item.name, 80),
+    quantity: item.quantity,
+    brand: item.brand ? sanitizeUntrustedPromptText(item.brand, 60) : undefined,
+    variant: item.variantLabel ? sanitizeUntrustedPromptText(item.variantLabel, 40) : undefined,
+    price: item.price,
+    restaurant: item.restaurantName ? sanitizeUntrustedPromptText(item.restaurantName, 80) : undefined,
+  }));
+}
+
+function buildTransportMessageForAction(
+  action: ChatAction,
+  verticalId: string,
+  lockedRestaurant: string | null,
+): string {
+  const message = getActionMessage(action).trim();
+  if (!message) return "";
+
+  if (isCartAddSelectionAction(action)) {
+    const safeItems = toSafeSelectionMetadata(action.items);
+    if (safeItems.length === 0) return message;
+
+    if (verticalId === "foodorder") {
+      return [
+        "Cart update request (menu mode):",
+        lockedRestaurant
+          ? `Selected restaurant: ${sanitizeUntrustedPromptText(lockedRestaurant, 80)}.`
+          : action.restaurantName
+            ? `Selected restaurant: ${sanitizeUntrustedPromptText(action.restaurantName, 80)}.`
+            : "Selected restaurant: currently opened menu context.",
+        `${message}.`,
+        `Structured items: ${JSON.stringify(safeItems)}.`,
+        "Execute cart update directly from this selected-item metadata.",
+        "Do not run restaurant discovery.",
+        "Do not run menu discovery or fetch/show menu items for this restaurant again unless the user explicitly asks to see the menu.",
+      ].join(" ");
+    }
+
+    return [
+      `${message}.`,
+      `Selected cart items metadata: ${JSON.stringify(safeItems)}.`,
+      "Execute cart update directly from this selected-item metadata.",
+      "Do not ask to reconfirm size/variant unless selected metadata is missing or conflicting across multiple exact matches.",
+    ].join(" ");
+  }
+
+  if (isCartUpdateItemAction(action)) {
+    const safeItemName = sanitizeUntrustedPromptText(action.itemName, 80);
+    return [
+      `${message}.`,
+      `Cart item metadata: ${JSON.stringify({
+        item_id: action.itemId,
+        item_name: safeItemName,
+        target_quantity: action.targetQuantity,
+        restaurant: action.restaurantName ? sanitizeUntrustedPromptText(action.restaurantName, 80) : undefined,
+      })}.`,
+      "Execute this cart update directly for the referenced item. Do not ask to reconfirm unless the item cannot be resolved.",
+    ].join(" ");
+  }
+
+  if (isRestaurantSelectAction(action)) {
+    return [
+      `${message}.`,
+      `Selected restaurant metadata: ${JSON.stringify({
+        restaurant_id: action.restaurantId,
+        restaurant_name: sanitizeUntrustedPromptText(action.restaurantName, 80),
+        mode: action.mode,
+      })}.`,
+      action.mode === "menu"
+        ? "Lock this restaurant for all subsequent menu/cart calls unless the user explicitly asks to change restaurant."
+        : "Use this exact restaurant identity for availability and booking checks.",
+    ].join(" ");
+  }
+
+  if (isSlotSelectAction(action)) {
+    return [
+      `${message}.`,
+      `Selected slot metadata: ${JSON.stringify({
+        slot_time: sanitizeUntrustedPromptText(action.slotTime, 40),
+        slot_id: action.slotId,
+        slot_token: action.slotToken,
+        restaurant_name: action.restaurantName ? sanitizeUntrustedPromptText(action.restaurantName, 80) : undefined,
+        restaurant_id: action.restaurantId,
+      })}.`,
+      "Use this slot selection directly for availability/booking flow. Do not ask to reconfirm unless the slot token/id is invalid or unavailable.",
+    ].join(" ");
+  }
+
+  return message;
+}
 
 function ChatViewInner({
   vertical,
@@ -137,8 +247,30 @@ function ChatViewInner({
   const effectiveCart = cart ?? optimisticCart;
   const effectiveItemCount = effectiveCart?.items.reduce((sum, i) => sum + i.quantity, 0) ?? 0;
 
-  const applyFoodOrderOptimisticAction = useCallback((actionText: string) => {
+  const applyFoodOrderOptimisticAction = useCallback((action: ChatAction, actionText: string) => {
     if (vertical.id !== "foodorder" || cart) return;
+
+    if (isCartUpdateItemAction(action)) {
+      const qty = action.targetQuantity;
+      if (!Number.isFinite(qty) || qty < 0) return;
+      setOptimisticCartItems((prev) => {
+        if (Object.keys(prev).length === 0) return prev;
+        const next = { ...prev };
+        const keyById = findOptimisticCartKeyById(next, action.itemId, lockedRestaurant);
+        const keyByName = findOptimisticCartKeyByName(next, action.itemName, lockedRestaurant);
+        const key = keyById || keyByName;
+        if (!key) return prev;
+        const item = next[key];
+        if (!item) return prev;
+        if (qty === 0) {
+          delete next[key];
+        } else {
+          next[key] = { ...item, quantity: qty, updatedAt: Date.now() };
+        }
+        return next;
+      });
+      return;
+    }
 
     const removeMatch = actionText.match(/^Remove (.+) from my cart$/i);
     if (removeMatch?.[1]) {
@@ -184,24 +316,43 @@ function ChatViewInner({
       }
       const message = getActionMessage(action).trim();
       if (!message) return;
-      const menuOpenMatch = message.match(/^Open menu for restaurant:\s*(.+)$/i);
-      if (menuOpenMatch?.[1]) {
-        const nextRestaurant = sanitizeUntrustedPromptText(menuOpenMatch[1], 80);
-        if (vertical.id === "foodorder" && nextRestaurant !== lockedRestaurant) {
+
+      if (isRestaurantSelectAction(action) && vertical.id === "foodorder") {
+        const nextRestaurant = sanitizeUntrustedPromptText(action.restaurantName, 80);
+        if (action.mode === "menu" && nextRestaurant !== lockedRestaurant) {
           setPendingSelection({});
           if (!cart) setOptimisticCartItems({});
         }
-        setLockedRestaurant(nextRestaurant);
-      } else if (
-        vertical.id === "foodorder" &&
-        /\b(change|switch|different|another|new)\b.*\brestaurant\b|\bfind\b.*\brestaurants?\b|\bshow\b.*\brestaurants?\b/i.test(message)
-      ) {
-        setLockedRestaurant(null);
-        setPendingSelection({});
-        if (!cart) setOptimisticCartItems({});
+        if (action.mode === "menu") {
+          setLockedRestaurant(nextRestaurant);
+        }
+      } else {
+        const menuOpenMatch = message.match(/^Open menu for restaurant:\s*(.+)$/i);
+        if (menuOpenMatch?.[1]) {
+          const nextRestaurant = sanitizeUntrustedPromptText(menuOpenMatch[1], 80);
+          if (vertical.id === "foodorder" && nextRestaurant !== lockedRestaurant) {
+            setPendingSelection({});
+            if (!cart) setOptimisticCartItems({});
+          }
+          setLockedRestaurant(nextRestaurant);
+        } else if (
+          vertical.id === "foodorder" &&
+          /\b(change|switch|different|another|new)\b.*\brestaurant\b|\bfind\b.*\brestaurants?\b|\bshow\b.*\brestaurants?\b/i.test(message)
+        ) {
+          setLockedRestaurant(null);
+          setPendingSelection({});
+          if (!cart) setOptimisticCartItems({});
+        }
       }
-      applyFoodOrderOptimisticAction(message);
-      void sendMessage(message);
+
+      applyFoodOrderOptimisticAction(action, message);
+
+      const transportMessage = buildTransportMessageForAction(
+        action,
+        vertical.id,
+        lockedRestaurant,
+      );
+      void sendMessage(transportMessage || message);
     },
     [
       applyFoodOrderOptimisticAction,
@@ -218,24 +369,30 @@ function ChatViewInner({
     const parts = pendingSelectedItems.map(
       (entry) => `${entry.quantity}x ${sanitizeUntrustedPromptText(entry.product.name, 80)}`,
     );
-    const addToCartMessage = vertical.id === "foodorder"
-      ? [
-          "Cart update request (menu mode):",
-          lockedRestaurant
-            ? `Selected restaurant: ${sanitizeUntrustedPromptText(lockedRestaurant, 80)}.`
-            : "Selected restaurant: currently opened menu context.",
-          `Add to cart: ${parts.join(", ")}.`,
-          `Structured items: ${JSON.stringify(
-            pendingSelectedItems.map((entry) => ({
-              item_id: entry.product.id,
-              name: sanitizeUntrustedPromptText(entry.product.name, 80),
-              quantity: entry.quantity,
-            })),
-          )}.`,
-          "Execute cart update directly. Do not run restaurant discovery.",
-          "Do not run menu discovery or fetch/show menu items for this restaurant again unless the user explicitly asks to see the menu.",
-        ].join(" ")
-      : `Add to cart: ${parts.join(", ")}`;
+    const cartAddAction: ChatAction = {
+      kind: "cart_add_selection",
+      message: `Add to cart: ${parts.join(", ")}`,
+      verticalId: vertical.id,
+      restaurantName: lockedRestaurant || undefined,
+      items: pendingSelectedItems.map((entry) => ({
+        uiProductId: entry.product.id,
+        name: sanitizeUntrustedPromptText(entry.product.name, 80),
+        quantity: entry.quantity,
+        brand: entry.product.brand
+          ? sanitizeUntrustedPromptText(entry.product.brand, 60)
+          : undefined,
+        variantLabel: entry.product.variantLabel || entry.product.quantity,
+        price: entry.product.price,
+        backendProductId: entry.product.backendProductId,
+        backendVariantId: entry.product.backendVariantId,
+        restaurantName: entry.product.restaurantName || lockedRestaurant || undefined,
+      })),
+    };
+    const addToCartMessage = buildTransportMessageForAction(
+      cartAddAction,
+      vertical.id,
+      lockedRestaurant,
+    );
     const ok = await sendMessage(addToCartMessage);
     if (vertical.id === "foodorder" && ok) {
       setOptimisticCartItems((prev) => {

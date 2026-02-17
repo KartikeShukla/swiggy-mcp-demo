@@ -98,4 +98,23 @@ describe("tryParseTimeSlots()", () => {
     if (result!.type !== "time_slots") return;
     expect(result!.slots).toHaveLength(1);
   });
+
+  it("captures slot ids/tokens/restaurant id when present", () => {
+    const result = tryParseTimeSlots([
+      {
+        time: "7:00 PM",
+        id: "slot-1",
+        token: "tok-abc",
+        restaurant_id: "r-1",
+      },
+    ]);
+    if (result!.type !== "time_slots") return;
+    expect(result!.slots[0]).toEqual({
+      time: "7:00 PM",
+      available: true,
+      slotId: "slot-1",
+      slotToken: "tok-abc",
+      restaurantId: "r-1",
+    });
+  });
 });

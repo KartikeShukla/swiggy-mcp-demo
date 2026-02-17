@@ -39,6 +39,7 @@ export function ItemCardGrid({
       const isRailSection = verticalId === "dining" || verticalId === "foodorder";
       const isMultiRow = !isRailSection && result.items.length > 3;
       const actionLabel = isFoodOrder ? "View Menu" : "Check Availability";
+      const actionMode = isFoodOrder ? "menu" : "availability";
       const actionMessage = isFoodOrder
         ? (name: string) => `Open menu for restaurant: ${name}`
         : undefined;
@@ -73,6 +74,7 @@ export function ItemCardGrid({
                   onAction={onAction}
                   actionLabel={actionLabel}
                   actionMessage={actionMessage}
+                  actionMode={actionMode}
                 />
               </div>
             ))}

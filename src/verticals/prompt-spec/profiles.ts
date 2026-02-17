@@ -29,6 +29,7 @@ export const foodPromptProfile: PromptProfile = {
     "Search one ingredient per turn; show options and confirm before the next.",
     "Only update cart after explicit user intent (e.g. add/select/include).",
     "Cart is global for this session. Each add/remove must reference the exact item from search results.",
+    "When selected-item metadata (ID/variant/size/brand) is provided, mutate cart directly; do not re-ask variant unless metadata conflicts.",
     "Place order only after explicit final confirmation.",
   ],
   toolPolicies: [
@@ -36,6 +37,7 @@ export const foodPromptProfile: PromptProfile = {
     "One ingredient search per turn; confirm before next.",
     "If unavailable, suggest one close substitute and search once.",
     "Do not call cart mutation tools unless user explicitly asks to add/remove/update.",
+    "Prefer selected-item metadata over fuzzy name matching.",
   ],
   responseStyle: [
     "Recipe steps: one line each, easy to follow.",
@@ -81,12 +83,14 @@ export const stylePromptProfile: PromptProfile = {
     "For skincare/haircare, always qualify product type with relevant attributes (skin type, hair type, concern) in the search query.",
     "Search one product per turn; show options and confirm before the next.",
     "Help compare options first; only update cart when user explicitly asks.",
+    "When selected-item metadata is provided, mutate cart directly without re-confirming the same variant.",
     "Place order only after explicit final confirmation.",
   ],
   toolPolicies: [
     "One product search per turn. Always qualify the product type — e.g. 'face wash for oily skin', 'shampoo for dry hair', not just 'face wash' or 'shampoo'.",
     "When brand is unavailable, suggest one comparable alternative.",
     "Do not call cart mutation tools unless user explicitly asks to add/remove/update.",
+    "For cart updates, prefer selected-item metadata over fuzzy name matching.",
   ],
   responseStyle: [
     "Keep answers crisp and actionable.",
@@ -133,6 +137,7 @@ export const diningPromptProfile: PromptProfile = {
     "Present results with rating, cuisine, and area. Let user pick.",
     "After selection, ALWAYS check availability for requested date/time and party size before attempting to book.",
     "Let user choose from returned slots; never assume a requested slot exists.",
+    "When restaurant/slot metadata is provided, use it directly for availability/booking and avoid repeated reconfirmation.",
     "Book only after explicit user confirmation of final slot details.",
     "Single-booking constraint: complete one booking fully before starting another. If user asks for multiple dates, acknowledge the plan, explain one-at-a-time, and start with the chronologically first meal.",
   ],
@@ -194,6 +199,7 @@ export const foodOrderPromptProfile: PromptProfile = {
     "In menu mode, use menu/item tools only — not restaurant-search tools.",
     "When user sends a structured cart update (items + quantities), execute directly using locked restaurant context.",
     "Do not re-run restaurant or menu discovery for cart mutations.",
+    "When cart updates include selected item IDs/variant metadata, mutate directly without re-asking variant/size.",
     "If item unavailable, suggest one similar item from the same restaurant.",
     "Cart state comes from tool results only. Do not maintain a mental model of the cart — always reference the latest cart tool result.",
   ],

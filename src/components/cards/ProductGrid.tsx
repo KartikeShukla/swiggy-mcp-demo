@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { ShoppingCart } from "lucide-react";
-import type { ChatAction, ParsedProduct } from "@/lib/types";
+import type { CartAddSelectionItem, ChatAction, ParsedProduct } from "@/lib/types";
 import { sanitizeUntrustedPromptText } from "@/lib/prompt-safety";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -101,7 +101,26 @@ export function ProductGrid({
     const parts = selectedItems.map(
       (p) => `${getQuantity(p.id)}x ${sanitizeUntrustedPromptText(p.name, 80)}`,
     );
-    onAction(`Add to cart: ${parts.join(", ")}`);
+    const structuredItems: CartAddSelectionItem[] = selectedItems.map((product) => ({
+      uiProductId: product.id,
+      name: sanitizeUntrustedPromptText(product.name, 80),
+      quantity: getQuantity(product.id),
+      brand: product.brand
+        ? sanitizeUntrustedPromptText(product.brand, 60)
+        : undefined,
+      variantLabel: product.variantLabel || product.quantity,
+      price: product.price,
+      backendProductId: product.backendProductId,
+      backendVariantId: product.backendVariantId,
+      restaurantName: product.restaurantName,
+    }));
+
+    onAction({
+      kind: "cart_add_selection",
+      message: `Add to cart: ${parts.join(", ")}`,
+      items: structuredItems,
+      verticalId,
+    });
     setQuantities({});
   };
 

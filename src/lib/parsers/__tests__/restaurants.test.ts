@@ -157,6 +157,7 @@ describe("tryParseRestaurants()", () => {
     ]);
     if (result!.type !== "restaurants") return;
     expect(result!.items[0].id).toBe("rid");
+    expect(result!.items[0].backendRestaurantId).toBe("rid");
   });
 
   it("generates fallback id", () => {

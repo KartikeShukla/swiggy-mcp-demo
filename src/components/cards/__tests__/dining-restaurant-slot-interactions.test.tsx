@@ -28,7 +28,13 @@ describe("dining interactions", () => {
       screen.getByRole("button", { name: "Check Availability Saffron Table" }),
     );
 
-    expect(onAction).toHaveBeenCalledWith("Check availability at Saffron Table");
+    expect(onAction).toHaveBeenCalledWith({
+      kind: "restaurant_select",
+      message: "Check availability at Saffron Table",
+      restaurantId: "r1",
+      restaurantName: "Saffron Table",
+      mode: "availability",
+    });
   });
 
   it("requires confirmation before emitting a booking message", async () => {
@@ -58,6 +64,14 @@ describe("dining interactions", () => {
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Yes, book this slot" }));
-    expect(onAction).toHaveBeenCalledWith("Book a table at Saffron Table for 7:30 PM");
+    expect(onAction).toHaveBeenCalledWith({
+      kind: "slot_select",
+      message: "Book a table at Saffron Table for 7:30 PM",
+      slotTime: "7:30 PM",
+      slotId: undefined,
+      slotToken: undefined,
+      restaurantName: "Saffron Table",
+      restaurantId: undefined,
+    });
   });
 });

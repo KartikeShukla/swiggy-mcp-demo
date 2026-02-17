@@ -73,6 +73,9 @@ export interface ParsedProduct {
   sourceQuery?: string;
   groupOrder?: number;
   quantity?: string;
+  variantLabel?: string;
+  backendProductId?: string;
+  backendVariantId?: string;
   available?: boolean;
   description?: string;
   restaurantName?: string;
@@ -81,6 +84,7 @@ export interface ParsedProduct {
 export interface ParsedRestaurant {
   id: string;
   name: string;
+  backendRestaurantId?: string;
   cuisine?: string;
   rating?: number;
   priceForTwo?: string;
@@ -94,6 +98,9 @@ export interface ParsedRestaurant {
 export interface ParsedTimeSlot {
   time: string;
   available: boolean;
+  slotId?: string;
+  slotToken?: string;
+  restaurantId?: string;
 }
 
 export interface ParsedAddress {
@@ -104,10 +111,53 @@ export interface ParsedAddress {
   lng?: number;
 }
 
+export interface CartAddSelectionItem {
+  uiProductId: string;
+  name: string;
+  quantity: number;
+  brand?: string;
+  variantLabel?: string;
+  price?: number;
+  backendProductId?: string;
+  backendVariantId?: string;
+  restaurantName?: string;
+}
+
 export type ChatAction =
   | string
   | { kind: "text"; text: string }
-  | { kind: "select_address"; address: ParsedAddress; message: string };
+  | { kind: "select_address"; address: ParsedAddress; message: string }
+  | {
+      kind: "cart_add_selection";
+      message: string;
+      items: CartAddSelectionItem[];
+      verticalId?: string;
+      restaurantName?: string;
+    }
+  | {
+      kind: "cart_update_item";
+      message: string;
+      itemId: string;
+      itemName: string;
+      targetQuantity: number;
+      restaurantName?: string;
+    }
+  | {
+      kind: "restaurant_select";
+      message: string;
+      restaurantId: string;
+      restaurantName: string;
+      mode: "menu" | "availability";
+    }
+  | {
+      kind: "slot_select";
+      message: string;
+      slotTime: string;
+      slotId?: string;
+      slotToken?: string;
+      restaurantName?: string;
+      restaurantId?: string;
+    };
 
 export interface ParsedStatus {
   success: boolean;

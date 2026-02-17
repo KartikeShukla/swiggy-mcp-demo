@@ -15,6 +15,7 @@ export function tryParseRestaurants(
     const obj = item as Record<string, unknown>;
     const name = str(obj.name) || str(obj.displayName) || str(obj.restaurant_name) || str(obj.title);
     if (!name) continue;
+    const backendRestaurantId = str(obj.id) || str(obj.restaurant_id);
 
     // Must look somewhat like a restaurant. Rating-only payloads are common on menu
     // items, so they qualify only when product-like keys are absent.
@@ -42,7 +43,8 @@ export function tryParseRestaurants(
       : undefined;
 
     items.push({
-      id: str(obj.id) || str(obj.restaurant_id) || String(items.length),
+      id: backendRestaurantId || String(items.length),
+      backendRestaurantId,
       name,
       cuisine: cuisine || undefined,
       rating: num(obj.rating) ?? num(obj.avg_rating) ?? num(obj.avgRating),

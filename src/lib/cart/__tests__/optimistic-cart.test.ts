@@ -1,5 +1,6 @@
 import {
   buildOptimisticCartKey,
+  findOptimisticCartKeyById,
   findOptimisticCartKeyByName,
   type OptimisticCartEntry,
 } from "@/lib/cart/optimistic-cart";
@@ -80,5 +81,29 @@ describe("optimistic cart helpers", () => {
 
     const key = findOptimisticCartKeyByName(entries, "Paneer Roll");
     expect(key).toBe("k-2");
+  });
+
+  it("finds exact-id match scoped by restaurant", () => {
+    const entries: Record<string, OptimisticCartEntry> = {
+      "k-1": {
+        id: "i1",
+        name: "Paneer Roll",
+        price: 200,
+        quantity: 1,
+        restaurantScope: "spice route",
+        updatedAt: 5,
+      },
+      "k-2": {
+        id: "i1",
+        name: "Paneer Roll",
+        price: 220,
+        quantity: 2,
+        restaurantScope: "curry house",
+        updatedAt: 10,
+      },
+    };
+
+    const key = findOptimisticCartKeyById(entries, "i1", "spice route");
+    expect(key).toBe("k-1");
   });
 });

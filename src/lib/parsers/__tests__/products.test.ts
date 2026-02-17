@@ -77,7 +77,9 @@ describe("tryParseProducts()", () => {
       price: 40,
       mrp: 45,
       quantity: "300ml",
+      variantLabel: "300ml",
       brand: "Coca Cola",
+      backendVariantId: "s1",
       available: true,
     });
   });
@@ -104,9 +106,12 @@ describe("tryParseProducts()", () => {
     expect(result!.items).toHaveLength(2);
     expect(result!.items[0].id).toBe("p1-var-0");
     expect(result!.items[0].quantity).toBe("250ml");
+    expect(result!.items[0].variantLabel).toBe("250ml");
     expect(result!.items[0].price).toBe(25);
+    expect(result!.items[0].backendProductId).toBe("p1");
     expect(result!.items[1].id).toBe("p1-var-1");
     expect(result!.items[1].quantity).toBe("500ml");
+    expect(result!.items[1].variantLabel).toBe("500ml");
     expect(result!.items[1].price).toBe(45);
   });
 
@@ -228,6 +233,27 @@ describe("tryParseProducts()", () => {
 
     const r3 = tryParseProducts([{ name: "A", item_id: "iid" }]);
     expect(r3!.type === "products" && r3!.items[0].id).toBe("iid");
+  });
+
+  it("retains backend product and variant ids when available", () => {
+    const result = tryParseProducts([
+      {
+        product_id: "prod-1",
+        name: "Sparkling Water",
+        variations: [
+          {
+            spin_id: "spin-1",
+            quantityDescription: "750ml",
+            price: { offerPrice: 120, mrp: 140 },
+          },
+        ],
+      },
+    ]);
+
+    if (result!.type !== "products") return;
+    expect(result.items[0].backendProductId).toBe("prod-1");
+    expect(result.items[0].backendVariantId).toBe("spin-1");
+    expect(result.items[0].variantLabel).toBe("750ml");
   });
 
   it("handles defaultPrice field", () => {

@@ -23,3 +23,4 @@ Guide restaurant discovery, slot availability checks, and booking via Dineout MC
 - Strict filters conflict (for example, cuisine + area both present but no combined match).
 - Dish-specific requests with no menu-level evidence should use a cuisine proxy with clear caveat.
 - Non-dining requests in dining context.
+- Repeated slot reconfirmation; when selected restaurant/slot metadata exists, booking flow should execute directly unless tool output conflicts.
