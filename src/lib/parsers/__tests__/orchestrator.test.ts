@@ -1,4 +1,5 @@
 import { parseToolResult } from "@/lib/parsers/orchestrator";
+import { buildToolRenderContext } from "@/lib/relevance/context";
 
 describe("parseToolResult()", () => {
   describe("tool name routing: search/find/discover/browse/menu/list/recommend -> products", () => {
@@ -238,6 +239,74 @@ describe("parseToolResult()", () => {
       expect(result.type).toBe("products");
     });
 
+    it("applies strict-first reranking for dining discovery with render context", () => {
+      const content = JSON.stringify([
+        { name: "Trattoria Bella", cuisine: "Italian", locality: "Koramangala", rating: 4.9 },
+        { name: "Andhra Spice Court", cuisine: "South Indian", locality: "Indiranagar", rating: 4.4 },
+        { name: "Udupi Corner", cuisine: "South Indian", locality: "Koramangala", rating: 4.2 },
+      ]);
+
+      const result = parseToolResult(
+        "search_restaurants",
+        content,
+        "dining",
+        undefined,
+        buildToolRenderContext("dining", "south indian dinner in koramangala"),
+      );
+
+      expect(result.type).toBe("restaurants");
+      if (result.type !== "restaurants") return;
+      expect(result.items[0]?.name).toBe("Udupi Corner");
+      expect(result.debug?.strategy).toBe("dining:restaurants");
+      expect(result.debug?.strictApplied).toEqual(expect.arrayContaining(["cuisine", "area"]));
+    });
+
+    it("returns actionable info card when strict dining filters produce no combined match", () => {
+      const content = JSON.stringify([
+        { name: "Roma House", cuisine: "Italian", locality: "Indiranagar", rating: 4.4, priceForTwo: "₹900" },
+        { name: "Spice Court", cuisine: "North Indian", locality: "Whitefield", rating: 4.3, priceForTwo: "₹800" },
+      ]);
+
+      const result = parseToolResult(
+        "search_restaurants",
+        content,
+        "dining",
+        undefined,
+        buildToolRenderContext("dining", "romantic italian in whitefield under 1000"),
+      );
+
+      expect(result.type).toBe("info");
+      if (result.type !== "info") return;
+      expect(result.title).toContain("No strict dining matches");
+      expect(result.entries.some((entry) => entry.key === "Current filters")).toBe(true);
+      expect(result.entries.some((entry) => entry.value.includes("Relax one filter"))).toBe(true);
+    });
+
+    it("parses up to 15 dining candidates and trims to top 5 after reranking", () => {
+      const content = JSON.stringify(
+        Array.from({ length: 12 }, (_, index) => ({
+          name: `Restaurant ${index + 1}`,
+          cuisine: index < 8 ? "South Indian" : "Italian",
+          locality: index < 10 ? "Koramangala" : "Indiranagar",
+          rating: 4.8 - index * 0.1,
+        })),
+      );
+
+      const result = parseToolResult(
+        "search_restaurants",
+        content,
+        "dining",
+        undefined,
+        buildToolRenderContext("dining", "south indian in koramangala"),
+      );
+
+      expect(result.type).toBe("restaurants");
+      if (result.type !== "restaurants") return;
+      expect(result.items).toHaveLength(5);
+      expect(result.debug?.beforeCount).toBe(12);
+      expect(result.debug?.afterCount).toBe(5);
+    });
+
     it("routes menu tool to products for foodorder vertical", () => {
       const content = JSON.stringify([
         { name: "Biryani", price: 250 },
@@ -321,6 +390,46 @@ describe("parseToolResult()", () => {
       expect(result.items[0].name).toBe("Menu Item 1");
       expect(result.items[4].name).toBe("Menu Item 5");
     });
+
+    it("applies foodorder discover reranking when render context is available", () => {
+      const content = JSON.stringify([
+        { name: "Veg Biryani Bowl", price: 220, description: "Spicy veg biryani" },
+        { name: "Mild Pasta", price: 180, description: "Creamy white sauce" },
+      ]);
+
+      const result = parseToolResult(
+        "search_restaurants",
+        content,
+        "foodorder",
+        undefined,
+        buildToolRenderContext("foodorder", "spicy veg biryani under 250"),
+      );
+
+      expect(result.type).toBe("products");
+      if (result.type !== "products") return;
+      expect(result.items[0]?.name).toBe("Veg Biryani Bowl");
+      expect(result.debug?.strategy).toBe("foodorder:discover-products");
+    });
+
+    it("returns strict-match guidance for menu mode when no menu items satisfy filters", () => {
+      const content = JSON.stringify([
+        { name: "Chicken Wings", price: 320, description: "Non-veg starter" },
+        { name: "Mutton Kebab", price: 410, description: "Non-veg appetizer" },
+      ]);
+
+      const result = parseToolResult(
+        "get_menu",
+        content,
+        "foodorder",
+        undefined,
+        buildToolRenderContext("foodorder", "show menu vegan pizza under 100"),
+      );
+
+      expect(result.type).toBe("info");
+      if (result.type !== "info") return;
+      expect(result.title).toContain("No strict menu matches");
+    });
+
   });
 
   describe("shape detection fallback", () => {

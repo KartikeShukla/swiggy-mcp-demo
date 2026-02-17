@@ -161,6 +161,7 @@ export function tryParseProducts(
         available: obj.isAvail != null ? Boolean(obj.isAvail) : obj.inStock != null ? Boolean(obj.inStock) : obj.available != null ? Boolean(obj.available) : obj.in_stock != null ? Boolean(obj.in_stock) : variation?.isInStockAndAvailable != null ? Boolean(variation.isInStockAndAvailable) : true,
         description: str(obj.description) || str(obj.desc) ||
           (obj.isVeg != null ? (obj.isVeg ? "Veg" : "Non-Veg") : undefined),
+        restaurantName: str(obj.restaurant_name) || str(obj.restaurantName),
       });
     } else {
       for (let vi = 0; vi < variations.length; vi++) {
@@ -192,6 +193,7 @@ export function tryParseProducts(
           available: obj.isAvail != null ? Boolean(obj.isAvail) : obj.inStock != null ? Boolean(obj.inStock) : obj.available != null ? Boolean(obj.available) : obj.in_stock != null ? Boolean(obj.in_stock) : variation.isInStockAndAvailable != null ? Boolean(variation.isInStockAndAvailable) : true,
           description: str(obj.description) || str(obj.desc) ||
             (obj.isVeg != null ? (obj.isVeg ? "Veg" : "Non-Veg") : undefined),
+          restaurantName: str(obj.restaurant_name) || str(obj.restaurantName),
         });
       }
     }

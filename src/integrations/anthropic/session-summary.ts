@@ -1,5 +1,8 @@
 import type { ParsedAddress, ChatMessage } from "@/lib/types";
 import type { VerticalId } from "@/verticals/prompt-spec/types";
+import { extractDiningConstraints } from "@/lib/relevance/dining";
+import { extractFoodorderConstraints } from "@/lib/relevance/foodorder";
+import { detectParserIntent } from "@/lib/intent/runtime-signals";
 
 // Module-scope regex constants (avoid per-call RegExp allocation)
 const RESTAURANT_SELECT_PATTERNS = [
@@ -10,7 +13,6 @@ const RESTAURANT_SELECT_PATTERNS = [
   /book a table at\s+(.+)$/i,
 ];
 
-const CONFIRM_INTENT_PATTERNS = [/confirm/, /go ahead/, /place order/, /book it/, /yes do it/];
 const FOOD_MENU_PATTERNS = [/open menu for restaurant:/, /menu at /];
 const DINING_AVAIL_PATTERNS = [/availability/, /time slot/, /book a table/];
 const CART_INTENT_PATTERNS = [/add /, /remove /, /cart/, /basket/];
@@ -91,9 +93,6 @@ function detectLatestSelectedRestaurant(userMessages: string[]): string | null {
 }
 
 function detectIntent(lastUserText: string, verticalId: VerticalId): SummarySignals["intent"] {
-  if (hasAny(lastUserText, CONFIRM_INTENT_PATTERNS)) {
-    return "confirm";
-  }
   if (verticalId === "foodorder" && hasAny(lastUserText, FOOD_MENU_PATTERNS)) {
     return "menu";
   }
@@ -103,7 +102,7 @@ function detectIntent(lastUserText: string, verticalId: VerticalId): SummarySign
   if (hasAny(lastUserText, CART_INTENT_PATTERNS)) {
     return "cart";
   }
-  return "discover";
+  return detectParserIntent(lastUserText, verticalId);
 }
 
 function detectSlots(allUserText: string, verticalId: VerticalId): string[] {
@@ -177,6 +176,32 @@ export function buildSessionStateSummary(
   }
   if (locationSignal) {
     parts.push(`location=${locationSignal}`);
+  }
+
+  if (verticalId === "foodorder") {
+    parts.push(`mode=${intent}`);
+    const constraints = extractFoodorderConstraints(allUserText);
+    const filterSignals: string[] = [];
+    if (constraints.cuisines?.length) filterSignals.push(`cuisine:${constraints.cuisines.join("|")}`);
+    if (constraints.dishes?.length) filterSignals.push(`dish:${constraints.dishes.join("|")}`);
+    if (constraints.diet) filterSignals.push(`diet:${constraints.diet}`);
+    if (constraints.spicy) filterSignals.push("spicy:true");
+    if (constraints.budgetMax != null) filterSignals.push(`budget:${constraints.budgetMax}`);
+    if (constraints.maxDeliveryMins != null) filterSignals.push(`speed:${constraints.maxDeliveryMins}`);
+    parts.push(`filters=${filterSignals.length > 0 ? filterSignals.join(",") : "-"}`);
+  }
+
+  if (verticalId === "dining") {
+    const constraints = extractDiningConstraints(allUserText);
+    const filterSignals: string[] = [];
+    if (constraints.cuisines?.length) filterSignals.push(`cuisine:${constraints.cuisines.join("|")}`);
+    if (constraints.vibes?.length) filterSignals.push(`vibe:${constraints.vibes.join("|")}`);
+    if (constraints.areas?.length) filterSignals.push(`area:${constraints.areas.join("|")}`);
+    if (constraints.dishes?.length) filterSignals.push(`dish:${constraints.dishes.join("|")}`);
+    if (constraints.budgetMax != null) filterSignals.push(`budget:${constraints.budgetMax}`);
+    if (constraints.partySize != null) filterSignals.push(`party:${constraints.partySize}`);
+    if (constraints.timeHints?.length) filterSignals.push(`time:${constraints.timeHints.join("|")}`);
+    parts.push(`filters=${filterSignals.length > 0 ? filterSignals.join(",") : "-"}`);
   }
 
   return parts.join(";");

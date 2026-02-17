@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Bot, ChevronRight } from "lucide-react";
-import type { ChatAction, ChatMessage, ContentBlock } from "@/lib/types";
+import type { ChatAction, ChatMessage, ContentBlock, ToolRenderContext } from "@/lib/types";
 import { renderMarkdownLite } from "@/lib/markdown";
 import { findPrecedingToolName, groupBlocks } from "@/lib/content-blocks";
 import { parseToolResult, parseVariantsFromText } from "@/lib/parsers";
@@ -17,11 +17,13 @@ export function AssistantMessageBubble({
   message,
   onAction,
   verticalId,
+  renderContext,
   sharedSelection,
 }: {
   message: ChatMessage;
   onAction?: (action: ChatAction) => void;
   verticalId?: string;
+  renderContext?: ToolRenderContext;
   sharedSelection?: SharedProductSelection;
 }) {
   const blocks: ContentBlock[] = useMemo(
@@ -56,6 +58,7 @@ export function AssistantMessageBubble({
         block.content,
         resolvedVerticalId,
         matchedToolUse?.input,
+        renderContext,
       );
       if (parsed.type !== "raw") {
         cards = true;
@@ -64,7 +67,7 @@ export function AssistantMessageBubble({
     }
 
     return { hasCards: cards, segments: segs, precomputedResults: resultsMap };
-  }, [blocks, resolvedVerticalId]);
+  }, [blocks, resolvedVerticalId, renderContext]);
 
   const collapsibleTexts: string[] = [];
   if (hasCards) {
@@ -171,6 +174,7 @@ export function AssistantMessageBubble({
                 onAction={onAction}
                 sharedSelection={sharedSelection}
                 precomputedResults={precomputedResults}
+                renderContext={renderContext}
               />
             );
           }
@@ -186,6 +190,7 @@ export function AssistantMessageBubble({
           blocks={detailBlocks}
           allBlocks={blocks}
           verticalId={resolvedVerticalId}
+          renderContext={renderContext}
         />
       )}
     </div>

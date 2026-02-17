@@ -2,6 +2,7 @@ import {
   sanitizeAssistantBlocks,
   sanitizeMessagesForApi,
   compactOldMessages,
+  compactOldUserMessages,
   truncateToolResultsInMessages,
 } from "@/integrations/anthropic/message-sanitizer";
 import type { ChatMessage, ContentBlock } from "@/lib/types";
@@ -230,6 +231,49 @@ describe("message-sanitizer", () => {
     });
   });
 
+  describe("compactOldUserMessages", () => {
+    function user(content: string): ChatMessage {
+      return { role: "user", content, timestamp: Date.now() };
+    }
+
+    function assistant(content: string | ContentBlock[]): ChatMessage {
+      return { role: "assistant", content, timestamp: Date.now() };
+    }
+
+    it("leaves recent messages untouched", () => {
+      const messages = [user("latest"), assistant("ok")];
+      const result = compactOldUserMessages(messages, { keepRecent: 2, maxChars: 50 });
+      expect(result).toBe(messages);
+    });
+
+    it("compacts older long user messages and keeps recent full", () => {
+      const messages: ChatMessage[] = [
+        user("x".repeat(500)),
+        assistant("a1"),
+        user("latest user prompt should stay full"),
+        assistant("latest assistant reply"),
+      ];
+
+      const result = compactOldUserMessages(messages, { keepRecent: 2, maxChars: 80 });
+      expect(result).not.toBe(messages);
+      expect(typeof result[0]?.content).toBe("string");
+      expect((result[0]?.content as string).length).toBeLessThanOrEqual(80);
+      expect(result[2]?.content).toBe("latest user prompt should stay full");
+    });
+
+    it("does not compact assistant messages", () => {
+      const messages: ChatMessage[] = [
+        assistant("x".repeat(400)),
+        user("older short"),
+        user("new"),
+      ];
+
+      const result = compactOldUserMessages(messages, { keepRecent: 1, maxChars: 60 });
+      expect(result[0]).toBe(messages[0]);
+      expect(result[1]).toBe(messages[1]);
+    });
+  });
+
   describe("truncateToolResultsInMessages", () => {
     function user(content: string): ChatMessage {
       return { role: "user", content, timestamp: Date.now() };
@@ -338,6 +382,24 @@ describe("message-sanitizer", () => {
 
       truncateToolResultsInMessages(msgs);
       expect(originalBlock.content).toHaveLength(5000);
+    });
+
+    it("can preserve truncation for the latest tool-result message", () => {
+      const longContent = "a".repeat(5000);
+      const msgs: ChatMessage[] = [
+        user("search"),
+        assistant([
+          { type: "mcp_tool_use", id: "u-1", name: "search" },
+          { type: "mcp_tool_result", tool_use_id: "u-1", content: longContent },
+        ]),
+      ];
+
+      const result = truncateToolResultsInMessages(msgs, {
+        preserveRecentToolResultMessages: 1,
+      });
+      const blocks = result[1].content as ContentBlock[];
+      const resultBlock = blocks[1] as { type: string; content: string };
+      expect(resultBlock.content).toHaveLength(5000);
     });
 
     it("smart-truncates valid JSON tool results, preferring query-relevant items", () => {

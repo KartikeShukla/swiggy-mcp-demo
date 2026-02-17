@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ContentBlock } from "@/lib/types";
+import type { ContentBlock, ToolRenderContext } from "@/lib/types";
 import { renderMarkdownLite } from "@/lib/markdown";
 import { findPrecedingToolName } from "@/lib/content-blocks";
 import { parseToolResult } from "@/lib/parsers";
@@ -23,6 +23,7 @@ export function DetailSheet({
   blocks,
   allBlocks,
   verticalId,
+  renderContext,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -30,6 +31,7 @@ export function DetailSheet({
   blocks: { block: ContentBlock; index: number }[];
   allBlocks: ContentBlock[];
   verticalId: string;
+  renderContext?: ToolRenderContext;
 }) {
   const hasText = text.length > 0;
   const defaultTab: Tab = hasText ? "message" : "tools";
@@ -99,7 +101,13 @@ export function DetailSheet({
               {blocks.map(({ block, index }) => {
                 if (block.type === "mcp_tool_result") {
                   const toolName = findPrecedingToolName(allBlocks, index);
-                  const parsed = parseToolResult(toolName, block.content, verticalId);
+                  const parsed = parseToolResult(
+                    toolName,
+                    block.content,
+                    verticalId,
+                    undefined,
+                    renderContext,
+                  );
                   return (
                     <ToolTrace
                       key={index}

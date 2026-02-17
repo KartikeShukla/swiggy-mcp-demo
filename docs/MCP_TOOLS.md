@@ -22,7 +22,7 @@ How MCP tools are configured, executed, and rendered in this project.
 1. `runMessageStream` emits assistant content blocks.
 2. `sanitizeAssistantBlocks` removes orphan tool block pairs.
 3. UI groups tool blocks by adjacency.
-4. `parseToolResult` applies tool-name and payload-shape heuristics.
+4. `parseToolResult` applies staged routing (tool pattern signals -> payload-shape signals -> shape fallback).
 5. `ItemCardGrid` renders typed cards.
 
 ## Parser Routing Signals
@@ -34,6 +34,7 @@ How MCP tools are configured, executed, and rendered in this project.
 
 ## Truncation And Compaction
 - `compactOldMessages`: strips tool blocks from old assistant messages while keeping text.
+- `compactOldUserMessages`: trims older long user messages before context bounding.
 - `truncateToolResultsInMessages`: truncates oversized tool results (uses `MAX_TOOL_RESULT_CHARS = 3000`).
 - Message window is bounded before request send.
 
@@ -45,8 +46,8 @@ How MCP tools are configured, executed, and rendered in this project.
 
 ## Vertical Tool Behavior
 - `food`/`style`: Instamart products + cart flows.
-- `dining`: restaurant discovery + availability + booking flows.
-- `foodorder`: restaurant discovery + menu + cart/order; includes restaurant-vs-menu disambiguation heuristics.
+- `dining`: restaurant discovery + availability + booking flows, with strict-first restaurant reranking and explicit broaden gating.
+- `foodorder`: restaurant discovery + menu + cart/order; includes restaurant-vs-menu disambiguation plus strict-first reranking when render context is available.
 
 ## Related Docs
 - [Architecture](./ARCHITECTURE.md)

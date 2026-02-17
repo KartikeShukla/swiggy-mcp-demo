@@ -49,7 +49,7 @@ describe("prompt compiler", () => {
       "switch to menu mode",
     );
     expect(verticals.foodorder.systemPrompt).toContain(
-      "original craving/cuisine intent as a filter",
+      "original craving/cuisine intent as a strict-first filter",
     );
     expect(verticals.foodorder.systemPrompt).toContain(
       "Restaurant selection = restaurant lock",

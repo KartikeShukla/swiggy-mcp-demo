@@ -15,6 +15,11 @@ import styleGif from "@/assets/verticals/style.gif";
 import diningGif from "@/assets/verticals/dining.gif";
 import foodorderGif from "@/assets/verticals/foodorder.gif";
 import { getActionMessage, isSelectAddressAction } from "@/lib/chat-actions";
+import {
+  buildOptimisticCartKey,
+  findOptimisticCartKeyByName,
+  type OptimisticCartEntry,
+} from "@/lib/cart/optimistic-cart";
 
 const gifMap: Record<string, string> = {
   food: "https://media.tenor.com/oiiF1L5rIdYAAAAM/chefcat-cat-chef.gif",
@@ -42,12 +47,11 @@ function ChatViewInner({
   onSelectAddressFromChat?: (address: ParsedAddress) => void;
   onAddressError?: () => void;
 }) {
-  type OptimisticCartItem = CartState["items"][number];
   const [pendingSelection, setPendingSelection] = useState<
     Record<string, { product: ParsedProduct; quantity: number }>
   >({});
   const [lockedRestaurant, setLockedRestaurant] = useState<string | null>(null);
-  const [optimisticCartItems, setOptimisticCartItems] = useState<Record<string, OptimisticCartItem>>({});
+  const [optimisticCartItems, setOptimisticCartItems] = useState<Record<string, OptimisticCartEntry>>({});
   const {
     messages,
     loading,
@@ -135,16 +139,16 @@ function ChatViewInner({
 
   const applyFoodOrderOptimisticAction = useCallback((actionText: string) => {
     if (vertical.id !== "foodorder" || cart) return;
-    if (Object.keys(optimisticCartItems).length === 0) return;
 
     const removeMatch = actionText.match(/^Remove (.+) from my cart$/i);
     if (removeMatch?.[1]) {
-      const target = removeMatch[1].trim().toLowerCase();
+      const target = removeMatch[1].trim();
       setOptimisticCartItems((prev) => {
+        if (Object.keys(prev).length === 0) return prev;
         const next = { ...prev };
-        const entry = Object.entries(next).find(([, item]) => item.name.trim().toLowerCase() === target);
-        if (entry) {
-          delete next[entry[0]];
+        const key = findOptimisticCartKeyByName(next, target, lockedRestaurant);
+        if (key) {
+          delete next[key];
         }
         return next;
       });
@@ -153,23 +157,25 @@ function ChatViewInner({
 
     const changeQtyMatch = actionText.match(/^Change (.+) quantity to (\d+)$/i);
     if (changeQtyMatch?.[1] && changeQtyMatch?.[2]) {
-      const target = changeQtyMatch[1].trim().toLowerCase();
+      const target = changeQtyMatch[1].trim();
       const qty = Number.parseInt(changeQtyMatch[2], 10);
       if (!Number.isFinite(qty) || qty < 0) return;
       setOptimisticCartItems((prev) => {
+        if (Object.keys(prev).length === 0) return prev;
         const next = { ...prev };
-        const entry = Object.entries(next).find(([, item]) => item.name.trim().toLowerCase() === target);
-        if (!entry) return prev;
-        const [key, item] = entry;
+        const key = findOptimisticCartKeyByName(next, target, lockedRestaurant);
+        if (!key) return prev;
+        const item = next[key];
+        if (!item) return prev;
         if (qty === 0) {
           delete next[key];
         } else {
-          next[key] = { ...item, quantity: qty };
+          next[key] = { ...item, quantity: qty, updatedAt: Date.now() };
         }
         return next;
       });
     }
-  }, [cart, optimisticCartItems, vertical.id]);
+  }, [cart, lockedRestaurant, vertical.id]);
 
   const handleAction = useCallback(
     (action: ChatAction) => {
@@ -180,12 +186,31 @@ function ChatViewInner({
       if (!message) return;
       const menuOpenMatch = message.match(/^Open menu for restaurant:\s*(.+)$/i);
       if (menuOpenMatch?.[1]) {
-        setLockedRestaurant(sanitizeUntrustedPromptText(menuOpenMatch[1], 80));
+        const nextRestaurant = sanitizeUntrustedPromptText(menuOpenMatch[1], 80);
+        if (vertical.id === "foodorder" && nextRestaurant !== lockedRestaurant) {
+          setPendingSelection({});
+          if (!cart) setOptimisticCartItems({});
+        }
+        setLockedRestaurant(nextRestaurant);
+      } else if (
+        vertical.id === "foodorder" &&
+        /\b(change|switch|different|another|new)\b.*\brestaurant\b|\bfind\b.*\brestaurants?\b|\bshow\b.*\brestaurants?\b/i.test(message)
+      ) {
+        setLockedRestaurant(null);
+        setPendingSelection({});
+        if (!cart) setOptimisticCartItems({});
       }
       applyFoodOrderOptimisticAction(message);
       void sendMessage(message);
     },
-    [applyFoodOrderOptimisticAction, onSelectAddressFromChat, sendMessage],
+    [
+      applyFoodOrderOptimisticAction,
+      cart,
+      lockedRestaurant,
+      onSelectAddressFromChat,
+      sendMessage,
+      vertical.id,
+    ],
   );
 
   const handleUnifiedAddToCart = useCallback(async () => {
@@ -215,14 +240,21 @@ function ChatViewInner({
     if (vertical.id === "foodorder" && ok) {
       setOptimisticCartItems((prev) => {
         const next = { ...prev };
+        const now = Date.now();
         for (const entry of pendingSelectedItems) {
-          const existing = next[entry.product.id];
-          next[entry.product.id] = {
+          const key = buildOptimisticCartKey(entry.product, {
+            verticalId: vertical.id,
+            lockedRestaurant,
+          });
+          const existing = next[key];
+          next[key] = {
             id: entry.product.id,
             name: entry.product.name,
             price: entry.product.price ?? existing?.price ?? 0,
             quantity: (existing?.quantity ?? 0) + entry.quantity,
             image: entry.product.image,
+            restaurantScope: lockedRestaurant || entry.product.restaurantName || null,
+            updatedAt: now,
           };
         }
         return next;
@@ -255,6 +287,7 @@ function ChatViewInner({
             loadingLabel={loadingLabel}
             loadingElapsedMs={loadingElapsedMs}
             verticalId={vertical.id}
+            lockedRestaurant={lockedRestaurant}
             onAction={handleAction}
             sharedSelection={sharedSelection}
           />

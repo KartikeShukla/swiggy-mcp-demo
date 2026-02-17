@@ -33,11 +33,13 @@ const scenarios: Scenario[] = [
     name: "dining uses active address as location and enforces single-booking",
     verticalId: "dining",
     mustContain: [
-      "active address exists in system context, treat it as fulfilled",
+      "active address exists in system context, use it as location",
       "Single-booking constraint",
       "chronologically first meal",
       "Availability check is mandatory before booking",
       "never assume a requested slot exists",
+      "strict-first cuisine/vibe/location matching",
+      "ask to relax one filter",
       "Never submit booking without explicit confirmation",
     ],
   },
@@ -47,7 +49,7 @@ const scenarios: Scenario[] = [
     mustContain: [
       "offer 2-3 cuisines",
       "switch to menu mode",
-      "original craving/cuisine intent as a filter",
+      "original craving/cuisine intent as a strict-first filter",
       "Restaurant selection = restaurant lock",
       "One tool call per step",
       "Never place order without explicit user confirmation",

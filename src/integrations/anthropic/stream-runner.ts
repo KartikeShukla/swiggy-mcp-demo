@@ -18,6 +18,60 @@ function ensureNonEmptyContent(content: ContentBlock[], fallbackText: string): C
   return [{ type: "text", text: fallbackText }];
 }
 
+/**
+ * Extracts whatever content and token usage has accumulated on the stream
+ * so far.  Used when the stream is aborted (timeout, MCP error limit) or
+ * ends without producing a final message, so partial results can still be
+ * returned to the user rather than discarded.
+ */
+function extractPartialResult(
+  stream: ReturnType<Anthropic["beta"]["messages"]["stream"]>,
+): { partialContent: ContentBlock[]; usage: ApiResponse["usage"] } {
+  const partial = stream.currentMessage;
+  const partialContent = sanitizeAssistantBlocks(
+    (partial?.content ?? []) as ContentBlock[],
+  ).blocks;
+  const partialUsage = partial?.usage;
+
+  const usage = {
+    input_tokens: partialUsage?.input_tokens ?? 0,
+    output_tokens: partialUsage?.output_tokens ?? 0,
+    cache_creation_input_tokens: (
+      partialUsage as Record<string, number> | undefined
+    )?.cache_creation_input_tokens,
+    cache_read_input_tokens: (
+      partialUsage as Record<string, number> | undefined
+    )?.cache_read_input_tokens,
+  };
+
+  return { partialContent, usage };
+}
+
+/**
+ * Runs a streaming `beta.messages` request with timeout enforcement,
+ * MCP error tracking, and graceful degradation on failures.
+ *
+ * **Timeout:** A `setTimeout` fires after `STREAM_REQUEST_TIMEOUT_MS`
+ * (90 s) and calls `stream.abort()`.  The catch branch detects this via
+ * the `timedOut` flag and returns partial content with a timeout message.
+ *
+ * **MCP error tracking:** A `contentBlock` listener inspects each
+ * `mcp_tool_result` with `is_error: true` and classifies it:
+ * - `auth` errors invoke `onAuthError` and abort after
+ *   `MCP_AUTH_ERROR_LIMIT` (1) occurrence.
+ * - `address` errors invoke `onAddressError` and abort immediately.
+ * - `server` and other errors abort after `MCP_TOOL_ERROR_LIMIT` (2)
+ *   cumulative occurrences.
+ *
+ * **Catch-branch routing** (checked in order):
+ * 1. Timeout — returns partial content + timeout message.
+ * 2. Self-inflicted abort (MCP error limit) — returns partial content
+ *    plus a synthetic text block with an abort explanation from
+ *    `ABORT_MESSAGES`.
+ * 3. "stream ended without assistant message" — returns whatever partial
+ *    content was collected.
+ * 4. All other errors — re-thrown to the caller for retry/classification.
+ */
 export async function runMessageStream(
   client: Anthropic,
   params: Record<string, unknown>,
@@ -113,23 +167,7 @@ export async function runMessageStream(
     };
   } catch (err) {
     if (timedOut) {
-      const partial = stream.currentMessage;
-      const partialContent = sanitizeAssistantBlocks(
-        (partial?.content ?? []) as ContentBlock[],
-      ).blocks;
-      const partialUsage = partial?.usage;
-
-      const usage = {
-        input_tokens: partialUsage?.input_tokens ?? 0,
-        output_tokens: partialUsage?.output_tokens ?? 0,
-        cache_creation_input_tokens: (
-          partialUsage as Record<string, number> | undefined
-        )?.cache_creation_input_tokens,
-        cache_read_input_tokens: (
-          partialUsage as Record<string, number> | undefined
-        )?.cache_read_input_tokens,
-      };
-
+      const { partialContent, usage } = extractPartialResult(stream);
       return {
         content: ensureNonEmptyContent(
           partialContent,
@@ -140,26 +178,10 @@ export async function runMessageStream(
     }
 
     if (abortedDueToRetryLoop && err instanceof APIUserAbortError) {
-      const partial = stream.currentMessage;
-      const partialContent = sanitizeAssistantBlocks(
-        (partial?.content ?? []) as ContentBlock[],
-      ).blocks;
-      const partialUsage = partial?.usage;
-
+      const { partialContent, usage } = extractPartialResult(stream);
       const syntheticBlock: ContentBlock = {
         type: "text",
         text: ABORT_MESSAGES[abortCategory],
-      };
-
-      const usage = {
-        input_tokens: partialUsage?.input_tokens ?? 0,
-        output_tokens: partialUsage?.output_tokens ?? 0,
-        cache_creation_input_tokens: (
-          partialUsage as Record<string, number> | undefined
-        )?.cache_creation_input_tokens,
-        cache_read_input_tokens: (
-          partialUsage as Record<string, number> | undefined
-        )?.cache_read_input_tokens,
       };
 
       logger.debug(`[Token Usage] (aborted — ${abortCategory})`, usage);
@@ -179,23 +201,7 @@ export async function runMessageStream(
         err.message,
       )
     ) {
-      const partial = stream.currentMessage;
-      const partialContent = sanitizeAssistantBlocks(
-        (partial?.content ?? []) as ContentBlock[],
-      ).blocks;
-      const partialUsage = partial?.usage;
-
-      const usage = {
-        input_tokens: partialUsage?.input_tokens ?? 0,
-        output_tokens: partialUsage?.output_tokens ?? 0,
-        cache_creation_input_tokens: (
-          partialUsage as Record<string, number> | undefined
-        )?.cache_creation_input_tokens,
-        cache_read_input_tokens: (
-          partialUsage as Record<string, number> | undefined
-        )?.cache_read_input_tokens,
-      };
-
+      const { partialContent, usage } = extractPartialResult(stream);
       return {
         content: ensureNonEmptyContent(
           partialContent,

@@ -14,12 +14,14 @@ Provide stable vertical behavior with compact prompts and predictable tool usage
 - Optional selected address lock context.
 - Datetime context block.
 - Optional compact session summary.
+- Shared runtime intent signals for loading/parser intent alignment (`src/lib/intent/runtime-signals.ts`).
 
 ## Runtime Constraints
 - Bounded message window.
+- Older long user turns are compacted before context bounding.
 - Context-management edit policy.
 - One stream request per turn.
-- Retry/abort guards for MCP and API failures.
+- Retry/abort guards for MCP and API failures with conservative retry budgets for rate-limit/heavy-context cases.
 
 ## Invariants
 1. Confirmation required before place/book actions.

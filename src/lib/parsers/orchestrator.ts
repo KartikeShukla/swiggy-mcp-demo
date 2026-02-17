@@ -1,4 +1,29 @@
-import type { ParsedToolResult } from "@/lib/types";
+/**
+ * Parser orchestrator — converts raw MCP tool-result content into typed
+ * `ParsedToolResult` models for rich card rendering.
+ *
+ * **Routing priority** (first match wins):
+ * 1. Search tools  — vertical-specific product/restaurant parsing
+ * 2. Cart tools    — cart payload extraction
+ * 3. Slot tools    — time-slot parsing
+ * 4. Address tools — address list parsing
+ * 5. Confirm tools — order/booking confirmation parsing
+ * 6. Embedded cart  — status-like wrappers that contain cart data
+ * 7. Shape detect  — heuristic fallback based on payload key shapes
+ * 8. Status        — success/error status messages
+ * 9. Info          — key-value informational cards
+ * 10. Raw          — unstructured fallback (always returned, never throws)
+ *
+ * **Contract**: This module never throws. Every code path returns a valid
+ * `ParsedToolResult`. Exceptions are caught and produce `{ type: "raw" }`.
+ *
+ * When relevance reranking is enabled (dining/foodorder with render context),
+ * the orchestrator uses enlarged candidate pools and applies strict-first
+ * reranking via `postProcessParsedResult` after parsing.
+ *
+ * @module orchestrator
+ */
+import type { ParsedToolResult, ToolRenderContext } from "@/lib/types";
 import { MAX_MENU_PRODUCTS_SHOWN } from "@/lib/constants";
 import { logger } from "@/lib/logger";
 import { unwrapContent, extractPayload } from "./unwrap";
@@ -11,248 +36,326 @@ import { tryParseConfirmation } from "./confirmation";
 import { tryParseStatus } from "./status";
 import { tryParseInfo } from "./info";
 import { detectByShape } from "./shape-detect";
-import { asArrayOrWrap } from "./primitives";
+import {
+  SEARCH_TOOL_RE,
+  CART_TOOL_RE,
+  SLOT_TOOL_RE,
+  ADDRESS_TOOL_RE,
+  CONFIRM_TOOL_RE,
+  DINING_RESTAURANT_CANDIDATES,
+  FOODORDER_MENU_CANDIDATES,
+  FOODORDER_RESTAURANT_CANDIDATES,
+  inferPayloadSignals,
+  shouldPreferFoodorderProducts,
+  shouldParseFoodorderRestaurants,
+} from "./routing-signals";
+import { postProcessParsedResult } from "./relevance-postprocess";
 
-const PRODUCT_SIGNAL_KEYS = new Set([
-  "price",
-  "selling_price",
-  "mrp",
-  "variations",
-  "defaultPrice",
-  "default_price",
-  "basePrice",
-  "base_price",
-  "offerPrice",
-  "offer_price",
-  "finalPrice",
-  "final_price",
-  "productId",
-  "product_id",
-  "item_id",
-  "quantity",
-  "weight",
-  "size",
-  "pack_size",
-  "isVeg",
-  "vegClassifier",
-  "itemAttribute",
-  "itemAttributes",
-  "category",
-  "dishType",
-  "menu_item_id",
-]);
+/**
+ * Determines whether relevance reranking should apply to parser output.
+ * Requires a render context (which carries the latest query and constraints).
+ * When enabled, the orchestrator uses enlarged candidate pools for dining/foodorder
+ * and applies strict-first reranking after parsing.
+ */
+function shouldEnableRelevanceReranking(
+  verticalId: string,
+  renderContext?: ToolRenderContext,
+): boolean {
+  if (!renderContext) return false;
+  return (
+    verticalId === "dining" ||
+    verticalId === "foodorder" ||
+    verticalId === "food" ||
+    verticalId === "style"
+  );
+}
 
-const STRONG_RESTAURANT_SIGNAL_KEYS = new Set([
-  "cuisine",
-  "cuisines",
-  "priceForTwo",
-  "price_for_two",
-  "locality",
-  "area",
-  "address",
-  "costForTwo",
-  "cost_for_two",
-  "deliveryTime",
-  "delivery_time",
-  "areaName",
-  "area_name",
-  "sla",
-  "feeDetails",
-]);
-
-const WEAK_RESTAURANT_SIGNAL_KEYS = new Set([
-  "rating",
-  "avgRating",
-  "avg_rating",
-]);
-
-const DISH_NAME_HINT_PATTERN =
-  /\b(paneer|chicken|mutton|fish|prawn|biryani|pizza|burger|sandwich|roll|wrap|tikka|masala|curry|thali|noodles|fries|rice|soup|salad|kebab|falafel|shawarma)\b/i;
-
-const MENU_SIGNAL_KEY_RE = /menu|dish|itemattribute|veg|addon|variant|option/i;
-const SEARCH_TOOL_RE = /search|find|discover|browse|menu|list|recommend|suggest|get_.*(?:product|restaurant|item|dish|cuisine)/i;
-const RESTAURANT_TOOL_RE = /restaurant/i;
-const MENU_INTENT_TOOL_RE = /menu|dish|item/i;
-const CART_TOOL_RE = /cart|basket|add_item|remove_item|update_item|modify_item|add_to|remove_from/i;
-const SLOT_TOOL_RE = /slot|avail|schedule|timeslot/i;
-const ADDRESS_TOOL_RE = /address|location|deliver/i;
-const CONFIRM_TOOL_RE = /order|place|book|reserve|confirm|checkout|submit/i;
-
-function inferPayloadSignals(payload: unknown): {
-  hasProductSignals: boolean;
-  hasMenuSignals: boolean;
-  hasStrongRestaurantSignals: boolean;
-  hasWeakRestaurantSignals: boolean;
-  hasDishNameSignals: boolean;
-} {
-  const arr = asArrayOrWrap(payload);
-  if (!arr || arr.length === 0) {
-    return {
-      hasProductSignals: false,
-      hasMenuSignals: false,
-      hasStrongRestaurantSignals: false,
-      hasWeakRestaurantSignals: false,
-      hasDishNameSignals: false,
-    };
-  }
-
-  let hasProductSignals = false;
-  let hasMenuSignals = false;
-  let hasStrongRestaurantSignals = false;
-  let hasWeakRestaurantSignals = false;
-  let hasDishNameSignals = false;
-
-  for (const item of arr.slice(0, 5)) {
-    if (typeof item !== "object" || item === null) continue;
-    const keys = Object.keys(item as Record<string, unknown>);
-    const name = typeof (item as Record<string, unknown>).name === "string"
-      ? (item as Record<string, unknown>).name as string
-      : "";
-
-    if (keys.some((key) => PRODUCT_SIGNAL_KEYS.has(key))) {
-      hasProductSignals = true;
-    }
-    if (
-      keys.some((key) =>
-        MENU_SIGNAL_KEY_RE.test(key),
-      )
-    ) {
-      hasMenuSignals = true;
-    }
-    if (keys.some((key) => STRONG_RESTAURANT_SIGNAL_KEYS.has(key))) {
-      hasStrongRestaurantSignals = true;
-    }
-    if (keys.some((key) => WEAK_RESTAURANT_SIGNAL_KEYS.has(key))) {
-      hasWeakRestaurantSignals = true;
-    }
-    if (name && DISH_NAME_HINT_PATTERN.test(name)) {
-      hasDishNameSignals = true;
-    }
-
-    if (hasProductSignals && hasMenuSignals && hasStrongRestaurantSignals && hasWeakRestaurantSignals && hasDishNameSignals) {
-      break;
-    }
-  }
-
-  return {
-    hasProductSignals,
-    hasMenuSignals,
-    hasStrongRestaurantSignals,
-    hasWeakRestaurantSignals,
-    hasDishNameSignals,
-  };
+/** Convenience wrapper that forwards a parsed result through post-processing. */
+function withPostProcess(
+  parsed: ParsedToolResult,
+  toolName: string,
+  verticalId: string,
+  renderContext: ToolRenderContext | undefined,
+  enableRelevanceReranking: boolean,
+): ParsedToolResult {
+  return postProcessParsedResult(
+    parsed,
+    toolName,
+    verticalId,
+    renderContext,
+    enableRelevanceReranking,
+  );
 }
 
 /**
- * Heuristic parser: examines mcp_tool_result content and tool name
- * to extract structured data for rich card rendering.
- * Returns { type: "raw" } as fallback when nothing matches.
+ * Routes search-like tool results to the correct parser based on vertical.
+ *
+ * - **foodorder**: Inspects payload signals to decide between products (menu items)
+ *   and restaurants. Tries the preferred type first, falls back to the other.
+ *   Signal-based routing uses `inferPayloadSignals` + `shouldPreferFoodorderProducts`
+ *   / `shouldParseFoodorderRestaurants` to disambiguate mixed payloads.
+ * - **dining**: Always attempts restaurant parsing (dining search results are restaurants).
+ * - **food / style**: Attempts product parsing (Instamart search results are products).
+ *
+ * Returns `null` if the tool name does not match the search pattern or no parser succeeds.
+ */
+function tryParseSearchRoute(
+  toolName: string,
+  payload: unknown,
+  verticalId: string,
+  productParseContext: { toolInput?: Record<string, unknown>; maxItems?: number },
+  restaurantParseContext: { maxItems?: number },
+  renderContext: ToolRenderContext | undefined,
+  enableRelevanceReranking: boolean,
+): ParsedToolResult | null {
+  if (!SEARCH_TOOL_RE.test(toolName)) return null;
+
+  if (verticalId === "foodorder") {
+    const signals = inferPayloadSignals(payload);
+
+    if (shouldPreferFoodorderProducts(toolName, signals)) {
+      const products = tryParseProducts(payload, productParseContext);
+      if (products) {
+        return withPostProcess(
+          products,
+          toolName,
+          verticalId,
+          renderContext,
+          enableRelevanceReranking,
+        );
+      }
+    }
+
+    if (shouldParseFoodorderRestaurants(toolName, signals)) {
+      const restaurants = tryParseRestaurants(payload, restaurantParseContext);
+      if (restaurants) {
+        return withPostProcess(
+          restaurants,
+          toolName,
+          verticalId,
+          renderContext,
+          enableRelevanceReranking,
+        );
+      }
+    }
+
+    const products = tryParseProducts(payload, productParseContext);
+    if (products) {
+      return withPostProcess(
+        products,
+        toolName,
+        verticalId,
+        renderContext,
+        enableRelevanceReranking,
+      );
+    }
+
+    const restaurants = tryParseRestaurants(payload, restaurantParseContext);
+    if (restaurants) {
+      return withPostProcess(
+        restaurants,
+        toolName,
+        verticalId,
+        renderContext,
+        enableRelevanceReranking,
+      );
+    }
+
+    return null;
+  }
+
+  if (verticalId === "dining") {
+    const restaurants = tryParseRestaurants(payload, restaurantParseContext);
+    if (restaurants) {
+      return withPostProcess(
+        restaurants,
+        toolName,
+        verticalId,
+        renderContext,
+        enableRelevanceReranking,
+      );
+    }
+  }
+
+  const products = tryParseProducts(payload, productParseContext);
+  if (products) {
+    return withPostProcess(
+      products,
+      toolName,
+      verticalId,
+      renderContext,
+      enableRelevanceReranking,
+    );
+  }
+
+  return null;
+}
+
+/**
+ * Handles MCP responses that wrap cart data inside a status-like envelope
+ * (objects with `success` or `message` fields). This is needed because some
+ * cart-mutating tools (add/remove item) return the updated cart embedded in
+ * a status wrapper rather than as a top-level cart payload.
+ *
+ * Returns `null` if the data is not an object or lacks status indicators.
+ */
+function tryParseEmbeddedStatusCart(
+  data: unknown,
+  toolName: string,
+  verticalId: string,
+  renderContext: ToolRenderContext | undefined,
+  enableRelevanceReranking: boolean,
+): ParsedToolResult | null {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) return null;
+
+  const dataObj = data as Record<string, unknown>;
+  if (dataObj.success == null && dataObj.message == null) return null;
+
+  const embeddedCart = tryParseCart(data);
+  if (!embeddedCart) return null;
+
+  return withPostProcess(
+    embeddedCart,
+    toolName,
+    verticalId,
+    renderContext,
+    enableRelevanceReranking,
+  );
+}
+
+/**
+ * Main entry point for parsing MCP tool-result content into typed card models.
+ *
+ * Examines the tool name and payload structure to route through parsers in
+ * priority order: search -> cart -> slot -> address -> confirm -> embedded cart
+ * -> shape detect -> status -> info -> raw.
+ *
+ * When a render context is available, relevance reranking is applied via
+ * `postProcessParsedResult`, which uses enlarged candidate pools and
+ * strict-first sorting for dining and foodorder verticals.
+ *
+ * **Contract**: Always returns a valid `ParsedToolResult`. Never throws.
+ * Exceptions are caught and produce `{ type: "raw", content }`.
+ *
+ * @param toolName - The MCP tool name (used for regex-based routing).
+ * @param content - Raw tool-result content from the Anthropic stream.
+ * @param verticalId - Active vertical (`food`, `style`, `dining`, `foodorder`).
+ * @param toolInput - Original tool input params (passed to product parser for context).
+ * @param renderContext - Optional context carrying the latest query and strict constraints.
+ * @returns A typed `ParsedToolResult` for card rendering.
  */
 export function parseToolResult(
   toolName: string,
   content: unknown,
   verticalId: string,
   toolInput?: Record<string, unknown>,
+  renderContext?: ToolRenderContext,
 ): ParsedToolResult {
   try {
+    const enableRelevanceReranking = shouldEnableRelevanceReranking(
+      verticalId,
+      renderContext,
+    );
+
     const data = unwrapContent(content);
     const payload = extractPayload(data);
+
     const productParseContext = {
       toolInput,
-      maxItems: verticalId === "foodorder" ? MAX_MENU_PRODUCTS_SHOWN : undefined,
+      maxItems:
+        verticalId === "foodorder"
+          ? (
+              enableRelevanceReranking
+                ? FOODORDER_MENU_CANDIDATES
+                : MAX_MENU_PRODUCTS_SHOWN
+            )
+          : undefined,
     };
 
-    // Match by tool name patterns
-    if (SEARCH_TOOL_RE.test(toolName)) {
-      if (verticalId === "foodorder") {
-        const isRestaurantDiscoveryTool =
-          RESTAURANT_TOOL_RE.test(toolName) && !MENU_INTENT_TOOL_RE.test(toolName);
-        const isMenuIntentTool = MENU_INTENT_TOOL_RE.test(toolName);
-        const signals = inferPayloadSignals(payload);
-        const weakRestaurantOnly =
-          signals.hasWeakRestaurantSignals && !signals.hasStrongRestaurantSignals;
-        const shouldPreferProducts =
-          isMenuIntentTool ||
-          signals.hasMenuSignals ||
-          (signals.hasProductSignals && !signals.hasStrongRestaurantSignals) ||
-          (weakRestaurantOnly && (!isRestaurantDiscoveryTool || signals.hasDishNameSignals));
+    const restaurantParseContext = {
+      maxItems:
+        verticalId === "dining" && enableRelevanceReranking
+          ? DINING_RESTAURANT_CANDIDATES
+          : verticalId === "foodorder" && enableRelevanceReranking
+            ? FOODORDER_RESTAURANT_CANDIDATES
+            : undefined,
+    };
 
-        if (shouldPreferProducts) {
-          const products = tryParseProducts(payload, productParseContext);
-          if (products) return products;
-        }
+    const searchResult = tryParseSearchRoute(
+      toolName,
+      payload,
+      verticalId,
+      productParseContext,
+      restaurantParseContext,
+      renderContext,
+      enableRelevanceReranking,
+    );
+    if (searchResult) return searchResult;
 
-        if (signals.hasStrongRestaurantSignals || (signals.hasWeakRestaurantSignals && isRestaurantDiscoveryTool)) {
-          const restaurants = tryParseRestaurants(payload);
-          if (restaurants) return restaurants;
-        }
-
-        const products = tryParseProducts(payload, productParseContext);
-        if (products) return products;
-        const restaurants = tryParseRestaurants(payload);
-        if (restaurants) return restaurants;
-      }
-
-      if (verticalId === "dining") {
-        const restaurants = tryParseRestaurants(payload);
-        if (restaurants) return restaurants;
-      }
-
-      // Always try products (including dining — dining can have menu/dish searches)
-      const products = tryParseProducts(payload, productParseContext);
-      if (products) return products;
-    }
     if (CART_TOOL_RE.test(toolName)) {
-      // Try original data first (before extractPayload strips the structure)
-      // so we preserve lineItems / bill breakdown alongside cart items
       const cart = tryParseCart(data) || tryParseCart(payload);
       logger.debug("[parseToolResult] Cart tool matched", {
         toolName,
         hasItems: Boolean(cart),
-        dataKeys: typeof data === "object" && data ? Object.keys(data as Record<string, unknown>) : "not-object",
+        dataKeys:
+          typeof data === "object" && data
+            ? Object.keys(data as Record<string, unknown>)
+            : "not-object",
       });
       if (cart) return cart;
     }
+
     if (SLOT_TOOL_RE.test(toolName)) {
       const slots = tryParseTimeSlots(payload);
       if (slots) return slots;
     }
+
     if (ADDRESS_TOOL_RE.test(toolName)) {
       const addresses = tryParseAddresses(payload);
       if (addresses) return addresses;
     }
+
     if (CONFIRM_TOOL_RE.test(toolName)) {
       const confirmation = tryParseConfirmation(payload, toolName);
       if (confirmation) return confirmation;
     }
 
-    // Before shape detection, check if data is a status-like response with embedded cart
-    // (e.g. { success: true, message: "Added", cart: { items: [...] } })
-    // Without this check, extractPayload would pull out the cart items and shape detection
-    // would render them as products instead of a cart card.
-    if (typeof data === "object" && data !== null && !Array.isArray(data)) {
-      const dataObj = data as Record<string, unknown>;
-      if (dataObj.success != null || dataObj.message != null) {
-        const embeddedCart = tryParseCart(data);
-        if (embeddedCart) return embeddedCart;
-      }
+    const embeddedCart = tryParseEmbeddedStatusCart(
+      data,
+      toolName,
+      verticalId,
+      renderContext,
+      enableRelevanceReranking,
+    );
+    if (embeddedCart) return embeddedCart;
+
+    const shaped = detectByShape(payload, verticalId, toolName);
+    if (shaped) {
+      return withPostProcess(
+        shaped,
+        toolName,
+        verticalId,
+        renderContext,
+        enableRelevanceReranking,
+      );
     }
 
-    // Fall back to shape detection
-    const shaped = detectByShape(payload, verticalId, toolName);
-    if (shaped) return shaped;
-
-    // Try status on pre-extracted data (has success/message at top level)
     const statusFromData = tryParseStatus(data);
     if (statusFromData) return statusFromData;
 
-    // Try status on extracted payload
     const statusFromPayload = tryParseStatus(payload);
     if (statusFromPayload) return statusFromPayload;
 
-    // Catch-all: any non-empty object becomes an info card
     const info = tryParseInfo(data);
-    if (info) return info;
+    if (info) {
+      return withPostProcess(
+        info,
+        toolName,
+        verticalId,
+        renderContext,
+        enableRelevanceReranking,
+      );
+    }
 
     const result: ParsedToolResult = { type: "raw", content };
     logger.debug(`parseToolResult: tool="${toolName}" vertical="${verticalId}" → ${result.type}`);

@@ -1,4 +1,6 @@
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504, 529]);
+const MCP_CONNECTION_ERROR_RE = /connection error while communicating with mcp server/i;
+const MCP_HTTP_STATUS_RE = /mcp server error\s*\(http\s*(\d{3})\)/i;
 
 function extractStatus(err: unknown): number | undefined {
   if (!err || typeof err !== "object") return undefined;
@@ -16,9 +18,24 @@ function extractMessage(err: unknown): string {
   }
 }
 
+export function isWrappedMcpConnectionError(err: unknown): boolean {
+  return MCP_CONNECTION_ERROR_RE.test(extractMessage(err));
+}
+
+export function extractWrappedMcpHttpStatus(err: unknown): number | null {
+  const message = extractMessage(err);
+  if (!MCP_CONNECTION_ERROR_RE.test(message)) return null;
+  const match = message.match(MCP_HTTP_STATUS_RE);
+  if (!match?.[1]) return null;
+  const status = Number.parseInt(match[1], 10);
+  return Number.isFinite(status) ? status : null;
+}
+
 export function isRateLimitError(err: unknown): boolean {
   const status = extractStatus(err);
   if (status === 429) return true;
+  const wrappedMcpStatus = extractWrappedMcpHttpStatus(err);
+  if (wrappedMcpStatus === 429) return true;
   const msg = extractMessage(err).toLowerCase();
   return /rate[_\s-]?limit/.test(msg);
 }
@@ -36,6 +53,16 @@ export function extractRetryAfterMs(err: unknown): number | null {
 export function isRetryableAnthropicError(err: unknown): boolean {
   const status = extractStatus(err);
   if (status && RETRYABLE_STATUSES.has(status)) return true;
+
+  const wrappedMcpStatus = extractWrappedMcpHttpStatus(err);
+  if (wrappedMcpStatus != null) {
+    if (RETRYABLE_STATUSES.has(wrappedMcpStatus)) return true;
+    if (wrappedMcpStatus === 401 || wrappedMcpStatus === 403) return false;
+  }
+  if (isWrappedMcpConnectionError(err)) {
+    // Wrapped MCP connection failures are usually transient transport/service issues.
+    return true;
+  }
 
   const msg = extractMessage(err).toLowerCase();
   return /overload(?:ed)?|overloaded_error|temporarily unavailable|internal server error|timeout|gateway|rate[_\s-]?limit/.test(
@@ -94,4 +121,3 @@ export async function waitForRetryAttempt(attempt: number, retryAfterMs?: number
   const delayMs = Math.min(baseMs + jitterMs, 5000);
   await new Promise((resolve) => setTimeout(resolve, delayMs));
 }
-

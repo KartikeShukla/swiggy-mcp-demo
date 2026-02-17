@@ -53,7 +53,9 @@ describe("buildSessionStateSummary", () => {
     );
 
     expect(summary).toContain("intent=menu");
+    expect(summary).toContain("mode=menu");
     expect(summary).toContain("restaurant=Behrouz Biryani");
+    expect(summary).toContain("dish:biryani");
   });
 
   it("keeps latest selected restaurant even after subsequent cart actions", () => {
@@ -66,6 +68,7 @@ describe("buildSessionStateSummary", () => {
     );
 
     expect(summary).toContain("intent=cart");
+    expect(summary).toContain("mode=cart");
     expect(summary).toContain("restaurant=Behrouz Biryani");
   });
 
@@ -91,5 +94,44 @@ describe("buildSessionStateSummary", () => {
 
     expect(summary).toContain("location=locked:Home");
     expect(summary).toContain("a1");
+  });
+
+  it("captures foodorder constraint filters for strict-first relevance", () => {
+    const summary = buildSessionStateSummary(
+      [user("I want spicy south indian food and dosa under 300")],
+      "foodorder",
+    );
+
+    expect(summary).toContain("filters=");
+    expect(summary).toContain("cuisine:south indian");
+    expect(summary).toContain("dish:dosa");
+    expect(summary).toContain("spicy:true");
+    expect(summary).toContain("budget:300");
+  });
+
+  it("captures dining strict-first filters for cuisine, vibe, area, and party context", () => {
+    const summary = buildSessionStateSummary(
+      [user("Romantic south indian dinner in Koramangala for 4 under 1500 tonight")],
+      "dining",
+    );
+
+    expect(summary).toContain("filters=");
+    expect(summary).toContain("cuisine:south indian");
+    expect(summary).toContain("vibe:romantic");
+    expect(summary).toContain("area:koramangala");
+    expect(summary).toContain("budget:1500");
+    expect(summary).toContain("party:4");
+    expect(summary).toContain("time:tonight|dinner");
+  });
+
+  it("captures sunday in dining time filters", () => {
+    const summary = buildSessionStateSummary(
+      [user("South Indian in Koramangala Sunday dinner for 2")],
+      "dining",
+    );
+
+    expect(summary).toContain("filters=");
+    expect(summary).toContain("area:koramangala");
+    expect(summary).toContain("time:sunday|dinner");
   });
 });

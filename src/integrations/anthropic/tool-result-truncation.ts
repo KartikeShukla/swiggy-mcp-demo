@@ -1,11 +1,22 @@
 export const MAX_TOOL_RESULT_CHARS = 3000;
 
+/**
+ * Known top-level and nested object keys that wrap the main item array in
+ * MCP tool result JSON.  Used by `findItemsArray` to drill into the
+ * response structure and locate the array of scorable items (up to 2 levels deep).
+ */
 const WRAPPER_KEYS = [
   "data", "results", "items", "products", "restaurants", "menu",
   "dishes", "addresses", "cart", "cart_items", "slots",
   "menu_items", "listings", "options",
 ];
 
+/**
+ * Item-level fields whose string values are extracted and matched against
+ * query terms during relevance scoring.  Covers common naming patterns
+ * across Swiggy verticals (product names, brands, cuisines, categories,
+ * locality info, etc.).
+ */
 const SEARCHABLE_ITEM_FIELDS = [
   "name", "displayName", "product_name", "title",
   "brand", "brand_name",
@@ -16,6 +27,11 @@ const SEARCHABLE_ITEM_FIELDS = [
   "locality", "area", "areaName", "area_name",
 ];
 
+/**
+ * Keys checked (in priority order) on `mcp_tool_use.input` to extract the
+ * user's original search query.  The first key found with a string value
+ * is split into lowercase terms for relevance scoring.
+ */
 const QUERY_INPUT_KEYS = [
   "query", "q", "search", "search_text", "searchText",
   "term", "keyword", "requirement", "category",
@@ -78,6 +94,13 @@ function scoreItem(item: unknown, queryTerms: string[]): number {
   return score;
 }
 
+/**
+ * Extracts search query terms from an MCP tool_use input object.
+ *
+ * Checks `QUERY_INPUT_KEYS` in order and returns the first string value
+ * found, split into lowercase tokens (filtering out single-char tokens).
+ * Returns an empty array if no query field is present.
+ */
 export function extractQueryFromToolInput(input: Record<string, unknown> | undefined): string[] {
   if (!input) return [];
   for (const key of QUERY_INPUT_KEYS) {
@@ -91,6 +114,23 @@ export function extractQueryFromToolInput(input: Record<string, unknown> | undef
   return [];
 }
 
+/**
+ * Truncates a JSON tool result string to fit within `maxChars` while
+ * preserving the most query-relevant items.
+ *
+ * **Strategy:**
+ * 1. Parses the JSON and locates the main item array via `WRAPPER_KEYS`.
+ * 2. Scores each item by counting how many `queryTerms` appear in its
+ *    `SEARCHABLE_ITEM_FIELDS`.
+ * 3. Sorts items by score (descending), breaking ties by original index.
+ * 4. Greedily selects items that fit within the character budget
+ *    (accounting for wrapper overhead and comma separators).
+ * 5. Re-sorts selected items by original index to preserve natural order.
+ * 6. Rebuilds the JSON with the wrapper structure intact.
+ *
+ * Falls back to a simple `slice(0, maxChars)` if the JSON cannot be
+ * parsed or no item array is found.
+ */
 export function smartTruncateJsonContent(
   jsonText: string,
   queryTerms: string[],

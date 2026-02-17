@@ -1,4 +1,4 @@
-import type { ChatAction, ContentBlock, ParsedToolResult } from "@/lib/types";
+import type { ChatAction, ContentBlock, ParsedToolResult, RelevanceDebugTrace, ToolRenderContext } from "@/lib/types";
 import { parseToolResult } from "@/lib/parsers";
 import { ItemCardGrid } from "../cards/ItemCardGrid";
 import { findPrecedingToolName } from "@/lib/content-blocks";
@@ -37,6 +37,7 @@ export function CollapsibleToolGroup({
   onAction,
   sharedSelection,
   precomputedResults,
+  renderContext,
 }: {
   blocks: { block: ContentBlock; index: number }[];
   allBlocks: ContentBlock[];
@@ -44,6 +45,7 @@ export function CollapsibleToolGroup({
   onAction?: (action: ChatAction) => void;
   sharedSelection?: SharedProductSelection;
   precomputedResults?: Map<number, PrecomputedToolResult>;
+  renderContext?: ToolRenderContext;
 }) {
   const toolUseById = new Map<string, Extract<ContentBlock, { type: "mcp_tool_use" }>>();
   for (const block of allBlocks) {
@@ -72,6 +74,7 @@ export function CollapsibleToolGroup({
           block.content,
           verticalId,
           matchedToolUse?.input,
+          renderContext,
         );
         logger.debug("[CollapsibleToolGroup] Parsed card", {
           index,
@@ -86,6 +89,10 @@ export function CollapsibleToolGroup({
   }
 
   if (cardResults.length === 0) return null;
+
+  const debugTraces = cardResults
+    .map((entry) => entry.parsed.debug)
+    .filter((trace): trace is RelevanceDebugTrace => Boolean(trace));
 
   const shouldMergeProductRails = verticalId === "food" || verticalId === "style";
   let resolvedCardResults = cardResults;
@@ -110,6 +117,17 @@ export function CollapsibleToolGroup({
 
   return (
     <div className="space-y-1">
+      {renderContext?.debug && debugTraces.length > 0 && (
+        <div className="rounded-md border border-dashed border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[10px] text-amber-700">
+          {debugTraces.map((trace, index) => (
+            <div key={`${trace.strategy}-${index}`} className="truncate">
+              {trace.strategy}: {trace.beforeCount ?? "-"}→{trace.afterCount ?? "-"}
+              {trace.strictApplied && trace.strictApplied.length > 0 ? ` | strict=${trace.strictApplied.join(",")}` : ""}
+              {trace.note ? ` | ${trace.note}` : ""}
+            </div>
+          ))}
+        </div>
+      )}
       {resolvedCardResults.map(({ key, parsed }) =>
         onAction ? (
           <ItemCardGrid

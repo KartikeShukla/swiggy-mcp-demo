@@ -2,7 +2,10 @@ import type { ParsedToolResult, ParsedRestaurant } from "@/lib/types";
 import { MAX_RESTAURANTS_SHOWN } from "@/lib/constants";
 import { asArrayOrWrap, str, num } from "./primitives";
 
-export function tryParseRestaurants(payload: unknown): ParsedToolResult | null {
+export function tryParseRestaurants(
+  payload: unknown,
+  context?: { maxItems?: number },
+): ParsedToolResult | null {
   const arr = asArrayOrWrap(payload);
   if (!arr || arr.length === 0) return null;
 
@@ -46,6 +49,7 @@ export function tryParseRestaurants(payload: unknown): ParsedToolResult | null {
       priceForTwo: str(obj.priceForTwo) || str(obj.price_for_two) ||
         (num(obj.costForTwo) ? `₹${num(obj.costForTwo)}` : undefined) ||
         (num(obj.cost_for_two) ? `₹${num(obj.cost_for_two)}` : undefined),
+      deliveryTime: str(obj.deliveryTime) || str(obj.delivery_time) || str((obj.sla as Record<string, unknown> | undefined)?.deliveryTime),
       image: str(obj.image) || str(obj.imageUrl) || str(obj.img) || str(obj.thumbnail) || str(obj.image_url),
       address: str(obj.address) || str(obj.full_address) || str(obj.completeAddress) || str(obj.complete_address),
       offers,
@@ -53,5 +57,6 @@ export function tryParseRestaurants(payload: unknown): ParsedToolResult | null {
     });
   }
 
-  return items.length > 0 ? { type: "restaurants", items: items.slice(0, MAX_RESTAURANTS_SHOWN) } : null;
+  const maxItems = context?.maxItems ?? MAX_RESTAURANTS_SHOWN;
+  return items.length > 0 ? { type: "restaurants", items: items.slice(0, maxItems) } : null;
 }
