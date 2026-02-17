@@ -25,6 +25,7 @@ Repository map with purpose-oriented annotations.
 - `useChatApi`: request/stream execution with retry + error classification.
 - `useChatPersistence`: localStorage history layer.
 - `useCart`: derives cart from parsed tool results.
+- `useLoadingLabel`: loading context detection and label generation (extracted from useChat).
 
 ### `src/integrations/anthropic`
 - `request-builder.ts`: builds stream params and MCP config.
@@ -34,8 +35,14 @@ Repository map with purpose-oriented annotations.
 - `retry-policy.ts`, `error-classifier.ts`, `mcp-tool-errors.ts`, `tool-result-truncation.ts`.
 
 ### `src/lib`
-- `constants.ts`, `types.ts`, `schemas.ts`, `storage.ts`, `logger.ts`, utility helpers.
-- `parsers/`: orchestrator + specialized parsing modules.
+- `constants.ts`: single source of truth for all numeric constants (context management, retry budgets, display limits, candidate pools).
+- `types.ts`, `schemas.ts`, `storage.ts`, `logger.ts`, utility helpers.
+- `intent/runtime-signals.ts`: shared loading + parser-intent classification.
+- `cart/latest-cart.ts` and `cart/optimistic-cart.ts`: authoritative cart extraction and optimistic cart key/matching helpers.
+- `parsers/`: orchestrator + staged routing/relevance helpers + specialized parsing modules.
+- `relevance/shared.ts`: shared relevance utilities (RelevanceResult, rankItems, unique, buildRelevanceDebug).
+- `relevance/patterns.ts`: unified pattern registries (cuisines, dishes, budget, broaden) and detection helpers.
+- `relevance/dining.ts`, `relevance/foodorder.ts`, `relevance/generic.ts`: vertical-specific reranking using shared foundations.
 
 ### `src/verticals`
 - Vertical config files and prompt-spec system.
@@ -53,7 +60,7 @@ Repository map with purpose-oriented annotations.
 
 ## Tests
 - Test files are colocated under `__tests__` directories in source areas.
-- Current total: 45 test files across components, hooks, integrations, parsers, verticals, lib, and server middleware.
+- Current total: 54 test files across components, hooks, integrations, parsers, verticals, lib, and server middleware.
 
 ## Related Docs
 - [Architecture](./ARCHITECTURE.md)

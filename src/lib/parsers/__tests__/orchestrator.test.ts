@@ -391,6 +391,45 @@ describe("parseToolResult()", () => {
       expect(result.items[4].name).toBe("Menu Item 5");
     });
 
+    it("applies foodorder discover reranking when render context is available", () => {
+      const content = JSON.stringify([
+        { name: "Veg Biryani Bowl", price: 220, description: "Spicy veg biryani" },
+        { name: "Mild Pasta", price: 180, description: "Creamy white sauce" },
+      ]);
+
+      const result = parseToolResult(
+        "search_restaurants",
+        content,
+        "foodorder",
+        undefined,
+        buildToolRenderContext("foodorder", "spicy veg biryani under 250"),
+      );
+
+      expect(result.type).toBe("products");
+      if (result.type !== "products") return;
+      expect(result.items[0]?.name).toBe("Veg Biryani Bowl");
+      expect(result.debug?.strategy).toBe("foodorder:discover-products");
+    });
+
+    it("returns strict-match guidance for menu mode when no menu items satisfy filters", () => {
+      const content = JSON.stringify([
+        { name: "Chicken Wings", price: 320, description: "Non-veg starter" },
+        { name: "Mutton Kebab", price: 410, description: "Non-veg appetizer" },
+      ]);
+
+      const result = parseToolResult(
+        "get_menu",
+        content,
+        "foodorder",
+        undefined,
+        buildToolRenderContext("foodorder", "show menu vegan pizza under 100"),
+      );
+
+      expect(result.type).toBe("info");
+      if (result.type !== "info") return;
+      expect(result.title).toContain("No strict menu matches");
+    });
+
   });
 
   describe("shape detection fallback", () => {

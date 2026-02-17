@@ -10,10 +10,12 @@ System prompts are composed from:
 ## Required Invariants
 1. Vertical mission/scope distinctions remain explicit.
 2. Confirmation policy remains explicit before place/book operations.
-3. Shared error-handling and card-first response rules remain present.
+3. Shared error-handling, card-first response, and cart-consistency rules remain present.
 4. Dining flow keeps availability-before-booking behavior.
 5. Dining strict-first matching must request user approval before broadening filters.
 6. Foodorder keeps discovery-to-menu progression semantics.
+7. Foodorder restaurant lock: once selected, all menu/cart operations use that restaurant.
+8. Cart state comes from tool results only — no mental model of cart contents.
 
 ## Mapping Contract
 - `food` and `style` use Instamart MCP.

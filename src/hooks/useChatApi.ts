@@ -18,8 +18,34 @@ import {
   extractRateLimitHeaders,
 } from "@/integrations/anthropic/retry-policy";
 
-const CHAT_REQUEST_MAX_RETRIES = 2;
-const RATE_LIMIT_MAX_RETRIES = 2;
+import {
+  CHAT_REQUEST_MAX_RETRIES,
+  RATE_LIMIT_MAX_RETRIES,
+  HEAVY_CONTEXT_RETRY_LIMIT,
+  HEAVY_CONTEXT_MESSAGE_COUNT,
+  HEAVY_CONTEXT_CHAR_BUDGET,
+} from "@/lib/constants";
+
+function estimateMessageChars(messages: ChatMessage[]): number {
+  return messages.reduce((sum, message) => {
+    if (typeof message.content === "string") {
+      return sum + message.content.length;
+    }
+    try {
+      return sum + JSON.stringify(message.content).length;
+    } catch {
+      return sum + 0;
+    }
+  }, 0);
+}
+
+function getRetryLimit(messages: ChatMessage[], rateLimited: boolean): number {
+  if (rateLimited) return RATE_LIMIT_MAX_RETRIES;
+  const heavyContext =
+    messages.length > HEAVY_CONTEXT_MESSAGE_COUNT ||
+    estimateMessageChars(messages) > HEAVY_CONTEXT_CHAR_BUDGET;
+  return heavyContext ? HEAVY_CONTEXT_RETRY_LIMIT : CHAT_REQUEST_MAX_RETRIES;
+}
 
 /** Encapsulates the Anthropic API call with MCP server configuration. */
 export function useChatApi(
@@ -55,13 +81,20 @@ export function useChatApi(
           lastError = err;
 
           const rateLimited = isRateLimitError(err);
+          const retryLimit = getRetryLimit(messages, rateLimited);
           if (rateLimited) {
             const headers = extractRateLimitHeaders(err);
             if (headers) logger.debug("[Rate Limit Hit]", headers);
           }
 
-          const maxRetries = rateLimited ? RATE_LIMIT_MAX_RETRIES : CHAT_REQUEST_MAX_RETRIES;
-          if (attempt >= maxRetries || !isRetryableAnthropicError(err)) {
+          logger.debug("[Retry Policy]", {
+            attempt,
+            retryLimit,
+            rateLimited,
+            messageCount: messages.length,
+          });
+
+          if (attempt >= retryLimit || !isRetryableAnthropicError(err)) {
             throw err;
           }
           await waitForRetryAttempt(attempt + 1, extractRetryAfterMs(err));

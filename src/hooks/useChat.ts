@@ -4,6 +4,8 @@ import { useChatApi } from "./useChatApi";
 import { useChatPersistence } from "./useChatPersistence";
 import { buildSessionStateSummary } from "@/integrations/anthropic/session-summary";
 import { logger } from "@/lib/logger";
+import { detectLoadingContext, type LoadingContext } from "@/lib/intent/runtime-signals";
+import { getLoadingLabel } from "./useLoadingLabel";
 import type { VerticalId } from "@/verticals/prompt-spec/types";
 
 const SUPPORTED_VERTICAL_IDS: VerticalId[] = [
@@ -13,78 +15,8 @@ const SUPPORTED_VERTICAL_IDS: VerticalId[] = [
   "foodorder",
 ];
 
-type LoadingContext =
-  | "generic"
-  | "cart"
-  | "menu"
-  | "restaurant"
-  | "slots"
-  | "booking"
-  | "address"
-  | "auth"
-  | "nutrition"
-  | "style"
-  | "grooming"
-  | "order";
-
-const LOADING_LABELS: Record<LoadingContext, string[]> = {
-  generic: ["Thinking", "Processing", "Working", "Almost Done"],
-  cart: ["Updating Cart", "Syncing Cart", "Checking Stock", "Applying Changes"],
-  menu: ["Scanning Menu", "Matching Items", "Filtering Dishes", "Ranking Options"],
-  restaurant: ["Finding Restaurants", "Checking Places", "Sorting Results", "Comparing Picks"],
-  slots: ["Checking Slots", "Finding Times", "Scanning Availability", "Shortlisting Times"],
-  booking: ["Preparing Booking", "Confirming Table", "Saving Details", "Finalizing Request"],
-  address: ["Fetching Addresses", "Checking Coverage", "Loading Locations", "Saving Address"],
-  auth: ["Verifying Login", "Connecting Account", "Syncing Access", "Validating Session"],
-  nutrition: ["Matching Meals", "Counting Macros", "Balancing Nutrition", "Planning Intake"],
-  style: ["Matching Style", "Building Looks", "Curating Picks", "Refining Outfit"],
-  grooming: ["Matching Products", "Curating Routine", "Scanning Essentials", "Refining Picks"],
-  order: ["Placing Order", "Confirming Order", "Validating Cart", "Finalizing Checkout"],
-};
-
 function isVerticalId(verticalId: string): verticalId is VerticalId {
   return SUPPORTED_VERTICAL_IDS.includes(verticalId as VerticalId);
-}
-
-const LOADING_ADDRESS_RE = /\b(address|location|deliver|delivery|sector|city|area|pin)\b/;
-const LOADING_AUTH_RE = /\b(connect|oauth|token|login|signin|auth|swiggy)\b/;
-const LOADING_CART_RE = /\b(cart|basket|add|remove|quantity|checkout)\b/;
-const LOADING_SLOTS_RE = /\b(slot|time|timeslot|availability)\b/;
-const LOADING_BOOKING_RE = /\b(book|booking|reservation|reserve|table)\b/;
-const LOADING_RESTAURANT_RE = /\b(restaurant|dine|dining|cafe|nearby)\b/;
-const LOADING_ORDER_RE = /\b(order|pay|payment|track)\b/;
-const LOADING_MENU_RE = /\b(menu|item|dish|pizza|biryani|burger|meal|cuisine)\b/;
-const LOADING_NUTRITION_RE = /\b(calorie|protein|macro|nutrition|diet|keto|vegan|meal prep)\b/;
-const LOADING_STYLE_RE = /\b(outfit|style|look|dress|shirt|jeans|fashion)\b/;
-const LOADING_GROOMING_RE = /\b(groom|skincare|hair|beard|serum|cleanser)\b/;
-
-function detectLoadingContext(text: string, verticalId: string): LoadingContext {
-  const input = text.toLowerCase();
-
-  if (LOADING_ADDRESS_RE.test(input)) return "address";
-  if (LOADING_AUTH_RE.test(input)) return "auth";
-  if (LOADING_CART_RE.test(input)) return "cart";
-  if (LOADING_SLOTS_RE.test(input)) return "slots";
-  if (LOADING_BOOKING_RE.test(input)) return "booking";
-  if (LOADING_RESTAURANT_RE.test(input)) return "restaurant";
-  if (LOADING_ORDER_RE.test(input)) return "order";
-  if (LOADING_MENU_RE.test(input)) return "menu";
-  if (LOADING_NUTRITION_RE.test(input)) return "nutrition";
-  if (LOADING_STYLE_RE.test(input)) return "style";
-  if (LOADING_GROOMING_RE.test(input)) return "grooming";
-
-  if (verticalId === "food") return "nutrition";
-  if (verticalId === "style") return "style";
-  if (verticalId === "dining") return "restaurant";
-  if (verticalId === "foodorder") return "menu";
-
-  return "generic";
-}
-
-function getLoadingLabel(context: LoadingContext, elapsedMs: number): string {
-  const labels = LOADING_LABELS[context] ?? LOADING_LABELS.generic;
-  const index = Math.floor(elapsedMs / 1800) % labels.length;
-  return labels[index];
 }
 
 export function useChat(

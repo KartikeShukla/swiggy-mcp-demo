@@ -1,7 +1,7 @@
 # Parser Contract
 
 ## Entrypoint
-`parseToolResult(toolName, content, verticalId, toolInput?)`
+`parseToolResult(toolName, content, verticalId, toolInput?, renderContext?)`
 
 ## Required Output
 Must always return one `ParsedToolResult` union variant:
@@ -13,7 +13,15 @@ Must always return one `ParsedToolResult` union variant:
 3. Shape fallback must remain active.
 4. Final fallback must remain `raw`.
 5. Cart parsing must preserve nested bill/line-item extraction behavior.
-6. Dining restaurant parsing must preserve strict-first rerank + explicit broaden-info fallback behavior.
+6. Dining and foodorder strict-first rerank behavior must preserve explicit broaden-info fallback semantics when constraints produce no strict matches.
+7. Relevance post-processing should only run when render context is available.
+
+## Module Structure
+- Orchestrator: `src/lib/parsers/orchestrator.ts` — routing core.
+- Routing signals: `src/lib/parsers/routing-signals.ts` — tool-name patterns and payload signal inference.
+- Relevance post-processing: `src/lib/parsers/relevance-postprocess.ts` — routes to vertical rerankers.
+- Relevance foundations: `src/lib/relevance/shared.ts` (utilities), `src/lib/relevance/patterns.ts` (unified patterns).
+- Vertical rerankers: `src/lib/relevance/dining.ts`, `src/lib/relevance/foodorder.ts`, `src/lib/relevance/generic.ts`.
 
 ## Regression Locks
 - `src/lib/parsers/__tests__/orchestrator.test.ts`

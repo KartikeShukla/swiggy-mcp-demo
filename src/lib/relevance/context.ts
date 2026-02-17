@@ -1,19 +1,11 @@
 import type { ParserIntentHint, ToolRenderContext } from "@/lib/types";
 import { extractDiningConstraints, shouldAllowDiningBroadening } from "./dining";
 import { extractFoodorderConstraints, shouldAllowBroadening } from "./foodorder";
-
-const MENU_RE = /\b(menu|dish|item|dosa|idli|pizza|biryani|burger)\b/i;
-const CART_RE = /\b(cart|basket|add|remove|quantity)\b/i;
-const CONFIRM_RE = /\b(confirm|go ahead|place order|checkout|book it)\b/i;
-const AVAILABILITY_RE = /\b(slot|availability|available|time slot|timeslot|check availability)\b/i;
+import { detectParserIntent } from "@/lib/intent/runtime-signals";
 
 function inferMode(query: string, verticalId: string): ParserIntentHint {
   if (!query) return "discover";
-  if (CONFIRM_RE.test(query)) return "confirm";
-  if (CART_RE.test(query)) return "cart";
-  if (verticalId === "foodorder" && MENU_RE.test(query)) return "menu";
-  if (verticalId === "dining" && AVAILABILITY_RE.test(query)) return "availability";
-  return "discover";
+  return detectParserIntent(query, verticalId);
 }
 
 export function buildToolRenderContext(

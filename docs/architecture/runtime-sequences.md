@@ -21,7 +21,8 @@
 ## Parser Rendering Sequence
 1. Normalize raw tool result payload.
 2. Extract nested payload.
-3. Route by tool name where possible.
-4. Apply shape detection fallback.
-5. Fallback to status/info/raw.
-6. Render through `ItemCardGrid`.
+3. Route by tool/payload signals where possible.
+4. Apply relevance post-processing (strict-first reranking) when render context is present.
+5. Apply shape detection fallback.
+6. Fallback to status/info/raw.
+7. Render through `ItemCardGrid`.

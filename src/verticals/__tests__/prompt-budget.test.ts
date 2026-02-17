@@ -1,10 +1,10 @@
 import { verticals } from "@/verticals";
 
 const MAX_PROMPT_WORDS = {
-  food: 530,
-  style: 520,
-  dining: 500,
-  foodorder: 525,
+  food: 700,
+  style: 700,
+  dining: 680,
+  foodorder: 760,
 } as const;
 
 function countWords(text: string): number {

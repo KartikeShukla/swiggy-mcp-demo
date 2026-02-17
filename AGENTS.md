@@ -43,22 +43,26 @@ npm run docs:verify
 2. `useChatApi` builds params via `buildMessageStreamParams`.
 3. `runMessageStream` handles streaming, timeout, tool-level aborts, and content sanitization.
 4. Assistant blocks are parsed into cards by `parseToolResult` + `ItemCardGrid`.
-5. Dining parser path applies strict-first relevance reranking before rendering restaurant cards.
+5. Dining and foodorder parser paths apply strict-first relevance reranking when render context is available.
 
 ### Current Limits And Constants
-- `MAX_CONTEXT_MESSAGES = 8` (`src/integrations/anthropic/request-builder.ts`).
+All numeric constants are centralized in `src/lib/constants.ts` unless noted otherwise.
+- `MAX_CONTEXT_MESSAGES = 8`.
 - Context management trigger: `input_tokens = 12000`.
 - Context management keep tool uses: `3`.
-- `KEEP_RECENT_MESSAGES_FULL = 2` (`src/integrations/anthropic/message-sanitizer.ts`).
+- `KEEP_RECENT_MESSAGES_FULL = 2`.
+- `MAX_OLD_USER_MESSAGE_CHARS = 240` for compacting older user turns before context bounding.
 - `MAX_PRODUCTS_SHOWN = 3`, `MAX_MENU_PRODUCTS_SHOWN = 5`, `MAX_RESTAURANTS_SHOWN = 5`.
-- Dining parser candidate pool before rerank: `15` (`src/lib/parsers/orchestrator.ts`).
+- Parser candidate pools before rerank: dining restaurants `15`, foodorder menu `15`, foodorder restaurants `15` (`src/lib/parsers/routing-signals.ts`).
 - `MCP_TOOL_ERROR_LIMIT = 2`, `MCP_AUTH_ERROR_LIMIT = 1`.
 - `STREAM_REQUEST_TIMEOUT_MS = 90000`.
+- API retry budgets: `CHAT_REQUEST_MAX_RETRIES = 2`, `RATE_LIMIT_MAX_RETRIES = 1`, `HEAVY_CONTEXT_RETRY_LIMIT = 1`.
 
 ### Session Summary
 - Built from recent user messages in `buildSessionStateSummary`.
 - Encodes compact signals like slots, intent, confirmation state, selected restaurant, and location lock.
 - `foodorder` and `dining` include compact `filters=` signals for strict-first relevance continuity.
+- Intent classification is aligned with render-context intent classification through shared runtime intent signals (`src/lib/intent/runtime-signals.ts`).
 - Included as a system text block without cache control.
 
 ### Storage Boundaries
@@ -72,7 +76,7 @@ npm run docs:verify
 - `foodorder` -> `swiggy-food` (`https://mcp.swiggy.com/food`).
 
 ### Current Test Footprint
-- `46` test files under `src/**/__tests__` and `server/**/__tests__`.
+- `54` test files under `src/**/__tests__` and `server/**/__tests__`.
 - Latest baseline: lint and test suites pass on this branch.
 
 <!-- CORE_RUNTIME_FACTS:END -->
@@ -81,7 +85,9 @@ npm run docs:verify
 - UI layers live in `src/components/*`, state orchestration in hooks, and runtime integration logic in `src/integrations/anthropic`.
 - The request builder assembles prompt blocks, optional address and session-state context, plus MCP config.
 - Stream runner enforces timeout and tool-error abort limits and returns sanitized assistant content.
+- Error classifier uses a table-driven `ERROR_RULES` approach for clear priority ordering.
 - Parser orchestrator converts MCP result payloads into typed card models (`products`, `restaurants`, `cart`, etc.).
+- Relevance system uses shared foundations (`relevance/shared.ts`, `relevance/patterns.ts`) with vertical-specific rerankers.
 
 ## Prompt System Summary
 - Prompt profiles are defined in `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/src/verticals/prompt-spec/profiles.ts`.
@@ -97,6 +103,7 @@ npm run docs:verify
 - Parser fallback contract: never throw; always return a valid `ParsedToolResult` variant.
 - Action-message contract: card interactions map to deterministic chat actions.
 - Prompt contract: explicit confirmation required before irreversible operations (order/booking).
+- Cart consistency contract: cart state comes from tool results only; foodorder restaurant lock must persist across menu/cart operations.
 
 ## Documentation Navigation
 - Start at `/Users/kartike/Downloads/Co-work/swiggy-mcp-demo/docs/README.md`.

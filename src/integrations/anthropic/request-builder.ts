@@ -2,18 +2,30 @@ import {
   MCP_BETA_FLAG,
   MAX_TOKENS,
   MODEL_ID,
+  MAX_CONTEXT_MESSAGES,
+  KEEP_RECENT_MESSAGES_FULL,
+  MAX_OLD_USER_MESSAGE_CHARS,
 } from "@/lib/constants";
 import type { ChatMessage, ParsedAddress, VerticalConfig } from "@/lib/types";
 import {
   quotePromptValue,
   sanitizeUntrustedPromptText,
 } from "@/lib/prompt-safety";
-import { sanitizeMessagesForApi, compactOldMessages, truncateToolResultsInMessages } from "./message-sanitizer";
+import {
+  sanitizeMessagesForApi,
+  compactOldMessages,
+  compactOldUserMessages,
+  truncateToolResultsInMessages,
+} from "./message-sanitizer";
 import { logger } from "@/lib/logger";
 
-const MAX_CONTEXT_MESSAGES = 8;
-const KEEP_RECENT_MESSAGES_FULL = 2;
-
+/**
+ * Formats the current date and time using the user's browser locale (en-IN)
+ * and appends the IANA timezone identifier (e.g. "Asia/Kolkata").
+ *
+ * The timezone is resolved from `Intl.DateTimeFormat`, so it reflects the
+ * user's actual OS/browser setting rather than a hardcoded value.
+ */
 export function formatCurrentDateTime(): string {
   const now = new Date();
   const formatted = new Intl.DateTimeFormat("en-IN", {
@@ -30,6 +42,33 @@ export function formatCurrentDateTime(): string {
   return `${formatted} (${tz})`;
 }
 
+/**
+ * Builds the full parameter object for `client.beta.messages.stream()`.
+ *
+ * **System blocks** (assembled in order):
+ * 1. Vertical prompt profile — cached with `cache_control: ephemeral`.
+ * 2. Active delivery address (if available) — cached, instructs the model
+ *    to treat it as the user's current location.
+ * 3. Current date/time — uncached, provides temporal context for
+ *    time-sensitive decisions (delivery windows, restaurant hours, etc.).
+ * 4. Session state summary (if available) — uncached, carries compact
+ *    intent/slot/filter signals across the conversation window.
+ *
+ * **Message processing pipeline** (applied sequentially):
+ * 1. `sanitizeMessagesForApi` — removes orphaned tool_use/result blocks
+ *    that would cause API validation errors.
+ * 2. `compactOldMessages` — strips tool blocks from older assistant
+ *    messages, keeping only text content.
+ * 3. `compactOldUserMessages` — truncates long older user messages to
+ *    `MAX_OLD_USER_MESSAGE_CHARS`.
+ * 4. Bounding — takes the last `MAX_CONTEXT_MESSAGES` messages.
+ * 5. `truncateToolResultsInMessages` — smart-truncates oversized
+ *    tool result payloads using query-relevance scoring.
+ *
+ * **MCP config**: When a Swiggy token is present, attaches the vertical's
+ * MCP server URL and a `mcp_toolset` tool entry so the model can invoke
+ * Swiggy tools through Anthropic's MCP bridge.
+ */
 export function buildMessageStreamParams(
   messages: ChatMessage[],
   vertical: VerticalConfig,
@@ -45,12 +84,17 @@ export function buildMessageStreamParams(
     sanitizedMessages,
     KEEP_RECENT_MESSAGES_FULL,
   );
-  const boundedMessages = compactedMessages.slice(-MAX_CONTEXT_MESSAGES);
+  const compactedUserMessages = compactOldUserMessages(compactedMessages, {
+    keepRecent: KEEP_RECENT_MESSAGES_FULL,
+    maxChars: MAX_OLD_USER_MESSAGE_CHARS,
+  });
+  const boundedMessages = compactedUserMessages.slice(-MAX_CONTEXT_MESSAGES);
   const truncatedMessages = truncateToolResultsInMessages(boundedMessages);
   logger.debug("[Request Builder Context]", {
     sourceMessages: messages.length,
     sanitizedMessages: sanitizedMessages.length,
     compactedMessages: compactedMessages.length,
+    compactedUserMessages: compactedUserMessages.length,
     boundedMessages: boundedMessages.length,
     maxContext: MAX_CONTEXT_MESSAGES,
   });

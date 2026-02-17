@@ -260,4 +260,21 @@ describe("buildMessageStreamParams()", () => {
     expect(blocks).toHaveLength(3);
     expect(blocks.map((b) => b.type)).toEqual(["text", "mcp_tool_use", "mcp_tool_result"]);
   });
+
+  it("compacts older long user messages before bounding context", () => {
+    const longUser = "x".repeat(600);
+    const messages = [
+      { role: "user" as const, content: longUser, timestamp: 1 },
+      { role: "assistant" as const, content: "ok", timestamp: 2 },
+      { role: "user" as const, content: "latest full message", timestamp: 3 },
+      { role: "assistant" as const, content: "latest reply", timestamp: 4 },
+    ];
+
+    const params = buildMessageStreamParams(messages, foodVertical, null);
+    const apiMessages = params.messages as Array<{ role: string; content: string }>;
+
+    expect(apiMessages[0]?.role).toBe("user");
+    expect(apiMessages[0]?.content.length).toBeLessThanOrEqual(240);
+    expect(apiMessages[2]?.content).toBe("latest full message");
+  });
 });

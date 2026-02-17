@@ -27,24 +27,29 @@ graph LR
 
 ## Chat + MCP Lifecycle
 1. User enters text in `ChatInput`.
-2. `useChat.sendMessage` appends user message and chooses loading context.
+2. `useChat.sendMessage` appends user message and chooses loading context via shared runtime intent signals.
 3. `buildSessionStateSummary` derives compact state hints from recent user turns.
 4. `buildMessageStreamParams` builds request payload:
    - bounded messages (`MAX_CONTEXT_MESSAGES = 8`)
+   - older long user turns compacted before bounding (`MAX_OLD_USER_MESSAGE_CHARS = 240`)
    - prompt + optional address + datetime + optional summary blocks
    - MCP configuration (when Swiggy token exists)
    - context-management edit (`input_tokens: 12000`, keep `3` tool uses)
 5. `runMessageStream` streams assistant blocks and monitors MCP tool errors.
 6. Assistant blocks are sanitized (`sanitizeAssistantBlocks`) and persisted.
 7. UI groups blocks and parses tool results into cards.
-8. Dining restaurant payloads are strict-filtered/reranked before final card render.
+8. Parser orchestration applies staged routing (tool-patterns -> shape fallback -> status/info fallback) with relevance post-processing when render context is available.
+9. Dining and foodorder strict-first reranking can return explicit broaden-guidance info cards when constraints are too narrow.
 
 ## Data Flow Layers
 1. Auth layer: `useAuth` + storage helpers.
-2. Chat layer: `useChat`, `useChatApi`, `useChatPersistence`.
-3. Integration layer: request builder, stream runner, retry policy, error classifiers.
-4. Parser layer: orchestrator + specialized parsers.
-5. Rendering layer: message bubbles, tool groups, typed cards.
+2. Chat layer: `useChat`, `useChatApi`, `useChatPersistence`, `useLoadingLabel`.
+3. Integration layer: request builder, stream runner, retry policy, table-driven error classifier.
+4. Intent layer: shared runtime signal detection in `src/lib/intent/runtime-signals.ts`.
+5. Parser layer: orchestrator + routing signals + relevance post-processing + specialized parsers.
+6. Relevance layer: shared utilities (`relevance/shared.ts`), unified patterns (`relevance/patterns.ts`), vertical-specific rerankers (`relevance/dining.ts`, `relevance/foodorder.ts`, `relevance/generic.ts`).
+7. Cart layer: `useCart` + `src/lib/cart/latest-cart.ts` + optimistic cart key/matching helpers.
+8. Rendering layer: message bubbles, tool groups, typed cards.
 
 ## Prompt Runtime
 - Vertical prompts are compiled from prompt profiles (`src/verticals/prompt-spec/profiles.ts` + compiler).
@@ -55,7 +60,7 @@ graph LR
 
 ## Error Handling Model
 ### API-level errors
-Handled by `classifyApiError`:
+Handled by `classifyApiError` (table-driven `ERROR_RULES` array):
 - 401: invalid API key
 - 403: Swiggy session expired
 - 429: rate limit with cooldown
@@ -69,6 +74,10 @@ Handled by `classifyMcpError` + stream abort guards:
 
 ### Retry policy
 - Retryable statuses include 429, 500, 502, 503, 504, 529.
+- Retry budgets centralized in `src/lib/constants.ts`:
+  - `RATE_LIMIT_MAX_RETRIES = 1`
+  - `HEAVY_CONTEXT_RETRY_LIMIT = 1`
+  - `CHAT_REQUEST_MAX_RETRIES = 2`
 - Stream timeout is `STREAM_REQUEST_TIMEOUT_MS = 90000`.
 - Custom retry is used (`maxRetries: 0` on SDK client).
 
@@ -76,6 +85,7 @@ Handled by `classifyMcpError` + stream abort guards:
 - Local storage keys include API key, Swiggy token/timestamp, selected address, and per-vertical chat histories.
 - Chat history is sanitized before API usage and on persistence.
 - Cart state is derived from parsed assistant tool results, not a separate server-backed cart store.
+- Foodorder optimistic cart state uses stable keys (vertical + restaurant scope + item id/name) to reduce cross-restaurant item collisions before authoritative cart results arrive.
 
 ## OAuth Flow (Dev Only)
 1. Browser opens `/api/auth/start`.

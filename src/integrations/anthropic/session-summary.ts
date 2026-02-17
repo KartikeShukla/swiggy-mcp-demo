@@ -2,6 +2,7 @@ import type { ParsedAddress, ChatMessage } from "@/lib/types";
 import type { VerticalId } from "@/verticals/prompt-spec/types";
 import { extractDiningConstraints } from "@/lib/relevance/dining";
 import { extractFoodorderConstraints } from "@/lib/relevance/foodorder";
+import { detectParserIntent } from "@/lib/intent/runtime-signals";
 
 // Module-scope regex constants (avoid per-call RegExp allocation)
 const RESTAURANT_SELECT_PATTERNS = [
@@ -12,7 +13,6 @@ const RESTAURANT_SELECT_PATTERNS = [
   /book a table at\s+(.+)$/i,
 ];
 
-const CONFIRM_INTENT_PATTERNS = [/confirm/, /go ahead/, /place order/, /book it/, /yes do it/];
 const FOOD_MENU_PATTERNS = [/open menu for restaurant:/, /menu at /];
 const DINING_AVAIL_PATTERNS = [/availability/, /time slot/, /book a table/];
 const CART_INTENT_PATTERNS = [/add /, /remove /, /cart/, /basket/];
@@ -93,9 +93,6 @@ function detectLatestSelectedRestaurant(userMessages: string[]): string | null {
 }
 
 function detectIntent(lastUserText: string, verticalId: VerticalId): SummarySignals["intent"] {
-  if (hasAny(lastUserText, CONFIRM_INTENT_PATTERNS)) {
-    return "confirm";
-  }
   if (verticalId === "foodorder" && hasAny(lastUserText, FOOD_MENU_PATTERNS)) {
     return "menu";
   }
@@ -105,7 +102,7 @@ function detectIntent(lastUserText: string, verticalId: VerticalId): SummarySign
   if (hasAny(lastUserText, CART_INTENT_PATTERNS)) {
     return "cart";
   }
-  return "discover";
+  return detectParserIntent(lastUserText, verticalId);
 }
 
 function detectSlots(allUserText: string, verticalId: VerticalId): string[] {

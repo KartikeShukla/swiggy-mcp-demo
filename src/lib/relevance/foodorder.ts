@@ -1,69 +1,36 @@
 import type {
   ParsedProduct,
   ParsedRestaurant,
-  RelevanceDebugTrace,
   StrictConstraintSnapshot,
   ToolRenderContext,
 } from "@/lib/types";
 import { MAX_MENU_PRODUCTS_SHOWN, MAX_RESTAURANTS_SHOWN } from "@/lib/constants";
 import { extractNumberFromText, normalizeText, textOverlapScore, tokenizeQuery } from "./text";
+import { unique, rankItems, buildRelevanceDebug, type RelevanceResult } from "./shared";
+import {
+  detectCuisines as sharedDetectCuisines,
+  detectDishes as sharedDetectDishes,
+  detectBudget,
+  BROADEN_RE,
+} from "./patterns";
 
-const CUISINE_PATTERNS: Array<{ key: string; pattern: RegExp }> = [
-  { key: "south indian", pattern: /\b(south[\s-]?indian|udupi|andhra|chettinad|kerala)\b/ },
-  { key: "north indian", pattern: /\b(north[\s-]?indian|punjabi|mughlai)\b/ },
-  { key: "chinese", pattern: /\b(chinese|schezwan|hakka)\b/ },
-  { key: "italian", pattern: /\b(italian|pasta|pizza)\b/ },
-  { key: "biryani", pattern: /\b(biryani|pulao)\b/ },
-];
+export type { RelevanceResult };
 
-const DISH_PATTERNS: Array<{ key: string; pattern: RegExp }> = [
-  { key: "dosa", pattern: /\b(dosa|dosai)\b/ },
-  { key: "idli", pattern: /\b(idli)\b/ },
-  { key: "uttapam", pattern: /\b(uttapam|uthappam)\b/ },
-  { key: "biryani", pattern: /\b(biryani)\b/ },
-  { key: "pizza", pattern: /\b(pizza)\b/ },
-  { key: "burger", pattern: /\b(burger)\b/ },
-];
+// ── Foodorder-specific patterns ───────────────────────────────────────
 
 const SPICY_RE = /\b(spicy|extra spicy|hot|fiery|schezwan|andhra|chettinad|kolhapuri)\b/;
 const VEG_RE = /\b(veg|vegetarian|pure veg|satvik|jain)\b/;
 const NON_VEG_RE = /\b(non[\s-]?veg|chicken|mutton|fish|prawn|egg)\b/;
 const VEGAN_RE = /\b(vegan)\b/;
-const BROADEN_RE = /\b(broaden|any|anything|open to|show more|no strict|relax|wider|widen)\b/;
 const SPEED_RE = /\b(under|within)\s*(\d{1,2})\s*(min|mins|minutes)\b/;
-const BUDGET_RE = /\b(under|below|upto|up to|within)\s*₹?\s*(\d{2,5})\b/;
 
 type DietPref = "veg" | "non_veg" | "vegan";
+
+// ── Constraint extraction ─────────────────────────────────────────────
 
 export interface FoodorderConstraintState extends StrictConstraintSnapshot {
   queryTerms: string[];
   rawQuery: string;
-}
-
-export interface RelevanceResult<T> {
-  items: T[];
-  debug: RelevanceDebugTrace;
-  requireBroadenPrompt: boolean;
-}
-
-function unique(values: string[]): string[] {
-  return [...new Set(values.filter(Boolean))];
-}
-
-function detectCuisines(query: string): string[] {
-  const cuisines: string[] = [];
-  for (const { key, pattern } of CUISINE_PATTERNS) {
-    if (pattern.test(query)) cuisines.push(key);
-  }
-  return unique(cuisines);
-}
-
-function detectDishes(query: string): string[] {
-  const dishes: string[] = [];
-  for (const { key, pattern } of DISH_PATTERNS) {
-    if (pattern.test(query)) dishes.push(key);
-  }
-  return unique(dishes);
 }
 
 function detectDiet(query: string): DietPref | undefined {
@@ -80,22 +47,15 @@ function detectSpeedMins(query: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function detectBudget(query: string): number | undefined {
-  const match = query.match(BUDGET_RE);
-  if (!match?.[2]) return undefined;
-  const parsed = Number.parseInt(match[2], 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
 export function extractFoodorderConstraints(queryText: string): FoodorderConstraintState {
   const query = normalizeText(queryText);
   const constraints: FoodorderConstraintState = {
     rawQuery: queryText,
     queryTerms: tokenizeQuery(queryText),
   };
-  const cuisines = detectCuisines(query);
+  const cuisines = sharedDetectCuisines(query);
   if (cuisines.length > 0) constraints.cuisines = cuisines;
-  const dishes = detectDishes(query);
+  const dishes = sharedDetectDishes(query);
   if (dishes.length > 0) constraints.dishes = dishes;
   const diet = detectDiet(query);
   if (diet) constraints.diet = diet;
@@ -110,6 +70,8 @@ export function extractFoodorderConstraints(queryText: string): FoodorderConstra
 export function shouldAllowBroadening(queryText: string): boolean {
   return BROADEN_RE.test(queryText.toLowerCase());
 }
+
+// ── Text helpers ──────────────────────────────────────────────────────
 
 function getRestaurantText(item: ParsedRestaurant): string {
   return normalizeText(
@@ -157,6 +119,8 @@ function getProductStrictText(item: ParsedProduct): string {
   );
 }
 
+// ── Matching helpers ──────────────────────────────────────────────────
+
 function matchesCuisine(text: string, cuisines?: string[]): boolean {
   if (!cuisines || cuisines.length === 0) return true;
   return cuisines.some((value) => text.includes(value));
@@ -178,6 +142,8 @@ function matchesSpicy(text: string, spicy?: boolean): boolean {
   if (!spicy) return true;
   return SPICY_RE.test(text);
 }
+
+// ── Strict key resolution ─────────────────────────────────────────────
 
 function resolveStrictKeysForRestaurants(
   items: ParsedRestaurant[],
@@ -219,6 +185,8 @@ function resolveStrictKeysForProducts(
   return keys;
 }
 
+// ── Scoring ───────────────────────────────────────────────────────────
+
 function scoreRestaurant(item: ParsedRestaurant, constraints: FoodorderConstraintState): number {
   const text = getRestaurantText(item);
   let score = textOverlapScore(text, constraints.queryTerms);
@@ -247,6 +215,8 @@ function scoreProduct(item: ParsedProduct, constraints: FoodorderConstraintState
   if (item.available === true) score += 1;
   return score;
 }
+
+// ── Strict matching ───────────────────────────────────────────────────
 
 function restaurantStrictMatch(
   item: ParsedRestaurant,
@@ -299,15 +269,7 @@ function productStrictMatch(
   return true;
 }
 
-function rankItems<T>(
-  items: T[],
-  scoreFn: (item: T) => number,
-): T[] {
-  return items
-    .map((item, index) => ({ item, index, score: scoreFn(item) }))
-    .sort((a, b) => b.score - a.score || a.index - b.index)
-    .map((entry) => entry.item);
-}
+// ── Restaurant lock scoping ───────────────────────────────────────────
 
 function matchLockedRestaurant(items: ParsedProduct[], lockedRestaurant?: string | null): ParsedProduct[] {
   if (!lockedRestaurant) return items;
@@ -319,6 +281,8 @@ function matchLockedRestaurant(items: ParsedProduct[], lockedRestaurant?: string
   );
   return matched.length > 0 ? matched : items;
 }
+
+// ── Constraint resolution ─────────────────────────────────────────────
 
 function resolveConstraints(
   renderContext?: ToolRenderContext,
@@ -348,26 +312,7 @@ function resolveConstraints(
   return merged;
 }
 
-function baseDebug(
-  strategy: string,
-  renderContext: ToolRenderContext | undefined,
-  strictApplied: string[],
-  strictSatisfied: boolean,
-  beforeCount: number,
-  afterCount: number,
-  note?: string,
-): RelevanceDebugTrace {
-  return {
-    strategy,
-    query: renderContext?.latestUserQuery,
-    mode: renderContext?.mode,
-    strictApplied,
-    strictSatisfied,
-    beforeCount,
-    afterCount,
-    note,
-  };
-}
+// ── Reranking ─────────────────────────────────────────────────────────
 
 export function rerankFoodorderRestaurants(
   items: ParsedRestaurant[],
@@ -382,7 +327,7 @@ export function rerankFoodorderRestaurants(
     return {
       items: items.slice(0, MAX_RESTAURANTS_SHOWN),
       requireBroadenPrompt: false,
-      debug: baseDebug(
+      debug: buildRelevanceDebug(
         "foodorder:restaurants",
         renderContext,
         strictKeys,
@@ -401,7 +346,7 @@ export function rerankFoodorderRestaurants(
     return {
       items: [],
       requireBroadenPrompt: true,
-      debug: baseDebug(
+      debug: buildRelevanceDebug(
         "foodorder:restaurants",
         renderContext,
         strictKeys,
@@ -419,7 +364,7 @@ export function rerankFoodorderRestaurants(
   return {
     items: ranked.slice(0, MAX_RESTAURANTS_SHOWN),
     requireBroadenPrompt: false,
-    debug: baseDebug(
+    debug: buildRelevanceDebug(
       "foodorder:restaurants",
       renderContext,
       strictKeys,
@@ -447,7 +392,7 @@ export function rerankFoodorderMenuItems(
     return {
       items: lockScopedItems.slice(0, MAX_MENU_PRODUCTS_SHOWN),
       requireBroadenPrompt: false,
-      debug: baseDebug(
+      debug: buildRelevanceDebug(
         "foodorder:menu",
         renderContext,
         strictKeys,
@@ -466,7 +411,7 @@ export function rerankFoodorderMenuItems(
     return {
       items: [],
       requireBroadenPrompt: true,
-      debug: baseDebug(
+      debug: buildRelevanceDebug(
         "foodorder:menu",
         renderContext,
         strictKeys,
@@ -484,7 +429,7 @@ export function rerankFoodorderMenuItems(
   return {
     items: ranked.slice(0, MAX_MENU_PRODUCTS_SHOWN),
     requireBroadenPrompt: false,
-    debug: baseDebug(
+    debug: buildRelevanceDebug(
       "foodorder:menu",
       renderContext,
       strictKeys,

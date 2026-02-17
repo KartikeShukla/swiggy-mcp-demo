@@ -1,15 +1,6 @@
 import type { ParsedProduct, ParsedRestaurant } from "@/lib/types";
 import { textOverlapScore, tokenizeQuery } from "./text";
-
-function rankItems<T>(
-  items: T[],
-  scoreFn: (item: T) => number,
-): T[] {
-  return items
-    .map((item, index) => ({ item, index, score: scoreFn(item) }))
-    .sort((a, b) => b.score - a.score || a.index - b.index)
-    .map((entry) => entry.item);
-}
+import { rankItems } from "./shared";
 
 export function rerankProductsByQuery(
   items: ParsedProduct[],
@@ -51,4 +42,3 @@ export function rerankRestaurantsByQuery(
     return overlap + (typeof item.rating === "number" ? Math.max(0, item.rating - 3) * 0.5 : 0);
   });
 }
-

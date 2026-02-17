@@ -1,3 +1,9 @@
+/**
+ * Shape-based heuristic detection for payloads that did not match any
+ * tool-name-based parser route.
+ *
+ * @module shape-detect
+ */
 import type { ParsedToolResult } from "@/lib/types";
 import { asArrayOrWrap } from "./primitives";
 import { tryParseRestaurants } from "./restaurants";
@@ -5,9 +11,32 @@ import { tryParseProducts } from "./products";
 import { tryParseTimeSlots } from "./time-slots";
 import { tryParseAddresses } from "./addresses";
 
+/** Pattern matching common dish/food names to detect menu-item payloads by item name. */
 const DISH_NAME_HINT_PATTERN =
   /\b(paneer|chicken|mutton|fish|prawn|biryani|pizza|burger|sandwich|roll|wrap|tikka|masala|curry|thali|noodles|fries|rice|soup|salad|kebab|falafel|shawarma)\b/i;
 
+/**
+ * Classifies an unrecognized payload by inspecting the keys and values of
+ * its first item. This is the orchestrator's fallback when no tool-name
+ * regex matched a dedicated parser.
+ *
+ * Detection strategy (first match wins):
+ * 1. **No name field** -- checks for time-slot or address shapes by key presence.
+ * 2. **Foodorder mixed shapes** -- when both product and restaurant keys exist,
+ *    prefers products (menu items commonly carry rating fields).
+ * 3. **Foodorder weak-restaurant-only** -- rating-only rows are routed based on
+ *    tool name and dish-name hints (menu items vs. restaurant discovery).
+ * 4. **Strong/weak restaurant shape** -- routes to restaurant parser.
+ * 5. **Product shape** -- routes to product parser.
+ * 6. **Time-slot / address** -- secondary check for items with a name field.
+ * 7. **Vertical fallback** -- dining/foodorder tries restaurants first, then
+ *    products; all others try products.
+ *
+ * @param payload - The extracted payload array (or single item to be wrapped).
+ * @param verticalId - Active vertical for disambiguation.
+ * @param toolName - Tool name for restaurant-discovery heuristic.
+ * @returns A parsed result or `null` if no shape matches.
+ */
 export function detectByShape(
   payload: unknown,
   verticalId: string,

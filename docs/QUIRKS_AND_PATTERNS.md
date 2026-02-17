@@ -9,6 +9,7 @@ Verified implementation patterns that are easy to regress.
 ## Message Sanitization Pattern
 - Orphan tool blocks are removed before persistence/request usage.
 - Old tool-heavy assistant messages are compacted to text-first representation.
+- Older long user messages are compacted before context bounding to reduce token load.
 - Large tool results are truncated with query-aware selection to avoid oversized payloads.
 
 ## Parser Fallback Pattern
@@ -22,6 +23,7 @@ Verified implementation patterns that are easy to regress.
 ## Cart Derivation Pattern
 - Cart state is derived from assistant tool results by reverse scanning messages.
 - Supports nested cart response structures and bill breakdown extraction.
+- Foodorder optimistic cart entries use stable keys with restaurant scope to avoid cross-restaurant key collisions.
 
 ## OAuth Discovery Pattern
 - OAuth discovery uses robust candidate probing and fallback paths.

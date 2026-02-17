@@ -1,6 +1,5 @@
 import type {
   ParsedRestaurant,
-  RelevanceDebugTrace,
   StrictConstraintSnapshot,
   ToolRenderContext,
 } from "@/lib/types";
@@ -11,17 +10,17 @@ import {
   textOverlapScore,
   tokenizeQuery,
 } from "./text";
+import { unique, rankItems, buildRelevanceDebug, type RelevanceResult } from "./shared";
+import {
+  detectCuisines as sharedDetectCuisines,
+  detectDishesWithProxy,
+  detectBudget,
+  BROADEN_RE,
+} from "./patterns";
 
-const CUISINE_PATTERNS: Array<{ key: string; pattern: RegExp }> = [
-  { key: "south indian", pattern: /\b(south[\s-]?indian|udupi|andhra|chettinad|kerala)\b/ },
-  { key: "north indian", pattern: /\b(north[\s-]?indian|punjabi|mughlai)\b/ },
-  { key: "italian", pattern: /\b(italian|pasta|pizza)\b/ },
-  { key: "asian", pattern: /\b(asian|japanese|thai|korean|sushi|ramen)\b/ },
-  { key: "chinese", pattern: /\b(chinese|hakka|schezwan)\b/ },
-  { key: "continental", pattern: /\b(continental|european|global cuisine)\b/ },
-  { key: "mexican", pattern: /\b(mexican|taco|burrito)\b/ },
-  { key: "middle eastern", pattern: /\b(middle[\s-]?eastern|arabic|lebanese|turkish)\b/ },
-];
+export type { RelevanceResult };
+
+// ── Dining-specific patterns ──────────────────────────────────────────
 
 const VIBE_PATTERNS: Array<{ key: string; pattern: RegExp }> = [
   { key: "romantic", pattern: /\b(romantic|date[\s-]?night|cozy|intimate)\b/ },
@@ -33,17 +32,6 @@ const VIBE_PATTERNS: Array<{ key: string; pattern: RegExp }> = [
   { key: "outdoor", pattern: /\b(outdoor|open[\s-]?air|al[\s-]?fresco)\b/ },
 ];
 
-const DISH_PATTERNS: Array<{ key: string; pattern: RegExp; cuisineProxy?: string }> = [
-  { key: "dosa", pattern: /\b(dosa|dosai)\b/, cuisineProxy: "south indian" },
-  { key: "idli", pattern: /\b(idli)\b/, cuisineProxy: "south indian" },
-  { key: "uttapam", pattern: /\b(uttapam|uthappam)\b/, cuisineProxy: "south indian" },
-  { key: "biryani", pattern: /\b(biryani|pulao)\b/, cuisineProxy: "north indian" },
-  { key: "pizza", pattern: /\b(pizza)\b/, cuisineProxy: "italian" },
-  { key: "pasta", pattern: /\b(pasta)\b/, cuisineProxy: "italian" },
-  { key: "sushi", pattern: /\b(sushi)\b/, cuisineProxy: "asian" },
-  { key: "ramen", pattern: /\b(ramen)\b/, cuisineProxy: "asian" },
-];
-
 const AREA_HINT_PATTERNS: Array<{ key: string; pattern: RegExp }> = [
   { key: "koramangala", pattern: /\bkoramangala\b/ },
   { key: "indiranagar", pattern: /\bindiranagar\b/ },
@@ -52,6 +40,11 @@ const AREA_HINT_PATTERNS: Array<{ key: string; pattern: RegExp }> = [
   { key: "btm", pattern: /\bbtm\b/ },
   { key: "gurugram", pattern: /\b(gurugram|gurgaon)\b/ },
   { key: "connaught place", pattern: /\b(connaught\s+place|cp)\b/ },
+  { key: "jayanagar", pattern: /\bjayanagar\b/ },
+  { key: "jp nagar", pattern: /\b(jp\s+nagar|j\.?p\.?\s*nagar)\b/ },
+  { key: "marathahalli", pattern: /\bmarathahalli\b/ },
+  { key: "electronic city", pattern: /\belectronic\s+city\b/ },
+  { key: "mg road", pattern: /\b(mg\s+road|m\.?g\.?\s*road)\b/ },
 ];
 
 const TIME_HINT_PATTERNS: Array<{ key: string; pattern: RegExp }> = [
@@ -72,56 +65,24 @@ const TIME_HINT_PATTERNS: Array<{ key: string; pattern: RegExp }> = [
   { key: "specific-time", pattern: /\b\d{1,2}(?::\d{2})?\s*(am|pm)\b/ },
 ];
 
-const BROADEN_RE = /\b(broaden|show more|anything|any place|open to|relax|wider|widen)\b/i;
-const BUDGET_RE = /\b(under|below|upto|up to|within|around)\s*₹?\s*(\d{2,5})\b/i;
 const PARTY_RE = /\bfor\s+(\d{1,2})\b|\b(\d{1,2})\s*(people|persons|guests|pax)\b/i;
 const AREA_CAPTURE_RE = /\b(?:in|near|around|at)\s+([a-z][a-z\s]{2,30})\b/gi;
 
 const AREA_BREAK_TOKENS = new Set([
-  "for",
-  "on",
-  "at",
-  "under",
-  "below",
-  "within",
-  "with",
-  "table",
-  "people",
-  "persons",
-  "guests",
-  "pax",
-  "today",
-  "tonight",
-  "tomorrow",
-  "weekend",
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
-  "lunch",
-  "dinner",
-  "brunch",
-  "budget",
+  "for", "on", "at", "under", "below", "within", "with",
+  "table", "people", "persons", "guests", "pax",
+  "today", "tonight", "tomorrow", "weekend",
+  "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+  "lunch", "dinner", "brunch", "budget",
 ]);
 
 const AREA_IGNORE = new Set(["me", "my", "here", "there"]);
 
+// ── Constraint extraction ─────────────────────────────────────────────
+
 export interface DiningConstraintState extends StrictConstraintSnapshot {
   queryTerms: string[];
   rawQuery: string;
-}
-
-export interface RelevanceResult<T> {
-  items: T[];
-  debug: RelevanceDebugTrace;
-  requireBroadenPrompt: boolean;
-}
-
-function unique(values: string[]): string[] {
-  return [...new Set(values.filter(Boolean))];
 }
 
 function parseAreaCandidate(candidate: string): string | null {
@@ -158,44 +119,12 @@ function detectAreas(queryText: string): string[] {
   return unique(values);
 }
 
-function detectCuisines(query: string): string[] {
-  const values: string[] = [];
-  for (const { key, pattern } of CUISINE_PATTERNS) {
-    if (pattern.test(query)) values.push(key);
-  }
-  return unique(values);
-}
-
 function detectVibes(query: string): string[] {
   const values: string[] = [];
   for (const { key, pattern } of VIBE_PATTERNS) {
     if (pattern.test(query)) values.push(key);
   }
   return unique(values);
-}
-
-function detectDishesAndCuisineProxy(query: string): {
-  dishes: string[];
-  cuisineProxy: string[];
-} {
-  const dishes: string[] = [];
-  const cuisineProxy: string[] = [];
-  for (const { key, pattern, cuisineProxy: proxy } of DISH_PATTERNS) {
-    if (!pattern.test(query)) continue;
-    dishes.push(key);
-    if (proxy) cuisineProxy.push(proxy);
-  }
-  return {
-    dishes: unique(dishes),
-    cuisineProxy: unique(cuisineProxy),
-  };
-}
-
-function detectBudget(queryText: string): number | undefined {
-  const match = queryText.match(BUDGET_RE);
-  if (!match?.[2]) return undefined;
-  const parsed = Number.parseInt(match[2], 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 function detectPartySize(queryText: string): number | undefined {
@@ -221,10 +150,10 @@ export function extractDiningConstraints(queryText: string): DiningConstraintSta
     queryTerms: tokenizeQuery(queryText),
   };
 
-  const cuisines = detectCuisines(normalizedQuery);
+  const cuisines = sharedDetectCuisines(normalizedQuery);
   const vibes = detectVibes(normalizedQuery);
   const areas = detectAreas(queryText);
-  const { dishes, cuisineProxy } = detectDishesAndCuisineProxy(normalizedQuery);
+  const { dishes, cuisineProxy } = detectDishesWithProxy(normalizedQuery);
 
   const mergedCuisines = unique([...cuisines, ...cuisineProxy]);
   if (mergedCuisines.length > 0) constraints.cuisines = mergedCuisines;
@@ -247,6 +176,8 @@ export function extractDiningConstraints(queryText: string): DiningConstraintSta
 export function shouldAllowDiningBroadening(queryText: string): boolean {
   return BROADEN_RE.test(queryText);
 }
+
+// ── Strict matching & scoring ─────────────────────────────────────────
 
 function getRestaurantText(item: ParsedRestaurant): string {
   return normalizeText(
@@ -348,12 +279,7 @@ function scoreRestaurant(item: ParsedRestaurant, constraints: DiningConstraintSt
   return score;
 }
 
-function rankItems<T>(items: T[], scoreFn: (item: T) => number): T[] {
-  return items
-    .map((item, index) => ({ item, index, score: scoreFn(item) }))
-    .sort((a, b) => b.score - a.score || a.index - b.index)
-    .map((entry) => entry.item);
-}
+// ── Constraint resolution & reranking ─────────────────────────────────
 
 function resolveConstraints(renderContext?: ToolRenderContext): DiningConstraintState {
   const fromSnapshot = renderContext?.strictConstraints;
@@ -402,26 +328,6 @@ function composeNote(...notes: Array<string | undefined>): string | undefined {
   return resolved.length > 0 ? resolved.join(" | ") : undefined;
 }
 
-function baseDebug(
-  renderContext: ToolRenderContext | undefined,
-  strictApplied: string[],
-  strictSatisfied: boolean,
-  beforeCount: number,
-  afterCount: number,
-  note?: string,
-): RelevanceDebugTrace {
-  return {
-    strategy: "dining:restaurants",
-    query: renderContext?.latestUserQuery,
-    mode: renderContext?.mode,
-    strictApplied,
-    strictSatisfied,
-    beforeCount,
-    afterCount,
-    note,
-  };
-}
-
 export function rerankDiningRestaurants(
   items: ParsedRestaurant[],
   renderContext?: ToolRenderContext,
@@ -440,7 +346,8 @@ export function rerankDiningRestaurants(
     return {
       items: items.slice(0, MAX_RESTAURANTS_SHOWN),
       requireBroadenPrompt: false,
-      debug: baseDebug(
+      debug: buildRelevanceDebug(
+        "dining:restaurants",
         renderContext,
         strictKeys,
         true,
@@ -459,7 +366,8 @@ export function rerankDiningRestaurants(
     return {
       items: [],
       requireBroadenPrompt: true,
-      debug: baseDebug(
+      debug: buildRelevanceDebug(
+        "dining:restaurants",
         renderContext,
         strictKeys,
         false,
@@ -479,7 +387,8 @@ export function rerankDiningRestaurants(
   return {
     items: ranked.slice(0, MAX_RESTAURANTS_SHOWN),
     requireBroadenPrompt: false,
-    debug: baseDebug(
+    debug: buildRelevanceDebug(
+      "dining:restaurants",
       renderContext,
       strictKeys,
       strictFiltered.length > 0 || strictKeys.length === 0,
