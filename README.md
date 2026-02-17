@@ -62,4 +62,4 @@ npm run docs:verify
 - Any commercial use is strictly not allowed without prior written permission.
 
 ## Thanks
-Thank you to the Swiggy team for making this MCP available: https://github.com/Swiggy/swiggy-mcp-server-manifest
+Thank you to Hariom Palkar for making this MCP available: https://github.com/Swiggy/swiggy-mcp-server-manifest
