@@ -17,7 +17,7 @@ import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 import { CartFloatingButton } from "../cart/CartFloatingButton";
 import { CartPanel } from "../cart/CartPanel";
-import { ShoppingCart } from "lucide-react";
+import { Plus } from "lucide-react";
 import styleGif from "@/assets/verticals/style.gif";
 import diningGif from "@/assets/verticals/dining.gif";
 import foodorderGif from "@/assets/verticals/foodorder.gif";
@@ -352,7 +352,7 @@ function ChatViewInner({
         vertical.id,
         lockedRestaurant,
       );
-      void sendMessage(transportMessage || message);
+      void sendMessage(message, { apiText: transportMessage || message });
     },
     [
       applyFoodOrderOptimisticAction,
@@ -393,7 +393,7 @@ function ChatViewInner({
       vertical.id,
       lockedRestaurant,
     );
-    const ok = await sendMessage(addToCartMessage);
+    const ok = await sendMessage(cartAddAction.message, { apiText: addToCartMessage });
     if (vertical.id === "foodorder" && ok) {
       setOptimisticCartItems((prev) => {
         const next = { ...prev };
@@ -479,14 +479,14 @@ function ChatViewInner({
 
       {(effectiveItemCount > 0 || (isUnifiedSelectionVertical && pendingCount > 0)) && (
         <div className="pointer-events-none absolute bottom-[6.9rem] left-4 right-4 z-50">
-          <div className="flex items-center justify-end gap-4">
+          <div className="flex items-center justify-end gap-[13px]">
             {isUnifiedSelectionVertical && pendingCount > 0 && (
               <Button
                 onClick={handleUnifiedAddToCart}
                 disabled={inputDisabled}
                 className="pointer-events-auto h-12 whitespace-nowrap rounded-full border-2 border-orange-400 bg-[#4a3527] px-4 has-[>svg]:px-4 text-sm font-semibold text-white shadow-[0_8px_16px_-12px_rgba(249,115,22,0.11)] hover:bg-[#553d2d]"
               >
-                <ShoppingCart className="h-5 w-5" />
+                <Plus className="h-5 w-5" />
                 Add {pendingCount} {pendingCount === 1 ? "item" : "items"} to cart
               </Button>
             )}

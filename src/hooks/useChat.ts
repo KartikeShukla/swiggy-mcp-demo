@@ -94,29 +94,41 @@ export function useChat(
   }, [loading]);
 
   const sendMessage = useCallback(
-    async (text: string): Promise<boolean> => {
+    async (
+      text: string,
+      options?: { apiText?: string },
+    ): Promise<boolean> => {
       if (!apiKey) {
         setError("API key required");
         return false;
       }
       if (loading || inFlightRef.current || cooldownEndsAt) return false;
 
+      const visibleText = text.trim();
+      if (!visibleText) return false;
+      const apiText = options?.apiText?.trim() || visibleText;
+
       const userMessage: ChatMessage = {
         role: "user",
-        content: text,
+        content: visibleText,
+        timestamp: Date.now(),
+      };
+      const apiUserMessage: ChatMessage = {
+        role: "user",
+        content: apiText,
         timestamp: Date.now(),
       };
 
       inFlightRef.current = true;
-      loadingContextRef.current = detectLoadingContext(text, vertical.id);
+      loadingContextRef.current = detectLoadingContext(visibleText, vertical.id);
 
       setMessages((prev) => [...prev, userMessage]);
       setLoading(true);
       setError(null);
 
       try {
-        // Pass all messages including the new user message
-        const allMessages = [...messagesRef.current, userMessage];
+        // Pass all messages including the latest user turn, optionally enriched for API only.
+        const allMessages = [...messagesRef.current, apiUserMessage];
         const sessionStateSummary = isVerticalId(vertical.id)
           ? buildSessionStateSummary(allMessages, vertical.id, selectedAddress)
           : null;
