@@ -58,7 +58,7 @@ npm run docs:verify
 
 ## Known Issues (Work in Progress)
 
-This demo has rough edges. The following are the most prominent issues I'm aware of:
+This demo has a few rough edges. The following are the most prominent issues I'm aware of currently:
 
 ### Dining Tab — Location and Slot Reliability
 - The **Dine** tab often fails to pull restaurants for a specified location, requiring multiple attempts before results appear. This is the most unreliable part of the demo.
