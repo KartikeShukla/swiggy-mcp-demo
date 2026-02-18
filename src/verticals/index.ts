@@ -12,8 +12,8 @@ export const verticals: Record<string, VerticalConfig> = {
 };
 
 export const verticalList: VerticalConfig[] = [
+  foodOrderVertical,
   foodVertical,
   styleVertical,
   diningVertical,
-  foodOrderVertical,
 ];
