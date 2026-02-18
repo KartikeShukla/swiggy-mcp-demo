@@ -78,4 +78,39 @@ describe("AssistantMessageBubble details trigger", () => {
     expect(screen.getByText("Bread")).toBeInTheDocument();
     expect(screen.queryByText("Cheddar Cheese")).not.toBeInTheDocument();
   });
+
+  it("uses grounded summary copy for dining tool responses", () => {
+    const message: ChatMessage = {
+      role: "assistant",
+      timestamp: Date.now(),
+      content: [
+        {
+          type: "text",
+          text: "Great! I found your exact 8 PM match and it is ready to book right away.",
+        },
+        {
+          type: "mcp_tool_use",
+          id: "tool_1",
+          name: "search_restaurants",
+          input: { query: "romantic italian koramangala" },
+        },
+        {
+          type: "mcp_tool_result",
+          tool_use_id: "tool_1",
+          content: [{ id: "r1", name: "Saffron Table", cuisine: "Italian", locality: "Koramangala" }],
+        },
+      ],
+    };
+
+    render(
+      <AssistantMessageBubble
+        message={message}
+        verticalId="dining"
+        onAction={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("Here are restaurant options that best match your request.")).toBeInTheDocument();
+    expect(screen.queryByText(/exact 8 PM match/i)).not.toBeInTheDocument();
+  });
 });

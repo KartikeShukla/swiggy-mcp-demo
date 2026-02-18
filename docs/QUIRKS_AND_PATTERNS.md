@@ -51,6 +51,13 @@ Verified implementation patterns that are easy to regress.
 - Relevance debug trace ribbons above card rails are hidden by default.
 - Overlay is rendered only in dev when `VITE_SHOW_RELEVANCE_DEBUG=true`.
 
+## Dining Strict-Match Pattern
+- Dining strict-first ranking no longer hard-blocks on conflicting filters.
+- When no exact combined match exists, closest restaurant options are still returned with an explicit relaxation hint.
+- Dining time-slot rails prioritize requested-time matches first, then list remaining available slots.
+- Dining slot selections are treated as pre-booking intent; assistant must ask one final explicit yes/no before executing booking tools.
+- Dining assistant copy is card-grounded when tool cards are present to avoid over-claiming exact match/slot outcomes.
+
 ## Guardrail-Sensitive Facts
 - Keep runtime numeric claims synced through `docs/RUNTIME_FACTS.md` and `docs:sync`.
 - `docs:verify` enforces stale-claim rejection for frequently regressed values.

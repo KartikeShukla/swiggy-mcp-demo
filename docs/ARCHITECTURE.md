@@ -40,7 +40,7 @@ graph LR
 7. Assistant blocks are sanitized (`sanitizeAssistantBlocks`) and persisted.
 8. UI groups blocks and parses tool results into cards.
 9. Parser orchestration applies staged routing (tool-patterns -> shape fallback -> status/info fallback) with relevance post-processing when render context is available.
-10. Dining and foodorder strict-first reranking can return explicit broaden-guidance info cards when constraints are too narrow.
+10. Dining and foodorder strict-first reranking preserves constraints while returning best candidates; dining surfaces closest options when exact combined matches are unavailable, and slot rails prioritize requested-time matches first.
 
 ## Data Flow Layers
 1. Auth layer: `useAuth` + storage helpers.

@@ -7,10 +7,11 @@ Guide restaurant discovery, slot availability checks, and booking via Dineout MC
 1. Gather cuisine/vibe, party size, and time context.
 2. Run one focused restaurant discovery call.
 3. Apply strict-first ranking for cuisine/vibe/location/budget when signals exist.
-4. If no strict combined match, return actionable broaden choices (one filter at a time).
+4. If no strict combined match, still return closest restaurant options and explain which filter can be relaxed.
 5. Let user choose a restaurant from cards.
-6. Fetch and render time-slot options.
-7. Require explicit confirmation before booking action.
+6. Fetch and render time-slot options only after restaurant selection.
+7. Prioritize slots nearest to requested time, followed by other available slots.
+8. Slot selection is pre-booking intent; require one final explicit yes/no before booking action.
 
 ## Key Signals
 - Cuisine/vibe vocabulary.

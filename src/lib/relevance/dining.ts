@@ -1,5 +1,7 @@
 import type {
   ParsedRestaurant,
+  ParsedTimeSlot,
+  RelevanceDebugTrace,
   StrictConstraintSnapshot,
   ToolRenderContext,
 } from "@/lib/types";
@@ -64,6 +66,21 @@ const TIME_HINT_PATTERNS: Array<{ key: string; pattern: RegExp }> = [
   { key: "brunch", pattern: /\bbrunch\b/ },
   { key: "specific-time", pattern: /\b\d{1,2}(?::\d{2})?\s*(am|pm)\b/ },
 ];
+
+const TWELVE_HOUR_TIME_RE = /\b(\d{1,2})(?::([0-5]\d))?\s*(am|pm)\b/gi;
+const TWENTY_FOUR_HOUR_TIME_RE = /\b([01]?\d|2[0-3]):([0-5]\d)\b/g;
+const SLOT_MATCH_WINDOW_MINUTES = 60;
+const SLOT_CLOSEST_FALLBACK_COUNT = 3;
+const DEFAULT_MEAL_TIME_MINUTES: Record<string, number> = {
+  breakfast: 8 * 60,
+  brunch: 11 * 60,
+  lunch: 13 * 60,
+  afternoon: 15 * 60,
+  evening: 19 * 60,
+  dinner: 20 * 60,
+  tonight: 20 * 60,
+  night: 21 * 60,
+};
 
 const PARTY_RE = /\bfor\s+(\d{1,2})\b|\b(\d{1,2})\s*(people|persons|guests|pax)\b/i;
 const AREA_CAPTURE_RE = /\b(?:in|near|around|at)\s+([a-z][a-z\s]{2,30})\b/gi;
@@ -141,6 +158,76 @@ function detectTimeHints(query: string): string[] {
     if (pattern.test(query)) values.push(key);
   }
   return unique(values);
+}
+
+function toMinutes(hour: number, minute: number, meridiem?: string): number {
+  if (!meridiem) return hour * 60 + minute;
+  const normalizedMeridiem = meridiem.toLowerCase();
+  let normalizedHour = hour % 12;
+  if (normalizedMeridiem === "pm") normalizedHour += 12;
+  return normalizedHour * 60 + minute;
+}
+
+function parseTimeToMinutes(value: string): number | null {
+  const text = value.trim().toLowerCase();
+  if (!text) return null;
+  if (text === "noon") return 12 * 60;
+  if (text === "midnight") return 0;
+
+  const twelveHour = text.match(/^(\d{1,2})(?::([0-5]\d))?\s*(am|pm)$/i);
+  if (twelveHour) {
+    const hour = Number.parseInt(twelveHour[1], 10);
+    const minute = twelveHour[2] ? Number.parseInt(twelveHour[2], 10) : 0;
+    if (hour >= 1 && hour <= 12) return toMinutes(hour, minute, twelveHour[3]);
+  }
+
+  const twentyFourHour = text.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  if (twentyFourHour) {
+    const hour = Number.parseInt(twentyFourHour[1], 10);
+    const minute = Number.parseInt(twentyFourHour[2], 10);
+    return toMinutes(hour, minute);
+  }
+
+  return null;
+}
+
+function minutesDistance(a: number, b: number): number {
+  const diff = Math.abs(a - b);
+  return Math.min(diff, 1440 - diff);
+}
+
+function extractRequestedTimeMinutes(
+  rawQuery: string,
+  timeHints?: string[],
+): number | null {
+  let latestTwelveHourMinutes: number | null = null;
+  for (const match of rawQuery.matchAll(new RegExp(TWELVE_HOUR_TIME_RE))) {
+    const hour = Number.parseInt(match[1], 10);
+    const minute = match[2] ? Number.parseInt(match[2], 10) : 0;
+    if (hour < 1 || hour > 12) continue;
+    latestTwelveHourMinutes = toMinutes(hour, minute, match[3]);
+  }
+  if (latestTwelveHourMinutes != null) return latestTwelveHourMinutes;
+
+  let latestTwentyFourHourMinutes: number | null = null;
+  for (const match of rawQuery.matchAll(new RegExp(TWENTY_FOUR_HOUR_TIME_RE))) {
+    const hour = Number.parseInt(match[1], 10);
+    const minute = Number.parseInt(match[2], 10);
+    latestTwentyFourHourMinutes = toMinutes(hour, minute);
+  }
+  if (latestTwentyFourHourMinutes != null) return latestTwentyFourHourMinutes;
+
+  const normalizedQuery = normalizeText(rawQuery);
+  for (const [hint, minutes] of Object.entries(DEFAULT_MEAL_TIME_MINUTES)) {
+    if (normalizedQuery.includes(hint)) return minutes;
+  }
+
+  for (const hint of timeHints ?? []) {
+    const minutes = DEFAULT_MEAL_TIME_MINUTES[hint];
+    if (minutes != null) return minutes;
+  }
+
+  return null;
 }
 
 export function extractDiningConstraints(queryText: string): DiningConstraintState {
@@ -361,27 +448,8 @@ export function rerankDiningRestaurants(
   const strictFiltered = strictKeys.length > 0
     ? items.filter((item) => strictMatch(item, constraints, strictKeys))
     : items;
-
-  if (strictKeys.length > 0 && strictFiltered.length === 0 && !allowBroadening) {
-    return {
-      items: [],
-      requireBroadenPrompt: true,
-      debug: buildRelevanceDebug(
-        "dining:restaurants",
-        renderContext,
-        strictKeys,
-        false,
-        items.length,
-        0,
-        composeNote(
-          "No strict dining matches",
-          usingCuisineProxyForDish ? "Dish intent mapped via cuisine proxy" : undefined,
-        ),
-      ),
-    };
-  }
-
-  const candidateItems = strictFiltered.length > 0 ? strictFiltered : items;
+  const strictSatisfied = strictFiltered.length > 0 || strictKeys.length === 0;
+  const candidateItems = strictSatisfied ? strictFiltered : items;
   const ranked = rankItems(candidateItems, (item) => scoreRestaurant(item, constraints));
 
   return {
@@ -391,15 +459,133 @@ export function rerankDiningRestaurants(
       "dining:restaurants",
       renderContext,
       strictKeys,
-      strictFiltered.length > 0 || strictKeys.length === 0,
+      strictSatisfied,
       items.length,
       Math.min(MAX_RESTAURANTS_SHOWN, ranked.length),
       composeNote(
-        strictFiltered.length === 0 && allowBroadening
-          ? "Relaxed ranking after explicit broadening signal"
+        strictKeys.length > 0 && strictFiltered.length === 0
+          ? (
+            allowBroadening
+              ? "Relaxed ranking after explicit broadening signal"
+              : "No exact strict match; showing closest options"
+          )
           : undefined,
         usingCuisineProxyForDish ? "Dish intent mapped via cuisine proxy" : undefined,
       ),
+    ),
+  };
+}
+
+export interface DiningTimeSlotRankingResult {
+  slots: ParsedTimeSlot[];
+  hasPreferredMatches: boolean;
+  slotGuidance?: string;
+  debug: RelevanceDebugTrace;
+}
+
+export function rerankDiningTimeSlots(
+  slots: ParsedTimeSlot[],
+  renderContext?: ToolRenderContext,
+): DiningTimeSlotRankingResult {
+  if (slots.length === 0) {
+    return {
+      slots: [],
+      hasPreferredMatches: false,
+      debug: buildRelevanceDebug(
+        "dining:time-slots",
+        renderContext,
+        [],
+        true,
+        0,
+        0,
+      ),
+    };
+  }
+
+  const requestedTimeMins = extractRequestedTimeMinutes(
+    renderContext?.latestUserQuery ?? "",
+    renderContext?.strictConstraints?.timeHints,
+  );
+
+  if (requestedTimeMins == null) {
+    return {
+      slots,
+      hasPreferredMatches: false,
+      debug: buildRelevanceDebug(
+        "dining:time-slots",
+        renderContext,
+        [],
+        true,
+        slots.length,
+        slots.length,
+      ),
+    };
+  }
+
+  const scored = slots.map((slot, index) => {
+    const slotMinutes = parseTimeToMinutes(slot.time);
+    const diff = slotMinutes == null ? null : minutesDistance(slotMinutes, requestedTimeMins);
+    return { slot, index, slotMinutes, diff };
+  });
+
+  const rankedAvailable = scored
+    .filter((entry) => entry.slot.available && entry.diff != null)
+    .sort((a, b) => (a.diff ?? Number.POSITIVE_INFINITY) - (b.diff ?? Number.POSITIVE_INFINITY));
+
+  if (rankedAvailable.length === 0) {
+    return {
+      slots,
+      hasPreferredMatches: false,
+      debug: buildRelevanceDebug(
+        "dining:time-slots",
+        renderContext,
+        ["time"],
+        false,
+        slots.length,
+        slots.length,
+        "No parseable slot times; keeping provider order.",
+      ),
+    };
+  }
+
+  const inWindow = rankedAvailable.filter(
+    (entry) => (entry.diff ?? Number.POSITIVE_INFINITY) <= SLOT_MATCH_WINDOW_MINUTES,
+  );
+  const preferredSource = inWindow.length > 0
+    ? inWindow
+    : rankedAvailable.slice(0, Math.min(SLOT_CLOSEST_FALLBACK_COUNT, rankedAvailable.length));
+  const preferredIndices = new Set(preferredSource.map((entry) => entry.index));
+
+  const preferredSlots = preferredSource.map((entry) => ({
+    ...entry.slot,
+    matchTier: "preferred" as const,
+  }));
+  const remainingSlots = scored
+    .filter((entry) => !preferredIndices.has(entry.index))
+    .map((entry) => ({
+      ...entry.slot,
+      matchTier: "other" as const,
+    }));
+  const orderedSlots = [...preferredSlots, ...remainingSlots];
+
+  const usedClosestFallback = inWindow.length === 0;
+
+  return {
+    slots: orderedSlots,
+    hasPreferredMatches: preferredSlots.length > 0,
+    slotGuidance: usedClosestFallback
+      ? "Requested time is unavailable. Showing closest available slots first."
+      : "Showing slots closest to your requested time first.",
+    debug: buildRelevanceDebug(
+      "dining:time-slots",
+      renderContext,
+      ["time"],
+      !usedClosestFallback,
+      slots.length,
+      orderedSlots.length,
+      usedClosestFallback
+        ? "No slot in requested window; promoted closest options."
+        : "Preferred slots in requested window promoted first.",
     ),
   };
 }

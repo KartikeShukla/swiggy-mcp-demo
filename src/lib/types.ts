@@ -101,6 +101,7 @@ export interface ParsedTimeSlot {
   slotId?: string;
   slotToken?: string;
   restaurantId?: string;
+  matchTier?: "preferred" | "other";
 }
 
 export interface ParsedAddress {
@@ -258,6 +259,7 @@ export type ParsedToolResult =
       type: "time_slots";
       slots: ParsedTimeSlot[];
       restaurantName?: string;
+      slotGuidance?: string;
       debug?: RelevanceDebugTrace;
     }
   | { type: "addresses"; addresses: ParsedAddress[]; debug?: RelevanceDebugTrace }

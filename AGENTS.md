@@ -43,7 +43,7 @@ npm run docs:verify
 2. `useChatApi` builds params via `buildMessageStreamParams`.
 3. `runMessageStream` handles streaming, timeout, tool-level aborts, and content sanitization.
 4. Assistant blocks are parsed into cards by `parseToolResult` + `ItemCardGrid`.
-5. Dining and foodorder parser paths apply strict-first relevance reranking when render context is available.
+5. Dining and foodorder parser paths apply strict-first relevance reranking when render context is available; dining returns closest candidates when strict combined filters have no exact match and prioritizes requested-time slot matches first.
 6. Cart snapshots for `food`, `style`, and `foodorder` reconcile partial add-mutation payloads with prior cart state to prevent item loss when tool responses are delta-like.
 
 ### Current Limits And Constants

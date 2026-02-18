@@ -261,7 +261,7 @@ describe("parseToolResult()", () => {
       expect(result.debug?.strictApplied).toEqual(expect.arrayContaining(["cuisine", "area"]));
     });
 
-    it("returns actionable info card when strict dining filters produce no combined match", () => {
+    it("returns closest dining restaurants when strict filters produce no combined match", () => {
       const content = JSON.stringify([
         { name: "Roma House", cuisine: "Italian", locality: "Indiranagar", rating: 4.4, priceForTwo: "₹900" },
         { name: "Spice Court", cuisine: "North Indian", locality: "Whitefield", rating: 4.3, priceForTwo: "₹800" },
@@ -275,11 +275,32 @@ describe("parseToolResult()", () => {
         buildToolRenderContext("dining", "romantic italian in whitefield under 1000"),
       );
 
-      expect(result.type).toBe("info");
-      if (result.type !== "info") return;
-      expect(result.title).toContain("No strict dining matches");
-      expect(result.entries.some((entry) => entry.key === "Current filters")).toBe(true);
-      expect(result.entries.some((entry) => entry.value.includes("Relax one filter"))).toBe(true);
+      expect(result.type).toBe("restaurants");
+      if (result.type !== "restaurants") return;
+      expect(result.items.length).toBeGreaterThan(0);
+      expect(result.debug?.note).toContain("No exact strict match");
+    });
+
+    it("prioritizes dining slots close to requested time before other slots", () => {
+      const content = JSON.stringify([
+        { time: "7:00 PM", available: true },
+        { time: "8:00 PM", available: true },
+        { time: "9:30 PM", available: true },
+      ]);
+
+      const result = parseToolResult(
+        "get_slots",
+        content,
+        "dining",
+        undefined,
+        buildToolRenderContext("dining", "show slots around 8 PM"),
+      );
+
+      expect(result.type).toBe("time_slots");
+      if (result.type !== "time_slots") return;
+      expect(result.slots[0]?.time).toBe("8:00 PM");
+      expect(result.slots[0]?.matchTier).toBe("preferred");
+      expect(result.slotGuidance).toContain("requested time");
     });
 
     it("parses up to 15 dining candidates and trims to top 5 after reranking", () => {

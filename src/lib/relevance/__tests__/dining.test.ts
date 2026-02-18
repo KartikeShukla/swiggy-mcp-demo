@@ -1,9 +1,10 @@
 import {
   extractDiningConstraints,
   rerankDiningRestaurants,
+  rerankDiningTimeSlots,
   shouldAllowDiningBroadening,
 } from "@/lib/relevance/dining";
-import type { ParsedRestaurant, ToolRenderContext } from "@/lib/types";
+import type { ParsedRestaurant, ParsedTimeSlot, ToolRenderContext } from "@/lib/types";
 
 describe("dining relevance", () => {
   it("extracts strict-first dining constraints including dish-to-cuisine proxy", () => {
@@ -49,7 +50,7 @@ describe("dining relevance", () => {
     expect(result.items[0]?.name).toBe("Udupi Corner");
   });
 
-  it("returns broaden prompt when strict filters conflict and no combined match exists", () => {
+  it("returns closest matches when strict filters conflict and no combined match exists", () => {
     const restaurants: ParsedRestaurant[] = [
       { id: "r1", name: "Roma House", cuisine: "Italian", locality: "Indiranagar", rating: 4.4, priceForTwo: "₹900" },
       { id: "r2", name: "Spice Court", cuisine: "North Indian", locality: "Whitefield", rating: 4.3, priceForTwo: "₹800" },
@@ -64,8 +65,9 @@ describe("dining relevance", () => {
     };
 
     const result = rerankDiningRestaurants(restaurants, context);
-    expect(result.requireBroadenPrompt).toBe(true);
-    expect(result.items).toHaveLength(0);
+    expect(result.requireBroadenPrompt).toBe(false);
+    expect(result.items.length).toBeGreaterThan(0);
+    expect(result.debug.note).toContain("No exact strict match");
   });
 
   it("relaxes ranking only after explicit broadening intent", () => {
@@ -88,5 +90,49 @@ describe("dining relevance", () => {
     expect(result.requireBroadenPrompt).toBe(false);
     expect(result.items.length).toBeGreaterThan(0);
     expect(result.debug.note).toContain("Relaxed ranking");
+  });
+
+  it("prioritizes slots in the requested time window first", () => {
+    const slots: ParsedTimeSlot[] = [
+      { time: "6:30 PM", available: true },
+      { time: "8:00 PM", available: true },
+      { time: "9:30 PM", available: true },
+      { time: "7:45 PM", available: true },
+    ];
+
+    const context: ToolRenderContext = {
+      verticalId: "dining",
+      mode: "availability",
+      latestUserQuery: "check slots for friday 8 PM",
+      strictConstraints: extractDiningConstraints("check slots for friday 8 PM"),
+    };
+
+    const result = rerankDiningTimeSlots(slots, context);
+    expect(result.hasPreferredMatches).toBe(true);
+    expect(result.slotGuidance).toContain("requested time");
+    expect(result.slots[0]?.matchTier).toBe("preferred");
+    expect(result.slots[0]?.time).toBe("8:00 PM");
+  });
+
+  it("promotes closest slots when requested window has no direct matches", () => {
+    const slots: ParsedTimeSlot[] = [
+      { time: "11:30 AM", available: true },
+      { time: "12:00 PM", available: true },
+      { time: "1:00 PM", available: true },
+      { time: "8:30 PM", available: false },
+    ];
+
+    const context: ToolRenderContext = {
+      verticalId: "dining",
+      mode: "availability",
+      latestUserQuery: "need slots around 8 PM",
+      strictConstraints: extractDiningConstraints("need slots around 8 PM"),
+    };
+
+    const result = rerankDiningTimeSlots(slots, context);
+    expect(result.hasPreferredMatches).toBe(true);
+    expect(result.slotGuidance).toContain("unavailable");
+    expect(result.debug.strictSatisfied).toBe(false);
+    expect(result.slots[0]?.matchTier).toBe("preferred");
   });
 });

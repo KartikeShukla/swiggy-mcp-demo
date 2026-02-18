@@ -1,6 +1,12 @@
 import { useState, useMemo } from "react";
 import { Bot, ChevronRight } from "lucide-react";
-import type { ChatAction, ChatMessage, ContentBlock, ToolRenderContext } from "@/lib/types";
+import type {
+  ChatAction,
+  ChatMessage,
+  ContentBlock,
+  ParsedToolResult,
+  ToolRenderContext,
+} from "@/lib/types";
 import { renderMarkdownLite } from "@/lib/markdown";
 import { findPrecedingToolName, groupBlocks } from "@/lib/content-blocks";
 import { parseToolResult, parseVariantsFromText } from "@/lib/parsers";
@@ -12,6 +18,28 @@ import { CollapsibleToolGroup } from "./CollapsibleToolGroup";
 import type { PrecomputedToolResult } from "./CollapsibleToolGroup";
 import { DetailSheet } from "./DetailSheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+function buildDiningGroundedSummary(cardResultTypes: ParsedToolResult["type"][]): string | null {
+  const hasType = (type: ParsedToolResult["type"]) => cardResultTypes.includes(type);
+
+  if (hasType("booking_confirmed")) {
+    return "Booking confirmed. Review the booking details below.";
+  }
+  if (hasType("time_slots")) {
+    return "Here are the available time slots.";
+  }
+  if (hasType("restaurants")) {
+    return "Here are restaurant options that best match your request.";
+  }
+  if (hasType("info")) {
+    return "Here are the latest dining filters and next-step suggestions.";
+  }
+  if (hasType("status")) {
+    return "Here is the latest booking status update.";
+  }
+
+  return null;
+}
 
 export function AssistantMessageBubble({
   message,
@@ -36,10 +64,11 @@ export function AssistantMessageBubble({
 
   const resolvedVerticalId = verticalId ?? "";
 
-  const { hasCards, segments, precomputedResults } = useMemo(() => {
+  const { hasCards, segments, precomputedResults, cardResultTypes } = useMemo(() => {
     const segs = groupBlocks(blocks);
     const resultsMap = new Map<number, PrecomputedToolResult>();
     let cards = false;
+    const parsedTypeSet = new Set<ParsedToolResult["type"]>();
     const toolUseById = new Map<string, Extract<ContentBlock, { type: "mcp_tool_use" }>>();
 
     for (const block of blocks) {
@@ -62,12 +91,22 @@ export function AssistantMessageBubble({
       );
       if (parsed.type !== "raw") {
         cards = true;
+        parsedTypeSet.add(parsed.type);
         resultsMap.set(i, { parsed, toolName: tn });
       }
     }
 
-    return { hasCards: cards, segments: segs, precomputedResults: resultsMap };
+    return {
+      hasCards: cards,
+      segments: segs,
+      precomputedResults: resultsMap,
+      cardResultTypes: [...parsedTypeSet],
+    };
   }, [blocks, resolvedVerticalId, renderContext]);
+  const diningGroundedSummary = useMemo(() => {
+    if (resolvedVerticalId !== "dining" || !hasCards) return null;
+    return buildDiningGroundedSummary(cardResultTypes);
+  }, [cardResultTypes, hasCards, resolvedVerticalId]);
 
   const collapsibleTexts: string[] = [];
   if (hasCards) {
@@ -88,6 +127,16 @@ export function AssistantMessageBubble({
   ));
   const hasDetails = detailBlocks.length > 0;
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const firstTextSegmentIndex = useMemo(
+    () =>
+      segments.findIndex(
+        (segment) =>
+          segment.kind === "text" &&
+          segment.block.type === "text" &&
+          Boolean(segment.block.text),
+      ),
+    [segments],
+  );
 
   return (
     <div className="flex flex-col items-start gap-3 px-3 py-2 animate-[fade-in_200ms_ease-out]">
@@ -119,6 +168,17 @@ export function AssistantMessageBubble({
             segment.block.type === "text" &&
             segment.block.text
           ) {
+            if (diningGroundedSummary) {
+              if (si !== firstTextSegmentIndex) return null;
+              return (
+                <CollapsibleText
+                  key={si}
+                  text={diningGroundedSummary}
+                  hasCards={false}
+                />
+              );
+            }
+
             const parsed = parseVariantsFromText(segment.block.text);
             const hasProductSegments = parsed.segments.some(
               (s) => s.type === "products",

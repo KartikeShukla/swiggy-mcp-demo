@@ -307,7 +307,15 @@ export function parseToolResult(
 
     if (SLOT_TOOL_RE.test(toolName)) {
       const slots = tryParseTimeSlots(payload);
-      if (slots) return slots;
+      if (slots) {
+        return withPostProcess(
+          slots,
+          toolName,
+          verticalId,
+          renderContext,
+          enableRelevanceReranking,
+        );
+      }
     }
 
     if (ADDRESS_TOOL_RE.test(toolName)) {

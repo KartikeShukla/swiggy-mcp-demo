@@ -38,6 +38,8 @@ export function ItemCardGrid({
       const isFoodOrder = verticalId === "foodorder";
       const isRailSection = verticalId === "dining" || verticalId === "foodorder";
       const isMultiRow = !isRailSection && result.items.length > 3;
+      const showClosestMatchNote = verticalId === "dining" &&
+        Boolean(result.debug?.note?.includes("No exact strict match"));
       const actionLabel = isFoodOrder ? "View Menu" : "Check Availability";
       const actionMode = isFoodOrder ? "menu" : "availability";
       const actionMessage = isFoodOrder
@@ -50,6 +52,11 @@ export function ItemCardGrid({
           titleClassName="text-[11px] font-medium text-muted-foreground/70"
           contentClassName="px-4 pt-3 pb-2.5"
         >
+          {showClosestMatchNote && (
+            <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground">
+              No exact match for every filter. Showing closest options.
+            </p>
+          )}
           <div className={cn(
             "overflow-x-auto scrollbar-thin-h snap-x snap-mandatory pb-1",
             isMultiRow
@@ -88,6 +95,7 @@ export function ItemCardGrid({
         <TimeSlotPicker
           slots={result.slots}
           restaurantName={result.restaurantName}
+          slotGuidance={result.slotGuidance}
           onAction={onAction}
         />
       );

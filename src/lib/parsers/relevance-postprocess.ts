@@ -10,7 +10,7 @@
  */
 import type { ParsedToolResult, RelevanceDebugTrace, ToolRenderContext } from "@/lib/types";
 import { logger } from "@/lib/logger";
-import { rerankDiningRestaurants } from "@/lib/relevance/dining";
+import { rerankDiningRestaurants, rerankDiningTimeSlots } from "@/lib/relevance/dining";
 import {
   rerankFoodorderMenuItems,
   rerankFoodorderRestaurants,
@@ -99,6 +99,7 @@ function buildStrictMatchInfo(
  * - **foodorder products (discover mode)** -> `rerankProductsByQuery` (query-based).
  * - **food / style products** -> `rerankProductsByQuery` (query-based).
  * - **dining restaurants** -> `rerankDiningRestaurants` (strict-first).
+ * - **dining time slots** -> `rerankDiningTimeSlots` (requested-time first).
  *
  * When a strict-first reranker returns `requireBroadenPrompt`, this function
  * substitutes the result with an info card via `buildStrictMatchInfo`.
@@ -225,17 +226,26 @@ export function postProcessParsedResult(
       toolName,
       debug: ranked.debug,
     });
-    if (ranked.requireBroadenPrompt) {
-      return buildStrictMatchInfo(
-        "No strict dining matches yet",
-        "Relax one filter: cuisine/vibe, area, budget, or time window. For dish-specific intent, I can broaden to nearby cuisine matches.",
-        renderContext,
-        ranked.debug,
-      );
-    }
     return {
       type: "restaurants",
       items: ranked.items,
+      debug: ranked.debug,
+    };
+  }
+
+  if (verticalId === "dining" && parsed.type === "time_slots") {
+    const ranked = rerankDiningTimeSlots(parsed.slots, renderContext);
+    logger.debug("[Parser Relevance]", {
+      verticalId,
+      type: "time_slots",
+      toolName,
+      debug: ranked.debug,
+    });
+    return {
+      type: "time_slots",
+      slots: ranked.slots,
+      restaurantName: parsed.restaurantName,
+      slotGuidance: ranked.slotGuidance,
       debug: ranked.debug,
     };
   }

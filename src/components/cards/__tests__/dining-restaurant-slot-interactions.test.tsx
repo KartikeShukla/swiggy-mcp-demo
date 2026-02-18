@@ -74,4 +74,24 @@ describe("dining interactions", () => {
       restaurantId: undefined,
     });
   });
+
+  it("renders preferred slots section ahead of other slots when match tiers are provided", () => {
+    const onAction = vi.fn();
+
+    render(
+      <TimeSlotPicker
+        slots={[
+          { time: "8:00 PM", available: true, matchTier: "preferred" },
+          { time: "7:00 PM", available: true, matchTier: "other" },
+        ]}
+        restaurantName="Saffron Table"
+        slotGuidance="Showing slots closest to your requested time first."
+        onAction={onAction}
+      />,
+    );
+
+    expect(screen.getByText("Showing slots closest to your requested time first.")).toBeInTheDocument();
+    expect(screen.getByText("Best matching time slots")).toBeInTheDocument();
+    expect(screen.getByText("Other available time slots")).toBeInTheDocument();
+  });
 });
