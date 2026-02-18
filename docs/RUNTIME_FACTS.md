@@ -11,6 +11,7 @@
 3. `runMessageStream` handles streaming, timeout, tool-level aborts, and content sanitization.
 4. Assistant blocks are parsed into cards by `parseToolResult` + `ItemCardGrid`.
 5. Dining and foodorder parser paths apply strict-first relevance reranking when render context is available.
+6. Cart snapshots for `food`, `style`, and `foodorder` reconcile partial add-mutation payloads with prior cart state to prevent item loss when tool responses are delta-like.
 
 ### Current Limits And Constants
 All numeric constants are centralized in `src/lib/constants.ts` unless noted otherwise.
@@ -29,6 +30,7 @@ All numeric constants are centralized in `src/lib/constants.ts` unless noted oth
 - Built from recent user messages in `buildSessionStateSummary`.
 - Encodes compact signals like slots, intent, confirmation state, selected restaurant, and location lock.
 - Can include compact selection-memory hints: `last_cart_selection`, `last_restaurant_selection`, `last_slot_selection`.
+- For `food` and `style`, cart intent heuristics avoid generic advisory phrasing (for example "add more protein to this recipe") so non-commerce turns stay in discover mode.
 - `foodorder` and `dining` include compact `filters=` signals for strict-first relevance continuity.
 - Intent classification is aligned with render-context intent classification through shared runtime intent signals (`src/lib/intent/runtime-signals.ts`).
 - Included as a system text block without cache control.

@@ -106,6 +106,43 @@ describe("useCart", () => {
     expect(result.current.itemCount).toBe(4); // 3 + 1
   });
 
+  it.each(["food", "style", "foodorder"] as const)(
+    "reconciles partial add snapshots for %s",
+    (verticalId) => {
+      const baseCart: CartState = {
+        items: [{ id: "a1", name: "Apple", price: 50, quantity: 1 }],
+        subtotal: 50,
+        deliveryFee: 0,
+        total: 50,
+      };
+      const partialAddCart: CartState = {
+        items: [{ id: "b1", name: "Banana", price: 30, quantity: 1 }],
+        subtotal: 30,
+        deliveryFee: 0,
+        total: 30,
+      };
+
+      mockedParseToolResult.mockImplementation((toolName) => {
+        if (toolName === "add_item") {
+          return { type: "cart", cart: partialAddCart };
+        }
+        return { type: "cart", cart: baseCart };
+      });
+
+      const messages: ChatMessage[] = [
+        makeCartMessage("get_cart", baseCart),
+        makeCartMessage("add_item", partialAddCart),
+      ];
+      const { result } = renderHook(() => useCart(messages, verticalId));
+
+      expect(result.current.cart?.items).toEqual([
+        { id: "a1", name: "Apple", price: 50, quantity: 1 },
+        { id: "b1", name: "Banana", price: 30, quantity: 1 },
+      ]);
+      expect(result.current.itemCount).toBe(2);
+    },
+  );
+
   it("extracts cart state even when tool name is non-cart", () => {
     const parsedCart: CartState = {
       items: [

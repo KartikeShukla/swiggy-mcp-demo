@@ -13,6 +13,7 @@ const scenarios: Scenario[] = [
     mustContain: [
       "search immediately",
       "goal + diet + servings first",
+      "do not call tools unless user explicitly asks to source/shop",
       "calories/protein/carbs/fats",
       "Only update cart after explicit user intent",
       "Never place order without explicit user confirmation",
@@ -25,6 +26,7 @@ const scenarios: Scenario[] = [
       "search immediately",
       "concern + skin_type for skincare",
       "concern + hair_type for haircare",
+      "Only after explicit shopping ask",
       "only update cart when user explicitly asks",
       "Never place order without explicit user confirmation",
     ],

@@ -21,8 +21,9 @@ Verified implementation patterns that are easy to regress.
 - Mixed payloads can prefer menu products over restaurants based on signals.
 
 ## Cart Derivation Pattern
-- Cart state is derived from assistant tool results by reverse scanning messages.
+- Cart state is derived from assistant tool results by chronological scanning and reconciliation.
 - Supports nested cart response structures and bill breakdown extraction.
+- For `food`, `style`, and `foodorder`, add-like partial cart snapshots are reconciled with prior cart state so earlier items do not disappear.
 - Foodorder optimistic cart entries use stable keys with restaurant scope to avoid cross-restaurant key collisions.
 
 ## Nutrition/Style Switch Guard Pattern
@@ -40,6 +41,11 @@ Verified implementation patterns that are easy to regress.
 - Critical interaction families preserve stable human-readable message templates while also carrying structured identity metadata.
 - Chat transport supports dual-channel user turns: clean visible text for bubbles plus optional API-only enriched metadata text for reliability.
 - Actions are fed back into the same chat pipeline, preserving one conversational loop.
+
+## Advisory Intent Guard Pattern
+- In `food` and `style`, advisory prompts (recipes/routines/plans) are treated as knowledge-first turns.
+- Advisory turns avoid MCP tool calls unless the user explicitly asks to source/find/buy items.
+- Cart intent heuristics for `food` and `style` are stricter than generic verticals to avoid false cart-mode triggers from non-commerce phrasing.
 
 ## Relevance Debug Overlay Pattern
 - Relevance debug trace ribbons above card rails are hidden by default.

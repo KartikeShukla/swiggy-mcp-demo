@@ -59,6 +59,7 @@ graph LR
 - Address lock block is included when selected address is known.
 - Dining and foodorder summaries include compact filter memory for relevance continuity.
 - Session summaries can also include compact selection-memory hints (`last_cart_selection`, `last_restaurant_selection`, `last_slot_selection`) derived from recent structured action payloads.
+- Nutrition and Styling advisory turns are prompt-constrained to remain tool-silent unless the user explicitly asks to source/find/buy items.
 
 ## Error Handling Model
 ### API-level errors
@@ -88,6 +89,7 @@ Handled by `classifyMcpError` + stream abort guards:
 - Chat history is sanitized before API usage and on persistence.
 - User bubbles intentionally render the clean user message text; internal transport metadata is not shown in chat UI.
 - Cart state is derived from parsed assistant tool results, not a separate server-backed cart store.
+- For `food`, `style`, and `foodorder`, cart derivation reconciles partial add-mutation snapshots against prior cart state to avoid dropping earlier items when tools return delta-like payloads.
 - Foodorder optimistic cart state uses stable keys (vertical + restaurant scope + item id/name) to reduce cross-restaurant item collisions before authoritative cart results arrive.
 - UI actions are emitted with stable human-readable messages plus structured identity metadata (IDs/variants/slot refs) to reduce cross-turn disambiguation failures.
 - Action transport can include model-facing metadata in API-only text while preserving stable visible message templates.

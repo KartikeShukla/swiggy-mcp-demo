@@ -15,7 +15,6 @@ const RESTAURANT_SELECT_PATTERNS = [
 
 const FOOD_MENU_PATTERNS = [/open menu for restaurant:/, /menu at /];
 const DINING_AVAIL_PATTERNS = [/availability/, /time slot/, /book a table/];
-const CART_INTENT_PATTERNS = [/add /, /remove /, /cart/, /basket/];
 
 const FOOD_GOAL_PATTERNS = [/meal prep/, /recipe/, /diet/, /calori/, /protein/, /nutrition/];
 const FOOD_DIET_PATTERNS = [/vegan/, /vegetarian/, /gluten/, /allerg/, /keto/, /low[- ]?carb/, /diabetic/, /jain/];
@@ -181,9 +180,6 @@ function detectIntent(lastUserText: string, verticalId: VerticalId): SummarySign
   }
   if (verticalId === "dining" && hasAny(lastUserText, DINING_AVAIL_PATTERNS)) {
     return "availability";
-  }
-  if (hasAny(lastUserText, CART_INTENT_PATTERNS)) {
-    return "cart";
   }
   return detectParserIntent(lastUserText, verticalId);
 }

@@ -32,6 +32,20 @@ describe("buildSessionStateSummary", () => {
     expect(summary).toContain("confirm=no");
   });
 
+  it("keeps advisory add-phrasing as discover intent in food/style", () => {
+    const foodSummary = buildSessionStateSummary(
+      [user("Can you add more protein to this recipe?")],
+      "food",
+    );
+    const styleSummary = buildSessionStateSummary(
+      [user("Add one extra hydration step to this routine.")],
+      "style",
+    );
+
+    expect(foodSummary).toContain("intent=discover");
+    expect(styleSummary).toContain("intent=discover");
+  });
+
   it("includes confirmation signal when detected", () => {
     const summary = buildSessionStateSummary(
       [

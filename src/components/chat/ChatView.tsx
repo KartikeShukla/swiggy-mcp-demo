@@ -82,6 +82,7 @@ function buildTransportMessageForAction(
         `${message}.`,
         `Structured items: ${JSON.stringify(safeItems)}.`,
         "Execute cart update directly from this selected-item metadata.",
+        "Treat this as an incremental cart mutation; do not clear unrelated existing cart lines unless the user explicitly asked to clear/remove them.",
         "Do not run restaurant discovery.",
         "Do not run menu discovery or fetch/show menu items for this restaurant again unless the user explicitly asks to see the menu.",
       ].join(" ");
@@ -91,6 +92,7 @@ function buildTransportMessageForAction(
       `${message}.`,
       `Selected cart items metadata: ${JSON.stringify(safeItems)}.`,
       "Execute cart update directly from this selected-item metadata.",
+      "Treat this as an incremental cart mutation; do not clear unrelated existing cart lines unless the user explicitly asked to clear/remove them.",
       "Do not ask to reconfirm size/variant unless selected metadata is missing or conflicting across multiple exact matches.",
     ].join(" ");
   }

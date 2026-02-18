@@ -33,12 +33,18 @@ describe("prompt compiler", () => {
     expect(verticals.food.systemPrompt).toContain(
       "Only update cart after explicit user intent",
     );
+    expect(verticals.food.systemPrompt).toContain(
+      "do not call tools unless user explicitly asks to source/shop",
+    );
     expect(verticals.food.systemPrompt).toContain("search immediately");
     expect(verticals.style.systemPrompt).toContain(
       "concern + skin_type for skincare",
     );
     expect(verticals.style.systemPrompt).toContain(
       "only update cart when user explicitly asks",
+    );
+    expect(verticals.style.systemPrompt).toContain(
+      "Only after explicit shopping ask",
     );
     expect(verticals.style.systemPrompt).toContain("search immediately");
     expect(verticals.dining.systemPrompt).toContain(

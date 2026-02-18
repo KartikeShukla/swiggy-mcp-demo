@@ -13,7 +13,7 @@ describe("style product interactions", () => {
       { id: "p2", name: "SPF 50 Sunscreen", price: 399, brand: "Glow Labs" },
     ];
 
-    render(<ProductGrid items={items} onAction={onAction} />);
+    render(<ProductGrid items={items} onAction={onAction} verticalId="style" />);
 
     await user.click(screen.getByRole("button", { name: "Add Hydrating Cleanser to cart" }));
     await user.click(screen.getByRole("button", { name: "Add SPF 50 Sunscreen to cart" }));
@@ -25,5 +25,21 @@ describe("style product interactions", () => {
         message: "Add to cart: 1x Hydrating Cleanser, 1x SPF 50 Sunscreen",
       }),
     );
+  });
+
+  it("hides explicit out-of-stock products in styling tab", () => {
+    const onAction = vi.fn();
+    const items: ParsedProduct[] = [
+      { id: "p1", name: "Vitamin C Serum", price: 699, available: false, brand: "Glow Labs" },
+      { id: "p2", name: "Niacinamide Gel", price: 499, brand: "Glow Labs" },
+    ];
+
+    render(<ProductGrid items={items} onAction={onAction} verticalId="style" />);
+
+    expect(screen.queryByText("Vitamin C Serum")).not.toBeInTheDocument();
+    expect(screen.queryByText("Out of stock")).not.toBeInTheDocument();
+    expect(screen.queryAllByText("Niacinamide Gel").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "Add Vitamin C Serum to cart" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add Niacinamide Gel to cart" })).toBeInTheDocument();
   });
 });

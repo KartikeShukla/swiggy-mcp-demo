@@ -30,6 +30,7 @@ describe("CollapsibleToolGroup", () => {
         tool_use_id: "tu-2",
         content: JSON.stringify([
           { id: "b2", name: "Britannia Bread", brand: "Britannia", price: 70, item_type: "Bread" },
+          { id: "c0", name: "Processed Cheese Cubes", brand: "Amul", price: 115, item_type: "Cheese", available: false },
           { id: "c1", name: "Amul Cheese Slices", brand: "Amul", price: 125, item_type: "Cheese" },
         ]),
       },
@@ -51,6 +52,6 @@ describe("CollapsibleToolGroup", () => {
     expect(screen.getByText("Harvest Gold Bread")).toBeInTheDocument();
     expect(screen.getByText("Britannia Bread")).toBeInTheDocument();
     expect(screen.getByText("Amul Cheese Slices")).toBeInTheDocument();
+    expect(screen.queryByText("Processed Cheese Cubes")).not.toBeInTheDocument();
   });
 });
-

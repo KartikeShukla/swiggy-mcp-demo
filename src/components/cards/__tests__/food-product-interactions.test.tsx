@@ -13,7 +13,7 @@ describe("food product interactions", () => {
       { id: "p2", name: "Banana", price: 50, brand: "Farm Fresh" },
     ];
 
-    render(<ProductGrid items={items} onAction={onAction} />);
+    render(<ProductGrid items={items} onAction={onAction} verticalId="food" />);
 
     await user.click(screen.getByRole("button", { name: "Add Apple to cart" }));
     await user.click(screen.getByRole("button", { name: "Increase Apple quantity" }));
@@ -40,15 +40,19 @@ describe("food product interactions", () => {
     expect(screen.getByRole("button", { name: "Add Banana to cart" })).toBeInTheDocument();
   });
 
-  it("does not render add controls for unavailable products", () => {
+  it("hides explicit out-of-stock products in nutrition tab", () => {
     const onAction = vi.fn();
     const items: ParsedProduct[] = [
       { id: "p1", name: "Dragon Fruit", price: 220, available: false, brand: "Farm Fresh" },
+      { id: "p2", name: "Blueberries", price: 340, brand: "Farm Fresh" },
     ];
 
-    render(<ProductGrid items={items} onAction={onAction} />);
+    render(<ProductGrid items={items} onAction={onAction} verticalId="food" />);
 
-    expect(screen.getByText("Out of stock")).toBeInTheDocument();
+    expect(screen.queryByText("Dragon Fruit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Out of stock")).not.toBeInTheDocument();
+    expect(screen.queryAllByText("Blueberries").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Add Dragon Fruit to cart" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add Blueberries to cart" })).toBeInTheDocument();
   });
 });

@@ -60,6 +60,15 @@ export function ProductGrid({
   sharedSelection?: SharedProductSelection;
 }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const shouldFilterOutOfStock = verticalId === "food" || verticalId === "style";
+  const visibleItems = useMemo(
+    () => (
+      shouldFilterOutOfStock
+        ? items.filter((item) => item.available !== false)
+        : items
+    ),
+    [items, shouldFilterOutOfStock],
+  );
 
   const getQuantity = (productId: string) => {
     if (sharedSelection) return sharedSelection.quantities[productId] || 0;
@@ -68,7 +77,7 @@ export function ProductGrid({
 
   const handleIncrement = (productId: string) => {
     if (sharedSelection) {
-      const product = items.find((item) => item.id === productId);
+      const product = visibleItems.find((item) => item.id === productId);
       if (product) sharedSelection.onIncrement(product);
       return;
     }
@@ -91,7 +100,7 @@ export function ProductGrid({
     });
   };
 
-  const selectedItems = items.filter((p) => getQuantity(p.id) > 0);
+  const selectedItems = visibleItems.filter((p) => getQuantity(p.id) > 0);
   const totalCount = selectedItems.reduce(
     (sum, p) => sum + getQuantity(p.id),
     0,
@@ -128,8 +137,8 @@ export function ProductGrid({
   const useTypeGrouping = verticalId === "food" || verticalId === "style" || isFoodOrder;
   const groupedEntries = useMemo(() => {
     const grouped = new Map<string, { title: string; items: ParsedProduct[]; order?: number; firstIndex: number }>();
-    for (let index = 0; index < items.length; index++) {
-      const item = items[index];
+    for (let index = 0; index < visibleItems.length; index++) {
+      const item = visibleItems[index];
       const metadataTitle = item.groupLabel?.trim();
       const inferredTitle = isFoodOrder
         ? (item.itemType?.trim() || "Menu Items")
@@ -158,10 +167,14 @@ export function ProductGrid({
       if (aOrder !== bOrder) return aOrder - bOrder;
       return a.firstIndex - b.firstIndex;
     });
-  }, [items, isFoodOrder, useTypeGrouping]);
+  }, [visibleItems, isFoodOrder, useTypeGrouping]);
   const isRailSection =
     verticalId === "foodorder" || verticalId === "food" || verticalId === "style";
   const isOrangeRailSection = isRailSection;
+
+  if (shouldFilterOutOfStock && visibleItems.length === 0) {
+    return null;
+  }
 
   return (
     <div>
