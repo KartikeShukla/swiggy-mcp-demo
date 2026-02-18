@@ -66,6 +66,7 @@ This demo has rough edges. The following are the most prominent issues I'm aware
 
 ### Cart Behavior — Multi-Item Ambiguity
 - Adding multiple items to the cart in a single turn — especially when items are loosely described rather than exactly specified — can lead to unexpected cart state.
+- The total amount for food orders and instamart item can be inaccurate depending on the offers available and the extra charges.
 ---
 
 ## License
