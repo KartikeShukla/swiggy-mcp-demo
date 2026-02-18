@@ -56,6 +56,18 @@ npm run docs:verify
 - Avoid shared devices/profiles.
 - Revoke/disconnect tokens after demos.
 
+## Known Issues (Work in Progress)
+
+This demo has rough edges. The following are the most prominent issues I'm aware of:
+
+### Dining Tab — Location and Slot Reliability
+- The **Dine** tab often fails to pull restaurants for a specified location, requiring multiple attempts before results appear. This is the most unreliable part of the demo.
+- Available booking slots are not always surfaced correctly. When a requested time slot is unavailable, the chat may still display a "booking confirmed" card, while the accompanying text message notes the actual issue. Use the see details bottom sheet to see the raw output and tool calls whenever the behaviour is confusing (applies to all the tabs).
+
+### Cart Behavior — Multi-Item Ambiguity
+- Adding multiple items to the cart in a single turn — especially when items are loosely described rather than exactly specified — can lead to unexpected cart state.
+---
+
 ## License
 - This project is source-available under a custom non-commercial license (see `LICENSE`).
 - You can use, modify, and share it for non-commercial purposes.
