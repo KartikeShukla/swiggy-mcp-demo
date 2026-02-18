@@ -5,7 +5,7 @@ Browser-first React demo that connects Anthropic chat streaming with Swiggy MCP 
 ## Important Warning
 - This demo was built completely through iterative prompting with CC (Claude Code) and Codex.
 - Reliability is not great and can break in edge cases (intent understanding, cart state, tool flows, rate-limit behavior).
-- Use this project for demos and experimentation, not as an actual reference.
+- Only use this project for demos and experimentation.
 
 ## What This Demo Covers
 - Shared chat infrastructure for 4 verticals (`food`, `style`, `dining`, `foodorder`).
@@ -62,4 +62,4 @@ npm run docs:verify
 - Any commercial use is strictly not allowed without prior written permission.
 
 ## Thanks
-Thank you to Hariom Palkar for making this MCP available: https://github.com/Swiggy/swiggy-mcp-server-manifest
+Thanks to Hariom Palkar for making this MCP available: https://github.com/Swiggy/swiggy-mcp-server-manifest
