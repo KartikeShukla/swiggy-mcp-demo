@@ -8,7 +8,7 @@ export const diningVertical: VerticalConfig = {
   name: "TableScout",
   tabName: "Dine",
   description:
-    "An AI dining concierge that finds restaurants matching your mood and cuisine, checks real-time table availability on Dineout, and helps you reserve a spot.",
+    "A dining concierge that finds restaurants matching your mood and cuisine, checks real-time table availability on Dineout, and helps you reserve a spot.",
   color: "dining",
   icon: "UtensilsCrossed",
   systemPrompt: buildSystemPrompt(diningPromptProfile),

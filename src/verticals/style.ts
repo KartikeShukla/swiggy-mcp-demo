@@ -8,7 +8,7 @@ export const styleVertical: VerticalConfig = {
   name: "Styling",
   tabName: "Styling",
   description:
-    "An AI grooming advisor that builds structured skincare and haircare routines for morning, evening, and weekly care, and helps you shop the right products on Instamart.",
+    "A grooming advisor that builds structured skincare and haircare routines for morning, evening, and weekly care, and helps you shop the right products on Instamart.",
   color: "style",
   icon: "Sparkles",
   systemPrompt: buildSystemPrompt(stylePromptProfile),

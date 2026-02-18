@@ -8,7 +8,7 @@ export const foodVertical: VerticalConfig = {
   name: "Nutrition",
   tabName: "Nutrition",
   description:
-    "An AI nutrition coach that plans meals with full macro breakdowns, walks you through recipes step by step, and helps you find every ingredient on Instamart.",
+    "A nutrition coach that plans meals with full macro breakdowns, walks you through recipes step by step, and helps you find every ingredient on Instamart.",
   color: "food",
   icon: "Salad",
   systemPrompt: buildSystemPrompt(foodPromptProfile),
