@@ -74,8 +74,6 @@ Full Walkthrough: https://vimeo.com/1165983820?share=copy&fl=sv&fe=ci
 
 Ordering Food: https://vimeo.com/1165983957?share=copy&fl=sv&fe=ci
 
-It does work, <img width="590" height="1278" alt="swiggy_screenshot" src="https://github.com/user-attachments/assets/2316627f-3364-4e20-8894-efbd4974e0ba" />
-
 ---
 
 ## License
