@@ -67,6 +67,15 @@ This demo has rough edges. The following are the most prominent issues I'm aware
 ### Cart Behavior — Multi-Item Ambiguity
 - Adding multiple items to the cart in a single turn — especially when items are loosely described rather than exactly specified — can lead to unexpected cart state.
 - The total amount for food orders and instamart item can be inaccurate depending on the offers available and the extra charges.
+
+## Demo Video
+
+<div style="padding:56.25% 0 0 0;position:relative;"><iframe src="https://player.vimeo.com/video/1165983820?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479&amp;autoplay=1&amp;muted=1&amp;loop=1" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;top:0;left:0;width:100%;height:100%;" title="Swiggy MCP Demo"></iframe></div><script src="https://player.vimeo.com/api/player.js"></script>
+
+<div style="padding:56.25% 0 0 0;position:relative;"><iframe src="https://player.vimeo.com/video/1165983957?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479&amp;autoplay=1&amp;muted=1&amp;loop=1" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;top:0;left:0;width:100%;height:100%;" title="Swiggy MCP Demo - Food Ordering"></iframe></div><script src="https://player.vimeo.com/api/player.js"></script>
+
+It does work, <img width="590" height="1278" alt="IMG_2861" src="https://github.com/user-attachments/assets/2316627f-3364-4e20-8894-efbd4974e0ba" />
+
 ---
 
 ## License
